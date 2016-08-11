@@ -2,15 +2,14 @@
 
 ## VOCABULARY
 
-    messure
-     /  \     note
+    Messure
+     /  \     Note
     /    \    |
     |1 2 |5 6 7 8| line \
-    |2   |7''    | line  > staff
+    |2   |7''    | line  > ScoreLine
     |  4 |p   3  | line /
-    \            /
-     \          /
-      \--staff-/
+    \             /
+     \-ScoreLine-/
 
           *top annotation
     |1   |p 6 7 8|
@@ -23,18 +22,25 @@
 ### Messure
 - data[] 1,, - 7'', p, space, annotation, newline, newpage
 
-### Staff
-- Line[], Messure[]
+### ScoreLine
+- Line[] of Messure[]
 
 ### Score
-- Staff[] 
-
+- ScoreLine[]
+- pageIndex[]
 
 ### ScoreEditor
 - add/del/change
 - undo/redo
 
+
 ## GUI/DRAWING
+
+### TextItem
+- alignment
+- font
+- bounding-box
+- margin
 
 ### PageAnnotation
 - TextItem[] (title, header, footer, pagenum, ...)
@@ -42,16 +48,20 @@
 ### PageAnnotationTemplate
 - PageAnnotation[] (1st, odd, even)
 
-### PageLayout (global)
-- size
+### PageMargins
 - margins (odd/even)
+
+### PageLayout
+- size
+- PageMargins
 - portrait/landscape
 - PageAnnotationTemplate
-
-### LayoutSettings (per page)
--
 
 ### ScoreView
 - Score*
 - ScoreEditor*
+- PageLayout (global)
 - renderPage(QPainter*, int)
+- optional per-page override:
+    - PageMargins
+    - PageAnnotation
