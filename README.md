@@ -3,8 +3,8 @@
 ## VOCABULARY
 
     messure
-     /  \
-    /    \
+     /  \     note
+    /    \    |
     |1 2 |5 6 7 8| line \
     |2   |7''    | line  > staff
     |  4 |p   3  | line /
@@ -16,15 +16,18 @@
     |1   |p 6 7 8|
     |  3 |    8 9|
        *bot. annotation
-\                    /
- \                  /
-  \------page------/
 
 
 ## GENERAL DATA
 
+### Messure
+- data[] 1,, - 7'', p, space, annotation, newline, newpage
+
+### Staff
+- Line[], Messure[]
+
 ### Score
-- data[] 1,,-7'',p,space,endmessure,annotation,newline,newpage
+- Staff[] 
 
 
 ### ScoreEditor
