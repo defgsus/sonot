@@ -18,4 +18,5 @@ SOURCES += main.cpp\
 HEADERS  += MainWindow.h
 
 DISTFILES += \
-    README.md
+    README.md \
+    .gitignore
