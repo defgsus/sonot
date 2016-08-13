@@ -22,12 +22,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #define SONOTESRC_JSONINTERFACE_H
 
 #include <vector>
+#include <QString>
 
 class QJsonObject;
 class QJsonArray;
 class QJsonValue;
-class QString;
 class QRectF;
+class QColor;
 
 namespace Sonote {
 
@@ -39,9 +40,6 @@ namespace Sonote {
 class JsonInterface
 {
 public:
-
-    JsonInterface(const char* className)
-        : p_json_iface_classname_(className) { }
 
     virtual ~JsonInterface() { }
 
@@ -77,33 +75,56 @@ public:
         @throws IoException on any error */
     virtual void loadJsonFile(const QString& filename);
 
-    /* ---- (static) helper functions ----- */
+};
 
-    static const char* json_typeName(const QJsonValue&);
+/** Collection of helper functions for json parsing.
+    Most functions throw Exception with the className defined in the constructor */
+class JsonHelper
+{
+public:
+
+    JsonHelper(const char* className)
+        : p_json_helper_classname_(className) { }
+    JsonHelper(const QString& className)
+        : p_json_helper_classname_(className) { }
+
+    // --- info ---
+
+    static const char* typeName(const QJsonValue&);
+
+    // -- convert to json --
+
+    static QJsonValue wrap(const QRectF&);
+    static QJsonValue wrap(const QColor&);
 
     template <typename T>
-    T json_expect(const QJsonValue&);
+    static QJsonArray toArray(const std::vector<T>&);
+
+
+    // -- throwing getters --
 
     template <typename T>
-    T json_expectChild(const QJsonObject& parent, const QString& key);
-
-    QJsonValue json_expectChildValue(const QJsonObject& parent, const QString& key);
-    QJsonArray json_expectArray(const QJsonValue&);
+    T expect(const QJsonValue&);
 
     template <typename T>
-    static QJsonArray json_toArray(const std::vector<T>&);
+    T expectChild(const QJsonObject& parent, const QString& key);
+
+    QJsonValue expectChildValue(const QJsonObject& parent, const QString& key);
+    QJsonArray expectArray(const QJsonValue&);
 
     template <typename T>
-    void json_fromArray(std::vector<T>& dst, const QJsonArray& src);
+    void fromArray(std::vector<T>& dst, const QJsonArray& src);
 
     template <typename T>
-    void json_fromArray(std::vector<T>& dst, const QJsonValue& src);
-
-    static QJsonValue json_wrap(const QRectF&);
+    void fromArray(std::vector<T>& dst, const QJsonValue& src);
 
 private:
-    const char* p_json_iface_classname_;
+    QString p_json_helper_classname_;
 };
+
+
+
+
 
 } // namespace Sonote
 

@@ -48,12 +48,13 @@
 ### PageAnnotationTemplate
 - PageAnnotation[] (1st, odd, even)
 
-### PageMargins
-- margins (odd/even)
+### PageSize
+- width/height (mm)
+- preset
 
 ### PageLayout
-- size
-- PageMargins
+- PageSize
+- page margins[odd/even]
 - portrait/landscape
 - PageAnnotationTemplate
 

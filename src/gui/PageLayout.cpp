@@ -27,6 +27,7 @@ const int EVEN = 1;
 
 PageLayout::PageLayout()
     : p_pageRect_   (0., 0., 190., 297.)
+    , p_zeroBased_  (true)
 {
     p_marginLeft_[ODD] = 20.; p_marginLeft_[EVEN] = 30.;
     p_marginRight_[ODD] = 30.; p_marginRight_[EVEN] = 20.;
@@ -38,6 +39,9 @@ QRectF PageLayout::pageRect() const { return p_pageRect_; }
 
 QRectF PageLayout::contentRect(int pageNum) const
 {
+    if (p_zeroBased_)
+        ++pageNum;
+
     int idx = (pageNum & 1) == 0 ? EVEN : ODD;
 
     return QRectF(

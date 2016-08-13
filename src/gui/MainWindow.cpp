@@ -44,6 +44,8 @@ MainWindow::MainWindow(QWidget *parent)
     setMinimumSize(320, 320);
 
     p_->createWidgets();
+
+    p_->scoreView->showPage(0);
 }
 
 MainWindow::~MainWindow()

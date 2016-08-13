@@ -35,6 +35,8 @@ public:
     QRectF pageRect() const;
     QRectF contentRect(int pageNum) const;
 
+    bool isZeroBased() const { return p_zeroBased_; }
+
 private:
 
     QRectF p_pageRect_;
@@ -43,6 +45,7 @@ private:
         p_marginRight_[2],
         p_marginTop_[2],
         p_marginBottom_[2];
+    bool p_zeroBased_;
 };
 
 } // namespace Sonote

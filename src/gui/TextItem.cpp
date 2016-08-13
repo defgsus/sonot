@@ -28,11 +28,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace Sonote {
 
 TextItem::TextItem()
-    : JsonInterface     ("TextItem")
-    , p_boxAlign_       (Qt::AlignAbsolute)
+    : p_boxAlign_       (Qt::AlignAbsolute)
     , p_textAlign_      (Qt::AlignCenter)
     , p_textFlags_      (Qt::TextDontClip)
+    , p_fontFlags_      (F_NONE)
     , p_pointSize_      (8.)
+    , p_color_          (Qt::black)
     , p_boundingBox_    (0,0,10,10)
 {
 
@@ -40,28 +41,36 @@ TextItem::TextItem()
 
 QJsonObject TextItem::toJson() const
 {
+    JsonHelper json("TextItem");
+
     QJsonObject o;
     o.insert("ver", 1);
     o.insert("text", QJsonValue(p_text_));
-    o.insert("box", json_wrap(p_boundingBox_));
+    o.insert("box", json.wrap(p_boundingBox_));
     o.insert("point-size", p_pointSize_);
     /** @todo supposing Qt::AlignmentFlag values never change */
     o.insert("box-align", QJsonValue((int)p_boxAlign_));
     o.insert("text-align", QJsonValue((int)p_textAlign_));
     /** @todo supposing Qt::TextFlag values never change */
     o.insert("text-flags", QJsonValue((int)p_textFlags_));
+    o.insert("font-flags", QJsonValue((int)p_fontFlags_));
+    o.insert("color", json.wrap(p_color_));
 
     return o;
 }
 
 void TextItem::fromJson(const QJsonObject& o)
 {
-    p_text_ = json_expectChild<QString>(o, "text");
-    p_boundingBox_ = json_expectChild<QRectF>(o, "box");
-    p_pointSize_ = json_expectChild<double>(o, "point-size");
-    p_boxAlign_ = (Qt::Alignment)json_expectChild<int>(o, "box-align");
-    p_textAlign_ = (Qt::Alignment)json_expectChild<int>(o, "text-align");
-    p_textFlags_ = (Qt::TextFlag)json_expectChild<int>(o, "text-flags");
+    JsonHelper json("TextItem");
+
+    p_text_ = json.expectChild<QString>(o, "text");
+    p_boundingBox_ = json.expectChild<QRectF>(o, "box");
+    p_pointSize_ = json.expectChild<double>(o, "point-size");
+    p_boxAlign_ = (Qt::Alignment)json.expectChild<int>(o, "box-align");
+    p_textAlign_ = (Qt::Alignment)json.expectChild<int>(o, "text-align");
+    p_textFlags_ = (Qt::TextFlag)json.expectChild<int>(o, "text-flags");
+    p_fontFlags_ = (FontFlag)json.expectChild<int>(o, "font-flags");
+    p_color_ = json.expectChild<QColor>(o, "color");
 }
 
 
@@ -102,7 +111,12 @@ QFont TextItem::font() const
 {
     QFont f;
 
+    //f.setFamily("Verdana");
     f.setPointSizeF(p_pointSize_);
+
+    f.setItalic(p_fontFlags_ & F_ITALIC);
+    f.setBold(p_fontFlags_ & F_BOLD);
+    f.setUnderline(p_fontFlags_ & F_UNDERLINE);
 
     return f;
 }

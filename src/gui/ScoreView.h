@@ -32,14 +32,24 @@ public:
     explicit ScoreView(QWidget *parent = 0);
     ~ScoreView();
 
-    void paintPage(QPainter*, int pageNum) const;
-
 signals:
 
 public slots:
 
+    /** Go to top-left of given page.
+        Leaves scale or rotation unchanged */
+    void goToPage(int pageIndex, double margin_mm = 5.);
+
+    /** Sets the transformation such that the given rectangle
+        in document-space is completely visible */
+    void showRect(const QRectF& rect_mm, double margin_mm = 5.);
+    /** Sets the transformation such that the given page
+        is completely visible. */
+    void showPage(int pageIndex, double margin_mm = 5.);
+
 protected:
 
+    void keyPressEvent(QKeyEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;
     void mouseMoveEvent(QMouseEvent*) override;

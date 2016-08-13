@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QString>
 #include <QRectF>
+#include <QColor>
 
 #include "io/JsonInterface.h"
 
@@ -34,6 +35,16 @@ namespace Sonote {
 class TextItem : public JsonInterface
 {
 public:
+    /** Flags for font selection.
+        order MUST NOT change for json persistence! */
+    enum FontFlag
+    {
+        F_NONE = 0,
+        F_ITALIC = 1,
+        F_BOLD = 2,
+        F_UNDERLINE = 4
+    };
+
     TextItem();
 
     // --- io ---
@@ -47,7 +58,9 @@ public:
     Qt::Alignment boxAlignment() const { return p_boxAlign_; }
     Qt::Alignment textAlignment() const { return p_textAlign_; }
     Qt::TextFlag textFlags() const { return p_textFlags_; }
+    FontFlag fontFlags() const { return p_fontFlags_; }
     double fontSize() const { return p_pointSize_; }
+    const QColor& color() const { return p_color_; }
 
     /** The bounding rectangle */
     const QRectF& boundingBox() const { return p_boundingBox_; }
@@ -64,7 +77,7 @@ public:
 
     void setText(const QString& t) { p_text_ = t; }
     void setTextAlignment(Qt::Alignment a) { p_textAlign_ = a; }
-    /** Accepted values are
+    /** Accepts or-combinations of
             Qt::TextDontClip
             Qt::TextSingleLine
             Qt::TextExpandTabs
@@ -72,13 +85,18 @@ public:
             Qt::TextWordWrap
             Qt::TextIncludeTrailingSpaces */
     void setTextFlags(int a) { p_textFlags_ = Qt::TextFlag(a); }
+    /** Accepts or-combinations of FontFlag */
+    void setFontFlags(int a) { p_fontFlags_ = FontFlag(a); }
     void setFontSize(double pointSize) { p_pointSize_ = pointSize; }
+    void setColor(const QColor& c) { p_color_ = c; }
 
 private:
 
     Qt::Alignment p_boxAlign_, p_textAlign_;
     Qt::TextFlag p_textFlags_;
+    FontFlag p_fontFlags_;
     double p_pointSize_;
+    QColor p_color_;
     QRectF p_boundingBox_;
     QString p_text_;
 };
