@@ -50,6 +50,7 @@ struct ScoreView::Private
         , brushPageBackground   (QColor(255,255,240))
     { }
 
+    bool showLayoutBoxes() const { return true; }
     void paintPage(QPainter* p, const QRect& updateRect, int pageNum) const;
     void paintTextItems(QPainter* p, const QRect& updateRect, int pageNum,
                         const QList<TextItem*>& items) const;
@@ -80,13 +81,25 @@ ScoreView::ScoreView(QWidget *parent)
     , p_        (new Private(this))
 {
     auto i = new TextItem;
-    i->setBoundingRect(QRectF(0,0,100,10));
-    i->setBoxAlignment(Qt::AlignLeft | Qt::AlignTop);
-    i->setTextAlignment(Qt::AlignCenter);
-    i->setText("Score");
+    i->setBoundingBox(QRectF(0,0,100,10));
+    i->setBoxAlignment(Qt::AlignHCenter | Qt::AlignTop);
+    i->setText("HCenter|Top");
     p_->textItems << i;
 
-    p_->matrix.scale(4., 4.);
+    i = new TextItem;
+    i->setBoundingBox(QRectF(0,0,30,10));
+    i->setBoxAlignment(Qt::AlignLeft | Qt::AlignTop);
+    i->setText("TL");
+    p_->textItems << i;
+
+    i = new TextItem;
+    i->setBoundingBox(QRectF(0,0,20,10));
+    i->setBoxAlignment(Qt::AlignRight | Qt::AlignBottom);
+    i->setText("BR");
+    i->setFontSize(5.);
+    p_->textItems << i;
+
+    p_->matrix.scale(2., 2.);
     p_->onMatrixChanged();
 }
 
@@ -119,7 +132,10 @@ void ScoreView::mousePressEvent(QMouseEvent* e)
     if (e->button() == Qt::LeftButton)
     {
         p_->setAction(Private::A_DRAG_TRANSLATE);
-        //p_->action = Private::A_DRAG_ZOOM;
+    }
+    else if (e->button() == Qt::RightButton)
+    {
+        p_->setAction(Private::A_DRAG_ZOOM);
     }
 }
 
@@ -200,9 +216,13 @@ void ScoreView::Private::paintPage(
     // page packground
     p->fillRect(pageLayout.pageRect(), brushPageBackground);
 
-    p->setPen(Qt::DotLine);
-    p->setBrush(Qt::NoBrush);
-    p->drawRect(pageLayout.contentRect(0));
+    // content borders / margins
+    if (showLayoutBoxes())
+    {
+        p->setPen(Qt::DotLine);
+        p->setBrush(Qt::NoBrush);
+        p->drawRect(pageLayout.contentRect(0));
+    }
 
     paintTextItems(p, updateRect, pageNum, textItems);
 
@@ -213,14 +233,25 @@ void ScoreView::Private::paintTextItems(
         QPainter* p, const QRect& updateRect, int pageNum,
         const QList<TextItem*>& items) const
 {
+    auto pageRect = pageLayout.pageRect();
+
     for (auto item : items)
     {
-        p->setBrush(Qt::NoBrush);
-        p->setPen(Qt::DashDotDotLine);
-        p->drawRect(item->boundingRect());
+        auto box = item->alignedBoundingBox(
+                            pageLayout.contentRect(pageNum));
+
+        // show text box
+        if (showLayoutBoxes())
+        {
+            p->setBrush(Qt::NoBrush);
+            p->setPen(Qt::DashDotDotLine);
+            p->drawRect(box);
+        }
 
         p->setPen(Qt::black);
-        p->drawText(item->boundingRect(), item->textAlignment(), item->text());
+        p->setFont(item->font());
+        p->drawText(box, item->textAlignment() | item->textFlags(),
+                    item->text(), &pageRect);
     }
 }
 

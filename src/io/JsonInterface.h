@@ -84,7 +84,10 @@ public:
     template <typename T>
     T json_expect(const QJsonValue&);
 
-    QJsonValue json_expectChild(const QJsonObject& parent, const QString& key);
+    template <typename T>
+    T json_expectChild(const QJsonObject& parent, const QString& key);
+
+    QJsonValue json_expectChildValue(const QJsonObject& parent, const QString& key);
     QJsonArray json_expectArray(const QJsonValue&);
 
     template <typename T>

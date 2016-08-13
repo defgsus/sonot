@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QJsonArray>
+#include <QString>
 #include <QFile>
 #include <QRectF>
 
@@ -91,12 +92,28 @@ namespace
     struct JsonValueTraits
     {
         static QJsonValue to(T v) { return QJsonValue(v); }
+        //static T from(const QJsonValue& v) { }
     };
 
     template <>
     struct JsonValueTraits<size_t>
     {
         static QJsonValue to(size_t v) { return QJsonValue((qint64)v); }
+        //static size_t from(const QJsonValue& v) { return v.toInt(); }
+    };
+
+    template <>
+    struct JsonValueTraits<QRectF>
+    {
+        static QJsonValue to(const QRectF& r)
+        {
+            QJsonArray a;
+            a.append(r.left());
+            a.append(r.top());
+            a.append(r.width());
+            a.append(r.height());
+            return a;
+        }
     };
 }
 
@@ -127,6 +144,12 @@ double JsonInterface::json_expect(const QJsonValue& v)
 }
 
 template <>
+float JsonInterface::json_expect(const QJsonValue& v)
+{
+    return json_expect<double>(v);
+}
+
+template <>
 int JsonInterface::json_expect(const QJsonValue& v)
 {
     if (!v.isDouble() && !v.isString())
@@ -144,15 +167,17 @@ int JsonInterface::json_expect(const QJsonValue& v)
 }
 
 template <>
-float JsonInterface::json_expect(const QJsonValue& v)
-{
-    return json_expect<double>(v);
-}
-
-template <>
 size_t JsonInterface::json_expect(const QJsonValue& v)
 {
     return json_expect<int>(v);
+}
+
+template <>
+QString JsonInterface::json_expect(const QJsonValue& v)
+{
+    if (!v.isString())
+        SONOTE_JSON_ERROR("Expected string value, got " << json_typeName(v));
+    return v.toString();
 }
 
 template <>
@@ -168,6 +193,16 @@ QRectF JsonInterface::json_expect(const QJsonValue& v)
     return QRectF(a[0], a[1], a[2], a[3]);
 }
 
+template <typename T>
+T JsonInterface::json_expectChild(
+        const QJsonObject& parent, const QString& key)
+{
+    if (!parent.contains(key))
+        SONOTE_JSON_ERROR("Expected '" << key << "' value ("
+                          << typeid(T).name() << "), not found");
+    return json_expect<T>( parent.value(key) );
+}
+
 
 QJsonArray JsonInterface::json_expectArray(const QJsonValue& v)
 {
@@ -176,11 +211,11 @@ QJsonArray JsonInterface::json_expectArray(const QJsonValue& v)
     return v.toArray();
 }
 
-QJsonValue JsonInterface::json_expectChild(
+QJsonValue JsonInterface::json_expectChildValue(
         const QJsonObject& parent, const QString& key)
 {
     if (!parent.contains(key))
-        SONOTE_JSON_ERROR("Expected '" << key << "' object, not found");
+        SONOTE_JSON_ERROR("Expected '" << key << "' value, not found");
     return parent.value(key);
 }
 
@@ -213,26 +248,24 @@ void JsonInterface::json_fromArray(std::vector<T>& dst, const QJsonValue& src)
 
 QJsonValue JsonInterface::json_wrap(const QRectF& r)
 {
-    QJsonArray a;
-    a.append(r.left());
-    a.append(r.top());
-    a.append(r.width());
-    a.append(r.height());
-    return a;
+    return JsonValueTraits<QRectF>::to(r);
 }
 
 
 // --- template instantiation ---
 
-#define SONOTE__INSTANTIATE(type__) \
-template QJsonArray JsonInterface::json_toArray<type__>( const std::vector<type__>&); \
-template void JsonInterface::json_fromArray<type__>(std::vector<type__>& dst, const QJsonArray& src); \
-template void JsonInterface::json_fromArray<type__>(std::vector<type__>& dst, const QJsonValue& src);
+#define SONOTE__INSTANTIATE(T__) \
+template T__ JsonInterface::json_expectChild<T__>(const QJsonObject& parent, const QString& key); \
+template QJsonArray JsonInterface::json_toArray<T__>( const std::vector<T__>&); \
+template void JsonInterface::json_fromArray<T__>(std::vector<T__>& dst, const QJsonArray& src); \
+template void JsonInterface::json_fromArray<T__>(std::vector<T__>& dst, const QJsonValue& src);
 
 SONOTE__INSTANTIATE(int)
 SONOTE__INSTANTIATE(float)
 SONOTE__INSTANTIATE(double)
 SONOTE__INSTANTIATE(size_t)
+SONOTE__INSTANTIATE(QString)
+SONOTE__INSTANTIATE(QRectF)
 
 
 #undef SONOTE__INSTANTIATE
