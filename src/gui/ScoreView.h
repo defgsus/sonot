@@ -40,6 +40,9 @@ public slots:
 
 protected:
 
+    void mousePressEvent(QMouseEvent*) override;
+    void mouseReleaseEvent(QMouseEvent*) override;
+    void mouseMoveEvent(QMouseEvent*) override;
     void paintEvent(QPaintEvent*) override;
 
 private:

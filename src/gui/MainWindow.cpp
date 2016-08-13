@@ -40,6 +40,9 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow   (parent)
     , p_            (new Private(this))
 {
+    setObjectName("MainWindow");
+    setMinimumSize(320, 320);
+
     p_->createWidgets();
 }
 
@@ -51,6 +54,7 @@ MainWindow::~MainWindow()
 void MainWindow::Private::createWidgets()
 {
     scoreView = new ScoreView(p);
+    scoreView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     p->setCentralWidget(scoreView);
 }
 

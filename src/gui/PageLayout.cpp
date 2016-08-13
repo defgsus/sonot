@@ -31,7 +31,7 @@ PageLayout::PageLayout()
     p_marginLeft_[ODD] = 20.; p_marginLeft_[EVEN] = 30.;
     p_marginRight_[ODD] = 30.; p_marginRight_[EVEN] = 20.;
     p_marginTop_[ODD] = p_marginTop_[EVEN] = 20.;
-    p_marginBottom_[ODD] = p_marginTop_[EVEN] = 30.;
+    p_marginBottom_[ODD] = p_marginBottom_[EVEN] = 30.;
 }
 
 QRectF PageLayout::pageRect() const { return p_pageRect_; }
