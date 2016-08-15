@@ -31,6 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "ScoreView.h"
 #include "TextItem.h"
 #include "PageLayout.h"
+#include "PageAnnotationTemplate.h"
 
 namespace Sonote {
 
@@ -65,21 +66,22 @@ struct ScoreView::Private
         Returns -1 if p is not on a page. */
     int pageIndexForDocumentPosition(const QPointF& p) const;
 
+    PageAnnotation getPageAnnotation(int pageIndex) const;
+
     // --- drawing ---
 
     bool doShowLayoutBoxes() const { return true; }
 
     void paintBackground(QPainter* p, const QRect& updateRect) const;
     void paintPage(QPainter* p, const QRect& updateRect, int pageIndex) const;
-    void paintTextItems(QPainter* p, const QRect& updateRect, int pageIndex,
-                        const QList<TextItem*>& items) const;
+    void paintPageAnnotation(QPainter* p, const QRect& updateRect, int pageIndex) const;
 
     ScoreView* p;
 
     PageLayout pageLayout;
     QTransform matrix, imatrix;
 
-    QList<TextItem*> textItems;
+    PageAnnotationTemplate annotationTemplate;
 
     // -- gui --
 
@@ -102,28 +104,8 @@ ScoreView::ScoreView(QWidget *parent)
 {
     grabKeyboard();
 
-    auto i = new TextItem;
-    i->setBoundingBox(QRectF(0,0,100,10));
-    i->setBoxAlignment(Qt::AlignHCenter | Qt::AlignTop);
-    i->setText("HCenter|Top");
-    i->setFontFlags(TextItem::F_ITALIC);
-    p_->textItems << i;
+    p_->annotationTemplate.init("default");
 
-    i = new TextItem;
-    i->setBoundingBox(QRectF(0,0,30,10));
-    i->setBoxAlignment(Qt::AlignLeft | Qt::AlignTop);
-    i->setText("TL");
-    i->setFontFlags(TextItem::F_BOLD);
-    p_->textItems << i;
-
-    i = new TextItem;
-    i->setBoundingBox(QRectF(0,0,20,10));
-    i->setBoxAlignment(Qt::AlignRight | Qt::AlignBottom);
-    i->setText("#page");
-    i->setFontSize(5.);
-    p_->textItems << i;
-
-    qInfo().noquote() << i->toJsonString();
     p_->matrix.scale(2., 2.);
 
     goToPage(0);
@@ -301,8 +283,6 @@ QPointF ScoreView::Private::pagePosition(int pageIndex) const
 
 int ScoreView::Private::pageIndexForDocumentPosition(const QPointF& p0) const
 {
-    // TODO: not finished
-
     if (p0.x() < 0.)
         return -1;
     auto r = pageLayout.pageRect();
@@ -313,10 +293,17 @@ int ScoreView::Private::pageIndexForDocumentPosition(const QPointF& p0) const
     if (p.rx() >= 2. || p.ry() < 0.)
         return -1;
 
-    return int(p.ry()) * 2 + int(p.rx()) + 1;
+    return int(p.ry()) * 2 + int(p.rx()) - 1;
 }
 
+PageAnnotation ScoreView::Private::getPageAnnotation(int pageIndex) const
+{
+    const PageAnnotationTemplate * anno = &annotationTemplate;
+    if (!anno)
+        return PageAnnotation();
 
+    return anno->getPage(pageIndex);
+}
 
 
 // ########################### DRAWING ##############################
@@ -370,22 +357,23 @@ void ScoreView::Private::paintPage(
         p->drawRect(pageLayout.contentRect(pageIndex));
     }
 
-    paintTextItems(p, updateRect, pageIndex, textItems);
+    paintPageAnnotation(p, updateRect, pageIndex);
 
     p->restore();
 }
 
-void ScoreView::Private::paintTextItems(
-        QPainter* p, const QRect& updateRect, int pageIndex,
-        const QList<TextItem*>& items) const
+void ScoreView::Private::paintPageAnnotation(
+        QPainter* p, const QRect& /*updateRect*/, int pageIndex) const
 {
+    PageAnnotation anno = getPageAnnotation(pageIndex);
+
     auto pageRect = pageLayout.pageRect();
     auto contentRect = pageLayout.contentRect(pageIndex);
     auto pageNum = pageNumber(pageIndex);
 
-    for (auto item : items)
+    for (const TextItem& item : anno.textItems())
     {
-        auto box = item->alignedBoundingBox(contentRect);
+        auto box = item.alignedBoundingBox(contentRect);
 
         // show text box
         if (doShowLayoutBoxes())
@@ -395,15 +383,15 @@ void ScoreView::Private::paintTextItems(
             p->drawRect(box);
         }
 
-        auto text = item->text();
+        auto text = item.text();
         text.replace("#page", QString::number(pageNum));
 
         if (text.isEmpty())
             continue;
 
-        p->setPen(item->color());
-        p->setFont(item->font());
-        p->drawText(box, item->textAlignment() | item->textFlags(),
+        p->setPen(item.color());
+        p->setFont(item.font());
+        p->drawText(box, item.textAlignment() | item.textFlags(),
                     text, &pageRect);
     }
 }
