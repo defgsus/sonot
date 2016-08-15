@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "PageAnnotationTemplate.h"
 
-namespace Sonote {
+namespace Sonot {
 
 
 PageAnnotationTemplate::PageAnnotationTemplate()
@@ -79,6 +79,7 @@ void PageAnnotationTemplate::init(const QString& )
             ti.setBoxAlignment(Qt::AlignHCenter | Qt::AlignBottom);
             ti.setText("#copyright");
             ti.setFontFlags(TextItem::F_ITALIC);
+            ti.setFontSize(4.);
             page.textItems().push_back(ti);
         }
 
@@ -88,6 +89,8 @@ void PageAnnotationTemplate::init(const QString& )
             ti.setBoundingBox(QRectF(0,0,20,10));
             ti.setBoxAlignment(Qt::AlignBottom |
                                (leftPage ? Qt::AlignLeft : Qt::AlignRight));
+            ti.setTextAlignment(Qt::AlignBottom |
+                                (leftPage ? Qt::AlignLeft : Qt::AlignRight));
             ti.setText("#page");
             ti.setFontSize(5.);
             page.textItems().push_back(ti);
@@ -99,4 +102,4 @@ void PageAnnotationTemplate::init(const QString& )
 }
 
 
-} // namespace Sonote
+} // namespace Sonot

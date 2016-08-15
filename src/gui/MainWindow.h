@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QMainWindow>
 
-namespace Sonote {
+namespace Sonot {
 
 class MainWindow : public QMainWindow
 {
@@ -33,11 +33,13 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+protected:
+    void showEvent(QShowEvent*) override;
 private:
     struct Private;
     Private* p_;
 };
 
-} // namespace Sonote
+} // namespace Sonot
 
 #endif // SONOTESRC_MAINWINDOW_H

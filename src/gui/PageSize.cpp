@@ -18,14 +18,25 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#include <QApplication>
-#include "gui/MainWindow.h"
+#include "PageSize.h"
 
-int main(int argc, char *argv[])
+namespace Sonot {
+
+PageSize::PageSize(Format f)
 {
-    QApplication a(argc, argv);
-    Sonot::MainWindow w;
-    w.show();
-
-    return a.exec();
+    setFormat(f);
 }
+
+void PageSize::setFormat(Format f)
+{
+    p_format_ = f;
+
+    switch (p_format_)
+    {
+        case F_CUSTOM: break;
+        //case F_DIN_A4:
+    }
+}
+
+
+} // namespace Sonot

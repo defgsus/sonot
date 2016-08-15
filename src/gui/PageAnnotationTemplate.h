@@ -18,8 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef PAGEANNOTATIONTEMPLATE_H
-#define PAGEANNOTATIONTEMPLATE_H
+#ifndef SONOTESRC_PAGEANNOTATIONTEMPLATE_H
+#define SONOTESRC_PAGEANNOTATIONTEMPLATE_H
 
 #include <QString>
 #include <QMap>
@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "PageAnnotation.h"
 
 
-namespace Sonote {
+namespace Sonot {
 
 class PageAnnotationTemplate
 {
@@ -55,6 +55,6 @@ private:
     QMap<QString, PageAnnotation> p_pages_;
 };
 
-} // namespace Sonote
+} // namespace Sonot
 
-#endif // PAGEANNOTATIONTEMPLATE_H
+#endif // SONOTESRC_PAGEANNOTATIONTEMPLATE_H

@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "PageLayout.h"
 #include "PageAnnotationTemplate.h"
 
-namespace Sonote {
+namespace Sonot {
 
 struct ScoreView::Private
 {
@@ -184,7 +184,7 @@ void ScoreView::Private::setAction(Action a)
 
 void ScoreView::Private::onMatrixChanged()
 {
-    qDebug() << matrix.map(QPointF(0,0));
+    //qDebug() << matrix.map(QPointF(0,0));
     imatrix = matrix.inverted();
 }
 
@@ -201,8 +201,8 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
 
 void ScoreView::mousePressEvent(QMouseEvent* e)
 {
-    qDebug() << p_->pageIndexForDocumentPosition(QPointF(
-                    p_->imatrix.map(e->pos())));
+    //qDebug() << p_->pageIndexForDocumentPosition(QPointF(
+    //                p_->imatrix.map(e->pos())));
 
     p_->lastMouseDown = QPointF(e->pos());
     p_->lastMouseDownMatrix = p_->matrix;
@@ -241,10 +241,10 @@ void ScoreView::mouseMoveEvent(QMouseEvent* e)
     if (p_->action == Private::A_DRAG_ZOOM)
     {
         auto imatrix = p_->lastMouseDownMatrix.inverted();
-        QPointF delta =   imatrix.map(QPointF(e->pos()))
-                        - imatrix.map(p_->lastMouseDown);
+        QPointF delta =   imatrix.map(p_->lastMouseDown)
+                        - imatrix.map(QPointF(e->pos()));
         // zoom strength
-        const double f =  imatrix.map(QPointF(10.,10.)).x()
+        const double f =  imatrix.map(QPointF(20.,20.)).x()
                         - imatrix.map(QPointF(0.,0.)).x();
         // scale factor
         const double sf = delta.y() <= 0.
@@ -316,7 +316,7 @@ void ScoreView::paintEvent(QPaintEvent* e)
     p.setRenderHint(QPainter::TextAntialiasing, true);
 
     p_->paintBackground(&p, e->rect());
-    for (int i=0; i<5000; ++i)
+    for (int i=0; i<500; ++i)
         p_->paintPage(&p, e->rect(), i);
 }
 
@@ -396,4 +396,4 @@ void ScoreView::Private::paintPageAnnotation(
     }
 }
 
-} // namespace Sonote
+} // namespace Sonot

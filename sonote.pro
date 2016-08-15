@@ -22,7 +22,8 @@ SOURCES += \
     src/gui/ScoreView.cpp \
     src/gui/PageLayout.cpp \
     src/gui/PageAnnotation.cpp \
-    src/gui/PageAnnotationTemplate.cpp
+    src/gui/PageAnnotationTemplate.cpp \
+    src/gui/PageSize.cpp
 
 HEADERS  += \
     src/gui/MainWindow.h \
@@ -32,7 +33,8 @@ HEADERS  += \
     src/gui/ScoreView.h \
     src/gui/PageLayout.h \
     src/gui/PageAnnotation.h \
-    src/gui/PageAnnotationTemplate.h
+    src/gui/PageAnnotationTemplate.h \
+    src/gui/PageSize.h
 
 DISTFILES += \
     README.md \

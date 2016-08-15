@@ -1,15 +1,16 @@
-# Spanish Organ Notation Software
+# Spanish Organ Notation
+
 
 ## VOCABULARY
 
-    Messure
+      Bar
      /  \     Note
     /    \    |
-    |1 2 |5 6 7 8| line \
-    |2   |7''    | line  > ScoreLine
-    |  4 |p   3  | line /
-    \             /
-     \-ScoreLine-/
+    |1 2 |5 6 7 8| row \                . .| ...|
+    |2   |7''    | row  > line of score  . | .. |
+    |  4 |p   3  | row /                   | .  |
+    \                                          /
+     \--------------NoteStream----------------/
 
           *top annotation
     |1   |p 6 7 8|
@@ -17,21 +18,50 @@
        *bot. annotation
 
 
+
+    page
+    |------------|
+    | |NN|N |  | | row \
+    | |N |  | N| | row / line
+    |            |
+    | |N |N | N| |
+    | |NN|N |N | |
+    |------------|
+
+
+
 ## GENERAL DATA
 
-### Messure
-- data[] 1,, - 7'', p, space, annotation, newline, newpage
+### Note
+- 1,, - 7'', p, space, ..., annotation, newline, newpage, ...
 
-### ScoreLine
-- Line[] of Messure[]
+### Bar
+- length (number Notes)
+- data[rows,length] of Note
+
+### NoteStream
+- data[] of Bar
 
 ### Score
-- ScoreLine[]
+- data[] of NoteStream
+- NoteId
 - pageIndex[]
+
+### NoteId
+- id = score.notestream.bar.note
 
 ### ScoreEditor
 - add/del/change
 - undo/redo
+- ScoreEditorCursor
+- Qt signals
+
+### ScoreEditorCursor
+- move within bar
+- move within NoteStream
+- set/insert/delete note
+- insert/delete bar
+- insert/delete row
 
 
 ## GUI/DRAWING
@@ -46,7 +76,7 @@
 - TextItem[] (title, header, footer, pagenum, ...)
 
 ### PageAnnotationTemplate
-- PageAnnotation[] (1st, odd, even)
+- PageAnnotation[] (1st, odd, even, last, ...)
 
 ### PageSize
 - width/height (mm)
@@ -58,11 +88,29 @@
 - portrait/landscape
 - PageAnnotationTemplate
 
-### ScoreView
-- Score*
-- ScoreEditor*
+### ScoreLayout
+- row spacing
+- line spacing
+- note spacing
+- min/max Bar width
+
+### ScoreItem
+- line, bar, note, TextItem, ...
+- bounding box
+- draw()
+
+### ScoreDocument
+- Score
+- ScoreEditor
 - PageLayout (global)
-- renderPage(QPainter*, int)
-- optional per-page override:
+- ScoreLayout (global)
+- optional override, per-page or until-next:
     - PageMargins
     - PageAnnotation
+    - ScoreLayout
+- createScoreItems(Score, pageIndex)
+- bool pageChanged[]
+
+### ScoreView
+- ScoreDocument
+- renderPage(QPainter*, pageIndex)

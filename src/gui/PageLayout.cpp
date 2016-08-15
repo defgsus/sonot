@@ -20,7 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "PageLayout.h"
 
-namespace Sonote {
+namespace Sonot {
 
 const int ODD = 0;
 const int EVEN = 1;
@@ -51,4 +51,4 @@ QRectF PageLayout::contentRect(int pageNum) const
                 p_pageRect_.height() - p_marginTop_[idx] - p_marginBottom_[idx]);
 }
 
-} // namespace Sonote
+} // namespace Sonot

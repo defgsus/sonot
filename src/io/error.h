@@ -28,13 +28,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QString>
 
 #define SONOTE_ERROR(arg__) \
-    { throw ::Sonote::Exception() << arg__; }
+    { throw ::Sonot::Exception() << arg__; }
 
 #define SONOTE_IO_ERROR(arg__) \
-    { throw ::Sonote::Exception() << "IO: " << arg__; }
+    { throw ::Sonot::Exception() << "IO: " << arg__; }
 
 
-namespace Sonote {
+namespace Sonot {
 
 /** Exception base class.
     Use like, e.g.:
@@ -76,7 +76,7 @@ protected:
 };
 
 
-} // namespace Sonote
+} // namespace Sonot
 
 #endif // SONOTESRC_ERROR_H
 

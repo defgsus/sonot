@@ -35,7 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #define SONOTE_JSON_ERROR(arg__) \
     SONOTE_IO_ERROR("[JSON: " << p_json_helper_classname_ << "] " << arg__)
 
-namespace Sonote {
+namespace Sonot {
 
 QString JsonInterface::toJsonString() const
 {
@@ -301,4 +301,4 @@ SONOTE__INSTANTIATE(QColor)
 
 #undef SONOTE__INSTANTIATE
 
-} // namespace Sonote
+} // namespace Sonot

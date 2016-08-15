@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 class QFont;
 
-namespace Sonote {
+namespace Sonot {
 
 /** @brief Class for storing/displaying a text on the score sheet */
 class TextItem : public JsonInterface
@@ -101,6 +101,6 @@ private:
     QString p_text_;
 };
 
-} // namespace Sonote
+} // namespace Sonot
 
 #endif // SONOTESRC_TEXTITEM_H

@@ -23,7 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QWidget>
 
-namespace Sonote {
+namespace Sonot {
 
 class ScoreView : public QWidget
 {
@@ -60,6 +60,6 @@ private:
     Private* p_;
 };
 
-} // namespace Sonote
+} // namespace Sonot
 
 #endif // SONOTESRC_SCOREVIEW_H

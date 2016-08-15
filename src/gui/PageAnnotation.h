@@ -18,14 +18,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef PAGEANNOTATION_H
-#define PAGEANNOTATION_H
+#ifndef SONOTESRC_PAGEANNOTATION_H
+#define SONOTESRC_PAGEANNOTATION_H
 
 #include <vector>
 
 #include "TextItem.h"
 
-namespace Sonote {
+namespace Sonot {
 
 
 class PageAnnotation
@@ -45,6 +45,6 @@ private:
     std::vector<TextItem> p_textItems;
 };
 
-} // namespace Sonote
+} // namespace Sonot
 
-#endif // PAGEANNOTATION_H
+#endif // SONOTESRC_PAGEANNOTATION_H

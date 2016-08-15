@@ -30,7 +30,7 @@ class QJsonValue;
 class QRectF;
 class QColor;
 
-namespace Sonote {
+namespace Sonot {
 
 /** Interface for loading/saving json data.
     Users of the interface need to implement the
@@ -126,6 +126,6 @@ private:
 
 
 
-} // namespace Sonote
+} // namespace Sonot
 
 #endif // SONOTESRC_JSONINTERFACE_H

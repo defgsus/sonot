@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "MainWindow.h"
 #include "ScoreView.h"
 
-namespace Sonote {
+namespace Sonot {
 
 struct MainWindow::Private
 {
@@ -42,10 +42,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     setObjectName("MainWindow");
     setMinimumSize(320, 320);
-
+    setGeometry(0,0,500,600);
     p_->createWidgets();
 
-    p_->scoreView->showPage(0);
 }
 
 MainWindow::~MainWindow()
@@ -60,4 +59,9 @@ void MainWindow::Private::createWidgets()
     p->setCentralWidget(scoreView);
 }
 
-} // namespace Sonote
+void MainWindow::showEvent(QShowEvent*)
+{
+    p_->scoreView->showPage(0);
+}
+
+} // namespace Sonot
