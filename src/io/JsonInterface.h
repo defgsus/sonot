@@ -18,8 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTESRC_JSONINTERFACE_H
-#define SONOTESRC_JSONINTERFACE_H
+#ifndef SONOTSRC_JSONINTERFACE_H
+#define SONOTSRC_JSONINTERFACE_H
 
 #include <vector>
 #include <QString>
@@ -128,4 +128,4 @@ private:
 
 } // namespace Sonot
 
-#endif // SONOTESRC_JSONINTERFACE_H
+#endif // SONOTSRC_JSONINTERFACE_H

@@ -18,25 +18,51 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#include "PageSize.h"
+#ifndef SONOTSRC_SCORELAYOUT_H
+#define SONOTSRC_SCORELAYOUT_H
+
+#include "io/JsonInterface.h"
+
+class QFont;
 
 namespace Sonot {
 
-PageSize::PageSize(Format f)
+
+class ScoreLayout : public JsonInterface
 {
-    setFormat(f);
-}
+public:
+    ScoreLayout();
+    void init();
 
-void PageSize::setFormat(Format f)
-{
-    p_format_ = f;
+    QJsonObject toJson() const;
+    void fromJson(const QJsonObject &);
 
-    switch (p_format_)
-    {
-        case F_CUSTOM: break;
-        case F_ISO_A4: p_size_ = QSizeF(210, 297); break;
-    }
-}
+    double noteSpacing() const { return p_noteSpacing_; }
+    double rowSpacing() const { return p_rowSpacing_; }
+    double lineSpacing() const { return p_lineSpacing_; }
+    double minBarWidth() const { return p_minBarWidth_; }
+    double maxBarWidth() const { return p_maxBarWidth_; }
 
+    double noteSize() const { return p_noteSize_; }
+
+    // --- convenience ---
+
+    QFont font() const;
+
+    double lineHeight(int numRows) const;
+
+private:
+
+    double
+        p_noteSpacing_,
+        p_rowSpacing_,
+        p_lineSpacing_,
+        p_minBarWidth_,
+        p_maxBarWidth_,
+
+        p_noteSize_;
+};
 
 } // namespace Sonot
+
+#endif // SONOTSRC_SCORELAYOUT_H

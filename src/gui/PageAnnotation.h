@@ -18,8 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTESRC_PAGEANNOTATION_H
-#define SONOTESRC_PAGEANNOTATION_H
+#ifndef SONOTSRC_PAGEANNOTATION_H
+#define SONOTSRC_PAGEANNOTATION_H
 
 #include <vector>
 
@@ -47,4 +47,4 @@ private:
 
 } // namespace Sonot
 
-#endif // SONOTESRC_PAGEANNOTATION_H
+#endif // SONOTSRC_PAGEANNOTATION_H

@@ -30,8 +30,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "ScoreView.h"
 #include "TextItem.h"
-#include "PageLayout.h"
 #include "PageAnnotationTemplate.h"
+#include "PageLayout.h"
+#include "ScoreLayout.h"
 
 namespace Sonot {
 
@@ -50,8 +51,11 @@ struct ScoreView::Private
         , action                (A_NOTHING)
         , brushBackground       (QColor(155,155,155))
         , brushPageBackground   (QColor(255,255,240))
+        , penScoreRow           (QColor(180,180,180))
         , pageSpacing           (2., 10.)
-    { }
+    {
+
+    }
 
     // --- gui / state ---
 
@@ -75,10 +79,12 @@ struct ScoreView::Private
     void paintBackground(QPainter* p, const QRect& updateRect) const;
     void paintPage(QPainter* p, const QRect& updateRect, int pageIndex) const;
     void paintPageAnnotation(QPainter* p, const QRect& updateRect, int pageIndex) const;
+    void paintScore(QPainter* p, const QRect& updateRect, int pageIndex) const;
 
     ScoreView* p;
 
     PageLayout pageLayout;
+    ScoreLayout scoreLayout;
     QTransform matrix, imatrix;
 
     PageAnnotationTemplate annotationTemplate;
@@ -93,6 +99,7 @@ struct ScoreView::Private
 
     QBrush  brushBackground,
             brushPageBackground;
+    QPen    penScoreRow;
     QPointF pageSpacing;
 };
 
@@ -355,9 +362,11 @@ void ScoreView::Private::paintPage(
         p->setPen(Qt::DotLine);
         p->setBrush(Qt::NoBrush);
         p->drawRect(pageLayout.contentRect(pageIndex));
+        p->drawRect(pageLayout.scoreRect(pageIndex));
     }
 
     paintPageAnnotation(p, updateRect, pageIndex);
+    paintScore(p, updateRect, pageIndex);
 
     p->restore();
 }
@@ -395,5 +404,27 @@ void ScoreView::Private::paintPageAnnotation(
                     text, &pageRect);
     }
 }
+
+void ScoreView::Private::paintScore(
+        QPainter* p, const QRect& /*updateRect*/, int pageIndex) const
+{
+    auto srect = pageLayout.scoreRect(pageIndex);
+
+    double y = 0.;
+    while (y < srect.height())
+    {
+        int numRows = 3;
+        if (y + scoreLayout.lineHeight(numRows) >= srect.height())
+            break;
+
+        p->setPen(penScoreRow);
+        for (int i=0; i<numRows; ++i, y += scoreLayout.rowSpacing())
+            p->drawLine(srect.left(), srect.top() + y,
+                        srect.right(), srect.top() + y);
+
+        y += scoreLayout.lineSpacing();
+    }
+}
+
 
 } // namespace Sonot

@@ -18,8 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTESRC_SCOREVIEW_H
-#define SONOTESRC_SCOREVIEW_H
+#ifndef SONOTSRC_SCOREVIEW_H
+#define SONOTSRC_SCOREVIEW_H
 
 #include <QWidget>
 
@@ -62,4 +62,4 @@ private:
 
 } // namespace Sonot
 
-#endif // SONOTESRC_SCOREVIEW_H
+#endif // SONOTSRC_SCOREVIEW_H

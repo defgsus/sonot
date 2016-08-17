@@ -18,8 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTESRC_ERROR_H
-#define SONOTESRC_ERROR_H
+#ifndef SONOTSRC_ERROR_H
+#define SONOTSRC_ERROR_H
 
 #include <exception>
 #include <string>
@@ -78,5 +78,5 @@ protected:
 
 } // namespace Sonot
 
-#endif // SONOTESRC_ERROR_H
+#endif // SONOTSRC_ERROR_H
 

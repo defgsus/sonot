@@ -18,10 +18,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTESRC_PAGESIZE_H
-#define SONOTESRC_PAGESIZE_H
+#ifndef SONOTSRC_PAGESIZE_H
+#define SONOTSRC_PAGESIZE_H
 
 #include <QSizeF>
+#include <QRectF>
 
 namespace Sonot {
 
@@ -32,7 +33,7 @@ public:
     enum Format
     {
         F_CUSTOM,
-        F_DIN_A4
+        F_ISO_A4
     };
 
     /** Constructor with preset type */
@@ -40,32 +41,38 @@ public:
 
     /** Constructor for F_CUSTOM type */
     PageSize(double width_mm, double height_mm)
-        : p_width_(width_mm), p_height_(height_mm)
-        , p_format_(F_CUSTOM) { }
+        : p_size_   (width_mm, height_mm)
+        , p_format_ (F_CUSTOM) { }
+
+    /** Constructor for F_CUSTOM type */
+    PageSize(const QSizeF& s)
+        : p_size_   (s)
+        , p_format_ (F_CUSTOM) { }
 
     // --- getter ---
 
     Format format() const { return p_format_; }
-    double width() const { return p_width_; }
-    double height() const { return p_height_; }
-    QSizeF size() const { return QSize(p_width_, p_height_); }
+    double width() const { return p_size_.width(); }
+    double height() const { return p_size_.height(); }
+    QSizeF size() const { return p_size_; }
+    QRectF rect() const { return QRectF(0,0, width(), height()); }
 
     // --- setter ---
 
     void setFormat(Format f);
-    void setWidth(double mm) { p_width_ = mm; p_format_ = F_CUSTOM; }
-    void setHeight(double mm) { p_height_ = mm; p_format_ = F_CUSTOM; }
-    void setSize(const QSize& s)
-        { p_width_ = s.width(); p_height_ = s.height(); p_format_ = F_CUSTOM; }
+    void setWidth(double mm) { p_size_.setWidth(mm); p_format_ = F_CUSTOM; }
+    void setHeight(double mm) { p_size_.setHeight(mm); p_format_ = F_CUSTOM; }
+    void setSize(const QSize& s) { p_size_ = s; p_format_ = F_CUSTOM; }
     void setSize(double width_mm, double height_mm)
-        { p_width_ = width_mm; p_height_ = height_mm; p_format_ = F_CUSTOM; }
+        { p_size_.setWidth(width_mm); p_size_.setHeight(height_mm);
+          p_format_ = F_CUSTOM; }
 
 private:
 
-    double p_width_, p_height_;
+    QSizeF p_size_;
     Format p_format_;
 };
 
 } // namespace Sonot
 
-#endif // SONOTESRC_PAGESIZE_H
+#endif // SONOTSRC_PAGESIZE_H

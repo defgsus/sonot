@@ -18,37 +18,52 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTESRC_PAGELAYOUT_H
-#define SONOTESRC_PAGELAYOUT_H
+#ifndef SONOTSRC_PAGELAYOUT_H
+#define SONOTSRC_PAGELAYOUT_H
 
 #include <QRectF>
 
+#include "PageSize.h"
+
 namespace Sonot {
 
+/** Layout settings per odd/even page pair.
+    Mainly controls size and margins
+    */
 class PageLayout
 {
 public:
     PageLayout();
+    void init();
 
     // --- getter ---
 
-    QRectF pageRect() const;
+    PageSize pageSize() const { return p_pageSize_; }
+    /** The whole page (starting at <0,0>) */
+    QRectF pageRect() const { return p_pageSize_.rect(); }
+    /** The rect for the content (annotations) = pageRect - margins */
     QRectF contentRect(int pageIndex) const;
+    /** The rect for the score = contectRect() - scoreMargins */
+    QRectF scoreRect(int pageIndex) const;
 
     /** Is pageIndex in contentRect() zero-based or one-based? */
     bool isZeroBased() const { return p_zeroBased_; }
 
 private:
 
-    QRectF p_pageRect_;
+    PageSize p_pageSize_;
     double
         p_marginLeft_[2],
         p_marginRight_[2],
         p_marginTop_[2],
-        p_marginBottom_[2];
+        p_marginBottom_[2],
+        p_scoreMarginLeft_[2],
+        p_scoreMarginRight_[2],
+        p_scoreMarginTop_[2],
+        p_scoreMarginBottom_[2];
     bool p_zeroBased_;
 };
 
 } // namespace Sonot
 
-#endif // SONOTESRC_PAGELAYOUT_H
+#endif // SONOTSRC_PAGELAYOUT_H

@@ -26,16 +26,26 @@ const int ODD = 0;
 const int EVEN = 1;
 
 PageLayout::PageLayout()
-    : p_pageRect_   (0., 0., 190., 297.)
+    : p_pageSize_   (PageSize::F_ISO_A4)
     , p_zeroBased_  (true)
 {
-    p_marginLeft_[ODD] = 20.; p_marginLeft_[EVEN] = 30.;
-    p_marginRight_[ODD] = 30.; p_marginRight_[EVEN] = 20.;
-    p_marginTop_[ODD] = p_marginTop_[EVEN] = 20.;
-    p_marginBottom_[ODD] = p_marginBottom_[EVEN] = 30.;
+    init();
 }
 
-QRectF PageLayout::pageRect() const { return p_pageRect_; }
+void PageLayout::init()
+{
+    p_pageSize_.setFormat(PageSize::F_ISO_A4);
+
+    p_marginLeft_[ODD] = 20.;   p_marginLeft_[EVEN] = 30.;
+    p_marginRight_[ODD] = 30.;  p_marginRight_[EVEN] = 20.;
+    p_marginTop_[ODD] =         p_marginTop_[EVEN] = 20.;
+    p_marginBottom_[ODD] =      p_marginBottom_[EVEN] = 30.;
+
+    p_scoreMarginLeft_[ODD] = 5.;    p_scoreMarginLeft_[EVEN] = 5.;
+    p_scoreMarginRight_[ODD] = 5.;   p_scoreMarginRight_[EVEN] = 5.;
+    p_scoreMarginTop_[ODD] =         p_scoreMarginTop_[EVEN] = 20.;
+    p_scoreMarginBottom_[ODD] =      p_scoreMarginBottom_[EVEN] = 10.;
+}
 
 QRectF PageLayout::contentRect(int pageNum) const
 {
@@ -44,11 +54,29 @@ QRectF PageLayout::contentRect(int pageNum) const
 
     int idx = (pageNum & 1) == 0 ? EVEN : ODD;
 
+    auto r = pageRect();
     return QRectF(
-                p_pageRect_.left() + p_marginLeft_[idx],
-                p_pageRect_.top() + p_marginTop_[idx],
-                p_pageRect_.width() - p_marginLeft_[idx] - p_marginRight_[idx],
-                p_pageRect_.height() - p_marginTop_[idx] - p_marginBottom_[idx]);
+                r.left()   + p_marginLeft_[idx],
+                r.top()    + p_marginTop_[idx],
+                r.width()  - p_marginLeft_[idx] - p_marginRight_[idx],
+                r.height() - p_marginTop_[idx] - p_marginBottom_[idx]);
+}
+
+
+QRectF PageLayout::scoreRect(int pageNum) const
+{
+    auto r = contentRect(pageNum);
+
+    if (p_zeroBased_)
+        ++pageNum;
+
+    int idx = (pageNum & 1) == 0 ? EVEN : ODD;
+
+    return QRectF(
+                r.left()   + p_scoreMarginLeft_[idx],
+                r.top()    + p_scoreMarginTop_[idx],
+                r.width()  - p_scoreMarginLeft_[idx] - p_scoreMarginRight_[idx],
+                r.height() - p_scoreMarginTop_[idx]  - p_scoreMarginBottom_[idx]);
 }
 
 } // namespace Sonot

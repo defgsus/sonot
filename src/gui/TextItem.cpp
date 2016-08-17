@@ -62,15 +62,18 @@ QJsonObject TextItem::toJson() const
 void TextItem::fromJson(const QJsonObject& o)
 {
     JsonHelper json("TextItem");
+    TextItem t;
 
-    p_text_ = json.expectChild<QString>(o, "text");
-    p_boundingBox_ = json.expectChild<QRectF>(o, "box");
-    p_pointSize_ = json.expectChild<double>(o, "point-size");
-    p_boxAlign_ = (Qt::Alignment)json.expectChild<int>(o, "box-align");
-    p_textAlign_ = (Qt::Alignment)json.expectChild<int>(o, "text-align");
-    p_textFlags_ = (Qt::TextFlag)json.expectChild<int>(o, "text-flags");
-    p_fontFlags_ = (FontFlag)json.expectChild<int>(o, "font-flags");
-    p_color_ = json.expectChild<QColor>(o, "color");
+    t.p_text_ = json.expectChild<QString>(o, "text");
+    t.p_boundingBox_ = json.expectChild<QRectF>(o, "box");
+    t.p_pointSize_ = json.expectChild<double>(o, "point-size");
+    t.p_boxAlign_ = (Qt::Alignment)json.expectChild<int>(o, "box-align");
+    t.p_textAlign_ = (Qt::Alignment)json.expectChild<int>(o, "text-align");
+    t.p_textFlags_ = (Qt::TextFlag)json.expectChild<int>(o, "text-flags");
+    t.p_fontFlags_ = (FontFlag)json.expectChild<int>(o, "font-flags");
+    t.p_color_ = json.expectChild<QColor>(o, "color");
+
+    *this = t;
 }
 
 
