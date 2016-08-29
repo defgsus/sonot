@@ -18,41 +18,42 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#include <QApplication>
-#include "gui/MainWindow.h"
+#ifndef SONOTSRC_BAR_H
+#define SONOTSRC_BAR_H
 
-#include "core/NoteStream.h"
-#include <iostream>
-void testNoteStream()
+#include <vector>
+
+#include "Note.h"
+
+
+namespace Sonot {
+
+/** A bar/messure of notes. */
+class Bar
 {
-    using namespace Sonot;
+public:
+    Bar(int8_t length = 0, int8_t numRows = 0);
 
-    NoteStream s;
+    // --- getter ---
 
-    for (int i=0; i<4; ++i)
-    {
-        Bar b(4, 3);
-        b.setNote(0, 0, Note(Note::C+i*2));
-        b.setNote(1, 0, Note(Note::D));
-        b.setNote(2, 0, Note(Note::E));
-        b.setNote(3, 0, Note(Note::F));
-        b.setNote(i, 1, Note(Note::E));
-        b.setNote(i, 2, Note(Note::G));
+    int8_t length() const { return p_numNotes_; }
+    int8_t numRows() const { return p_numRows_; }
 
-        s.appendBar(b);
-    }
+    Note note(int8_t column, int8_t row) const;
 
-    std::cout << s.toString().toStdString() << std::endl;
-}
+    // --- setter ---
 
+    void resize(int8_t length, int8_t numRows);
+    void setLength(int8_t length) { resize(length, p_numRows_); }
+    void setNumRows(int8_t rows) { resize(p_numNotes_, rows); }
 
-int main(int argc, char *argv[])
-{
-    //testNoteStream(); return 0;
+    void setNote(int8_t column, int8_t row, const Note& n);
 
-    QApplication a(argc, argv);
-    Sonot::MainWindow w;
-    w.show();
+private:
+    int8_t p_numNotes_, p_numRows_;
+    std::vector<Note> p_data_;
+};
 
-    return a.exec();
-}
+} // namespace Sonot
+
+#endif // SONOTSRC_BAR_H

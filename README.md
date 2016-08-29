@@ -37,6 +37,7 @@
 
 ### Bar
 - length (number Notes)
+- rows
 - data[rows,length] of Note
 
 ### NoteStream

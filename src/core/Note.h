@@ -18,41 +18,58 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#include <QApplication>
-#include "gui/MainWindow.h"
+#ifndef SONOTSRC_NOTE_H
+#define SONOTSRC_NOTE_H
 
-#include "core/NoteStream.h"
-#include <iostream>
-void testNoteStream()
+#include <cstdint>
+#include <QString>
+
+namespace Sonot {
+
+/** A single note value */
+class Note
 {
-    using namespace Sonot;
+public:
 
-    NoteStream s;
-
-    for (int i=0; i<4; ++i)
+    enum Name
     {
-        Bar b(4, 3);
-        b.setNote(0, 0, Note(Note::C+i*2));
-        b.setNote(1, 0, Note(Note::D));
-        b.setNote(2, 0, Note(Note::E));
-        b.setNote(3, 0, Note(Note::F));
-        b.setNote(i, 1, Note(Note::E));
-        b.setNote(i, 2, Note(Note::G));
+        C, Cx, D, Dx, E, F, Fx, G, Gx, A, Ax, B
+    };
 
-        s.appendBar(b);
-    }
+    enum Special
+    {
+        Invalid = -1,
+        Space = -2,
+        Rest = -3
+    };
 
-    std::cout << s.toString().toStdString() << std::endl;
-}
+    explicit Note(Special s = Invalid);
+    explicit Note(int8_t note);
+    explicit Note(Name noteName, int8_t octave);
+
+    // --- getter ---
+
+    int8_t octave() const;
+    int8_t note() const { return p_note_; }
+    Name noteName() const;
+    QString toString() const;
+
+    bool isValid() const { return p_note_ != Invalid; }
+    bool isNote() const { return p_note_ >= 0; }
+
+    // --- setter ---
+
+    void setOctave(int8_t o);
+    void setNote(int8_t n) { p_note_ = n; }
+    void setNoteName(Name n);
+
+private:
+    int8_t p_note_;
+
+};
 
 
-int main(int argc, char *argv[])
-{
-    //testNoteStream(); return 0;
+} // namespace Sonot
 
-    QApplication a(argc, argv);
-    Sonot::MainWindow w;
-    w.show();
+#endif // SONOTSRC_NOTE_H
 
-    return a.exec();
-}

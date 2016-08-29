@@ -27,11 +27,29 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QString>
 
-#define SONOTE_ERROR(arg__) \
+#define SONOT_ERROR(arg__) \
     { throw ::Sonot::Exception() << arg__; }
 
-#define SONOTE_IO_ERROR(arg__) \
+#define SONOT_IO_ERROR(arg__) \
     { throw ::Sonot::Exception() << "IO: " << arg__; }
+
+#define SONOT_PROG_ERROR(arg__) \
+    { throw ::Sonot::Exception() << __FILE__ << ":" << __LINE__ << " " << arg__; }
+
+#define SONOT_ASSERT(cond__, arg__) \
+    { if (!(cond__)) SONOT_PROG_ERROR(arg__); }
+
+#define SONOT_ASSERT_LT(a__, b__, arg__) \
+    { if (!((a__) < (b__))) SONOT_PROG_ERROR( \
+        "'" #a__ "' (" << (long long)(a__) \
+        << ") expected to be less than '" #b__ "' (" \
+        << (long long)(b__) << ") " << arg__); }
+
+#define SONOT_ASSERT_LTE(a__, b__, arg__) \
+    { if (!((a__) <= (b__))) SONOT_PROG_ERROR( \
+        "'" #a__ "' (" << (long long)(a__) \
+        << ") expected to be less than or equal to '" #b__ "' (" \
+        << (long long)(b__) << ") " << arg__); }
 
 
 namespace Sonot {
@@ -44,8 +62,8 @@ namespace Sonot {
     The content of the text stream is returned from classic const char* what().
     Encouraged use is:
     @code
-    SONOTE_ERROR("information is " << whatever_helps);
-    SONOTE_IO_ERROR("wrong version, only " << ver << " supported");
+    SONOT_ERROR("information is " << whatever_helps);
+    SONOT_IO_ERROR("wrong version, only " << ver << " supported");
     @endcode
     Especially io errors with IoException() will be reported to the user.
     @todo Should be internationalized with tr()

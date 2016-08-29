@@ -33,7 +33,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "io/error.h"
 
 #define SONOTE_JSON_ERROR(arg__) \
-    SONOTE_IO_ERROR("[JSON: " << p_json_helper_classname_ << "] " << arg__)
+    SONOT_IO_ERROR("[JSON: " << p_json_helper_classname_ << "] " << arg__)
 
 namespace Sonot {
 
@@ -48,7 +48,7 @@ void JsonInterface::fromJsonString(const QString &jsonString)
     QJsonParseError error;
     auto doc = QJsonDocument::fromJson(jsonString.toUtf8(), &error);
     if (error.error != QJsonParseError::NoError)
-        SONOTE_IO_ERROR("Error parsing json string: "
+        SONOT_IO_ERROR("Error parsing json string: "
                         << error.errorString().toStdString());
     auto main = doc.object();
     fromJson(main);
@@ -61,7 +61,7 @@ void JsonInterface::saveJsonFile(const QString& filename) const
 
     QFile file(filename);
     if (!file.open(QFile::WriteOnly))
-        SONOTE_IO_ERROR("Could not open '"
+        SONOT_IO_ERROR("Could not open '"
                       << filename.toStdString() << "' for writing,\n"
                       << file.errorString().toStdString());
 
@@ -72,7 +72,7 @@ void JsonInterface::loadJsonFile(const QString &filename)
 {
     QFile file(filename);
     if (!file.open(QFile::ReadOnly))
-        SONOTE_IO_ERROR("Could not open '"
+        SONOT_IO_ERROR("Could not open '"
                       << filename.toStdString() << "' for reading,\n"
                       << file.errorString().toStdString());
 

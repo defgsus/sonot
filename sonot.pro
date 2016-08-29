@@ -24,7 +24,10 @@ SOURCES += \
     src/gui/PageAnnotation.cpp \
     src/gui/PageAnnotationTemplate.cpp \
     src/gui/PageSize.cpp \
-    src/gui/ScoreLayout.cpp
+    src/gui/ScoreLayout.cpp \
+    src/core/Note.cpp \
+    src/core/Bar.cpp \
+    src/core/NoteStream.cpp
 
 HEADERS  += \
     src/gui/MainWindow.h \
@@ -36,7 +39,10 @@ HEADERS  += \
     src/gui/PageAnnotation.h \
     src/gui/PageAnnotationTemplate.h \
     src/gui/PageSize.h \
-    src/gui/ScoreLayout.h
+    src/gui/ScoreLayout.h \
+    src/core/Note.h \
+    src/core/Bar.h \
+    src/core/NoteStream.h
 
 DISTFILES += \
     README.md \
