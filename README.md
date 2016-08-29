@@ -1,5 +1,12 @@
-# Spanish Organ Notation
+# Sonot - Spanish Organ Notation
 
+This software is totally under development.
+
+The main purpose is to enter 16th century spanish organ tablature and translate it into modern formats. First milestone is live editing and playback of tablature data and export into common music notation.
+
+Below is the proposed vocabulary and class hierarchy.
+
+Framework: Qt, License: GPL
 
 ## VOCABULARY
 
