@@ -20,6 +20,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <algorithm>
 
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QStringList>
+
 #include "Bar.h"
 #include "io/error.h"
 
@@ -33,12 +37,12 @@ Bar::Bar(int8_t length, int8_t numRows)
 
 }
 
-Note Bar::note(int8_t column, int8_t row) const
+const Note& Bar::note(int8_t column, int8_t row) const
 {
-    return column < 0 || column >= p_numNotes_
-        || row < 0 || row >= p_numRows_
-            ? Note(Note::Invalid)
-            : p_data_[row * p_numNotes_ + column];
+    SONOT_ASSERT_LT(column, p_numNotes_, "in Bar::note()");
+    SONOT_ASSERT_LT(row, p_numRows_, "in Bar::note()");
+
+    return p_data_[row * p_numNotes_ + column];
 }
 
 void Bar::resize(int8_t length, int8_t numRows)
@@ -62,5 +66,84 @@ void Bar::setNote(int8_t column, int8_t row, const Note &n)
     p_data_[row * p_numNotes_ + column] = n;
 }
 
+bool Bar::isAnnotated() const
+{
+    for (const Note& n : p_data_)
+        if (n.isAnnotated())
+            return true;
+    return false;
+}
+
+QJsonObject Bar::toJson() const
+{
+    JsonHelper json("Bar");
+
+    QJsonObject o;
+    o.insert("len", QJsonValue(p_numNotes_));
+    o.insert("rows", QJsonValue(p_numRows_));
+
+    std::vector<int> v;
+    for (const Note& n : p_data_)
+        v.push_back(n.value());
+    o.insert("notes", json.toArray(v));
+
+    if (isAnnotated())
+    {
+        QJsonObject ann;
+        for (int8_t row=0; row<p_numRows_; ++row)
+        for (int8_t col=0; col<p_numNotes_; ++col)
+        {
+            const Note& n = p_data_[row*p_numNotes_+col];
+            if (!n.isAnnotated())
+                continue;
+            ann.insert(QString::number(row*p_numNotes_+col), n.annotation());
+        }
+        o.insert("text", ann);
+    }
+
+    return o;
+}
+
+void Bar::fromJson(const QJsonObject& o)
+{
+    JsonHelper json("Bar");
+    const int
+            len = json.expectChild<int>(o, "len"),
+            rows = json.expectChild<int>(o, "rows");
+
+    QJsonArray jnotes = json.expectArray(json.expectChildValue(o, "notes"));
+    if (jnotes.size() != len*rows)
+        SONOT_IO_ERROR("Mismatching note data size " << jnotes.size()
+                       << ", expected " << len << "x" << rows);
+    std::vector<Note> notes;
+    for (int i=0; i<jnotes.size(); ++i)
+    {
+        int8_t n = jnotes[i].toInt(Note::Invalid);
+        notes.push_back(Note(n));
+    }
+
+    if (o.contains("text"))
+    {
+        QJsonObject ann = json.expectObject(o.value("text"));
+        QStringList keys = ann.keys();
+        for (const QString& key : keys)
+        {
+            bool ok;
+            int k = key.toInt(&ok);
+            if (!ok)
+                SONOT_IO_ERROR("Expected integer key in Bar object, got '"
+                               << key << "'");
+            if (k < 0 || size_t(k) >= notes.size())
+                SONOT_IO_ERROR("Integer key out of range in Bar object, got "
+                               << k << ", expected [0," << notes.size() << ")");
+            QString text = json.expectChild<QString>(ann, key);
+            notes[k].setAnnotation(text);
+        }
+    }
+
+    p_numNotes_ = len;
+    p_numRows_ = rows;
+    p_data_.swap(notes);
+}
 
 } // namespace Sonot

@@ -58,7 +58,7 @@ public:
     /** Converts this object's data to a Json string.
         Uses toJson().
         @throws IoException on any error */
-    virtual QString toJsonString() const;
+    virtual QString toJsonString(bool compact = true) const;
 
     /** Initializes this objects's data from a json string.
         Uses fromJson().
@@ -68,7 +68,8 @@ public:
     /** Stores the json string to a file.
         Uses toJsonString().
         @throws IoException on any error */
-    virtual void saveJsonFile(const QString& filename) const;
+    virtual void saveJsonFile(
+            const QString& filename, bool compact = true) const;
 
     /** Initializes this object's data from a json file.
         Uses fromJsonString().
@@ -111,6 +112,7 @@ public:
 
     QJsonValue expectChildValue(const QJsonObject& parent, const QString& key);
     QJsonArray expectArray(const QJsonValue&);
+    QJsonObject expectObject(const QJsonValue&);
 
     template <typename T>
     void fromArray(std::vector<T>& dst, const QJsonArray& src);

@@ -31,11 +31,15 @@ class Note
 {
 public:
 
+    /** Musical notes
+        @warning Order/values must not change for file persistence */
     enum Name
     {
         C, Cx, D, Dx, E, F, Fx, G, Gx, A, Ax, B
     };
 
+    /** Special notes
+        @warning Order/values must not change for file persistence */
     enum Special
     {
         Invalid = -1,
@@ -44,28 +48,38 @@ public:
     };
 
     explicit Note(Special s = Invalid);
-    explicit Note(int8_t note);
     explicit Note(Name noteName, int8_t octave);
+    explicit Note(int8_t value);
 
     // --- getter ---
 
-    int8_t octave() const;
-    int8_t note() const { return p_note_; }
-    Name noteName() const;
-    QString toString() const;
+    /** Pure value, this is either a note if >= 0
+        or a Special enum if < 0 */
+    int8_t value() const { return p_value_; }
 
-    bool isValid() const { return p_note_ != Invalid; }
-    bool isNote() const { return p_note_ >= 0; }
+    int8_t octave() const;
+    Name noteName() const;
+
+    /** Returns a string in the format 'C#3' */
+    QString toNoteString() const;
+
+    bool isValid() const { return p_value_ != Invalid; }
+    bool isNote() const { return p_value_ >= 0; }
+    bool isAnnotated() const { return !p_annotation_.isEmpty(); }
+
+    QString annotation() const { return p_annotation_; }
 
     // --- setter ---
 
-    void setOctave(int8_t o);
-    void setNote(int8_t n) { p_note_ = n; }
-    void setNoteName(Name n);
+    Note& setValue(int8_t n) { p_value_ = n; return *this; }
+    Note& setOctave(int8_t o);
+    Note& setNoteName(Name n);
+
+    Note& setAnnotation(const QString& a) { p_annotation_ = a; return *this; }
 
 private:
-    int8_t p_note_;
-
+    int8_t p_value_;
+    QString p_annotation_;
 };
 
 

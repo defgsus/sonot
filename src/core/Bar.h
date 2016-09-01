@@ -24,22 +24,32 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <vector>
 
 #include "Note.h"
-
+#include "io/JsonInterface.h"
 
 namespace Sonot {
 
 /** A bar/messure of notes. */
-class Bar
+class Bar : public JsonInterface
 {
 public:
     Bar(int8_t length = 0, int8_t numRows = 0);
+
+    // --- io ---
+
+    QJsonObject toJson() const override;
+    void fromJson(const QJsonObject&) override;
 
     // --- getter ---
 
     int8_t length() const { return p_numNotes_; }
     int8_t numRows() const { return p_numRows_; }
 
-    Note note(int8_t column, int8_t row) const;
+    /** Returns the note at given column and row.
+        @warning No range checking! */
+    const Note& note(int8_t column, int8_t row) const;
+
+    /** Is any of the Notes annotated? */
+    bool isAnnotated() const;
 
     // --- setter ---
 
@@ -47,6 +57,8 @@ public:
     void setLength(int8_t length) { resize(length, p_numRows_); }
     void setNumRows(int8_t rows) { resize(p_numNotes_, rows); }
 
+    /** Stores the Note at given column and row.
+        @warning No range checking! */
     void setNote(int8_t column, int8_t row, const Note& n);
 
 private:

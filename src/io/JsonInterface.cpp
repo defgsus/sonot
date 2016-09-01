@@ -37,10 +37,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
-QString JsonInterface::toJsonString() const
+QString JsonInterface::toJsonString(bool compact) const
 {
     QJsonDocument doc(toJson());
-    return QString::fromUtf8(doc.toJson());
+    return QString::fromUtf8(doc.toJson(
+                compact ? QJsonDocument::Compact : QJsonDocument::Indented));
 }
 
 void JsonInterface::fromJsonString(const QString &jsonString)
@@ -55,9 +56,9 @@ void JsonInterface::fromJsonString(const QString &jsonString)
 }
 
 
-void JsonInterface::saveJsonFile(const QString& filename) const
+void JsonInterface::saveJsonFile(const QString& filename, bool compact) const
 {
-    QString js = toJsonString();
+    QString js = toJsonString(compact);
 
     QFile file(filename);
     if (!file.open(QFile::WriteOnly))
@@ -234,6 +235,13 @@ QJsonArray JsonHelper::expectArray(const QJsonValue& v)
     if (!v.isArray())
         SONOTE_JSON_ERROR("Expected json array, got " << typeName(v));
     return v.toArray();
+}
+
+QJsonObject JsonHelper::expectObject(const QJsonValue& v)
+{
+    if (!v.isObject())
+        SONOTE_JSON_ERROR("Expected json object, got " << typeName(v));
+    return v.toObject();
 }
 
 QJsonValue JsonHelper::expectChildValue(

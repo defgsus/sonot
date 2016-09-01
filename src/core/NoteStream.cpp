@@ -20,6 +20,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <algorithm>
 
+#include <QJsonObject>
+#include <QJsonArray>
+
 #include "NoteStream.h"
 #include "io/error.h"
 
@@ -116,7 +119,7 @@ QString NoteStream::toString() const
         {
             const Note n = b.note(i, y);
             if (n.isNote())
-                s[uint(y*w + x + i)] = n.toString()[0];
+                s[uint(y*w + x + i)] = n.toNoteString()[0];
         }
         x += b.length();
     }
@@ -124,6 +127,39 @@ QString NoteStream::toString() const
     return s;
 }
 
+
+
+QJsonObject NoteStream::toJson() const
+{
+    JsonHelper json("NoteStream");
+
+    QJsonArray jbars;
+    for (const Bar& bar : p_data_)
+    {
+        jbars.append(QJsonValue(bar.toJson()));
+    }
+
+    QJsonObject o;
+    o.insert("bars", jbars);
+    return o;
+}
+
+void NoteStream::fromJson(const QJsonObject& o)
+{
+    JsonHelper json("NoteStream");
+
+    QJsonArray jbars = json.expectArray(json.expectChildValue(o, "bars"));
+
+    std::vector<Bar> data;
+    for (int i=0; i<jbars.size(); ++i)
+    {
+        Bar bar;
+        bar.fromJson(json.expectObject(jbars.at(i)));
+        data.push_back(bar);
+    }
+
+    p_data_.swap(data);
+}
 
 
 } // namespace Sonot

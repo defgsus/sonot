@@ -21,6 +21,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QApplication>
 #include "gui/MainWindow.h"
 
+#if 1
+#include <QJsonObject>
 #include "core/NoteStream.h"
 #include <iostream>
 void testNoteStream()
@@ -31,20 +33,29 @@ void testNoteStream()
 
     for (int i=0; i<4; ++i)
     {
-        Bar b(4, 3);
+        Bar b(4, 3+rand()%2);
         b.setNote(0, 0, Note(Note::C+i*2));
         b.setNote(1, 0, Note(Note::D));
-        b.setNote(2, 0, Note(Note::E));
-        b.setNote(3, 0, Note(Note::F));
-        b.setNote(i, 1, Note(Note::E));
-        b.setNote(i, 2, Note(Note::G));
+        b.setNote(2, 0, Note(Note::Space));
+        b.setNote(3, 0, Note(Note::F).setAnnotation("3,0"));
+        b.setNote(i, rand()%b.numRows(), Note(Note::C+rand()%12));
+        b.setNote(i, rand()%b.numRows(), Note(Note::C+rand()%12));
 
         s.appendBar(b);
     }
 
-    std::cout << s.toString().toStdString() << std::endl;
-}
+    NoteStream s2;
+    s2.fromJson(s.toJson());
 
+    std::cout
+              << s.toJsonString().toStdString()
+              << "\n" << s.toString().toStdString()
+              << "\n" << s2.toString().toStdString()
+              << std::endl;
+
+
+}
+#endif
 
 int main(int argc, char *argv[])
 {

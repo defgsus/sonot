@@ -23,19 +23,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace Sonot {
 
 Note::Note(Special s)
-    : p_note_   (s)
+    : p_value_   (s)
 {
 
 }
 
 Note::Note(int8_t note)
-    : p_note_   (note)
+    : p_value_   (note)
 {
 
 }
 
 Note::Note(Name noteName, int8_t octave)
-    : p_note_   (noteName + octave * 12)
+    : p_value_   ((noteName % 12) + octave * 12)
 {
 
 }
@@ -43,54 +43,56 @@ Note::Note(Name noteName, int8_t octave)
 
 int8_t Note::octave() const
 {
-    return p_note_ < 0 ? p_note_ / 12 : 0;
+    return p_value_ < 0 ? p_value_ / 12 : 0;
 }
 
 Note::Name Note::noteName() const
 {
-    return p_note_ < 0 ? C : Name(p_note_ % 12);
+    return p_value_ < 0 ? C : Name(p_value_ % 12);
 }
 
-QString Note::toString() const
+QString Note::toNoteString() const
 {
-    if (p_note_ == Invalid)
+    if (p_value_ == Invalid)
         return QString();
-    if (p_note_ == Rest)
+    if (p_value_ == Rest)
         return "p";
-    if (p_note_ == Space)
+    if (p_value_ == Space)
         return " ";
 
     QString n;
     switch (noteName())
     {
-        case C:  n = "C"; break;
-        case Cx: n = "Cx"; break;
-        case D:  n = "D"; break;
-        case Dx: n = "Dx"; break;
-        case E:  n = "E"; break;
-        case F:  n = "F"; break;
-        case Fx: n = "Fx"; break;
-        case G:  n = "G"; break;
-        case Gx: n = "Gx"; break;
-        case A:  n = "A"; break;
-        case Ax: n = "Ax"; break;
-        case B:  n = "B"; break;
+        case C:  n = "C-"; break;
+        case Cx: n = "C#"; break;
+        case D:  n = "D-"; break;
+        case Dx: n = "D#"; break;
+        case E:  n = "E-"; break;
+        case F:  n = "F-"; break;
+        case Fx: n = "F#"; break;
+        case G:  n = "G-"; break;
+        case Gx: n = "G#"; break;
+        case A:  n = "A-"; break;
+        case Ax: n = "A#"; break;
+        case B:  n = "B-"; break;
     }
-    n += QString("-%1").arg(octave());
+    n += QString("%1").arg(octave());
     return n;
 }
 
 
 
-void Note::setOctave(int8_t o)
+Note& Note::setOctave(int8_t o)
 {
-    if (p_note_ >= 0)
-        p_note_ = o * 12 + (p_note_ % 12);
+    if (p_value_ >= 0)
+        p_value_ = o * 12 + (p_value_ % 12);
+    return *this;
 }
 
-void Note::setNoteName(Name n)
+Note& Note::setNoteName(Name n)
 {
-    p_note_ = n + octave() * 12;
+    p_value_ = n + octave() * 12;
+    return *this;
 }
 
 } // namespace Sonot
