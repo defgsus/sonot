@@ -40,6 +40,11 @@ Note::Note(Name noteName, int8_t octave)
 
 }
 
+bool Note::operator == (const Note& rhs) const
+{
+    return p_value_ == rhs.p_value_
+        && p_annotation_ == rhs.p_annotation_;
+}
 
 int8_t Note::octave() const
 {

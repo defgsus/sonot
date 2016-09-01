@@ -58,14 +58,27 @@ public:
             The check is performed against the current Score. */
         bool isValid() const;
 
+        bool operator == (const Index& rhs) const;
+        bool operator != (const Index& rhs) const { return !(*this == rhs); }
+
         const NoteStream& getNoteStream() const;
         const Bar& getBar() const;
         const Note& getNote() const;
 
+        QString toString() const;
+
+        // --- iterators ---
+
         /** Iterates to the next Note, or returns false if not possible.
-            This function never changes the isValid() state. */
+            @note This function never changes the isValid() state. */
         bool nextNote();
         bool prevNote();
+
+        /** Iterates to the next Bar, or returns false if not possible.
+            The column() and row() will be set to zero on success.
+            @note This function never changes the isValid() state. */
+        bool nextBar();
+        bool prevBar();
 
     private:
         friend class Score;
@@ -103,8 +116,11 @@ public:
         If any of the indices is out of range an invalid Index is returned.
         @note The returned Index is tied to this Score instance and
         must only be referenced during it's lifetime. */
-    Index createIndex(
+    Index index(
             size_t stream, size_t bar, size_t row, size_t column) const;
+
+    bool operator == (const Score& rhs) const;
+    bool operator != (const Score& rhs) const { return !(*this == rhs); }
 
     // ---- setter ----
 

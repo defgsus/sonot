@@ -67,7 +67,7 @@ void testNoteStream()
               << "\n" << score2.noteStream(0).toString().toStdString()
               << std::endl;
 
-    auto idx = score.createIndex(0,0,0,0);
+    auto idx = score.index(0,0,0,0);
     do
     {
         std::cout << "," << idx.getNote().toNoteString().toStdString();

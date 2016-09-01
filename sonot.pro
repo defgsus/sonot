@@ -14,37 +14,28 @@ CONFIG += c++11
 
 INCLUDEPATH += src
 
+include(src/core/core.pri)
+
 SOURCES += \
     src/gui/MainWindow.cpp \
     src/main.cpp \
     src/gui/TextItem.cpp \
-    src/io/JsonInterface.cpp \
     src/gui/ScoreView.cpp \
     src/gui/PageLayout.cpp \
     src/gui/PageAnnotation.cpp \
     src/gui/PageAnnotationTemplate.cpp \
     src/gui/PageSize.cpp \
-    src/gui/ScoreLayout.cpp \
-    src/core/Note.cpp \
-    src/core/Bar.cpp \
-    src/core/NoteStream.cpp \
-    src/core/Score.cpp
+    src/gui/ScoreLayout.cpp
 
-HEADERS  += \
+HEADERS += \
     src/gui/MainWindow.h \
     src/gui/TextItem.h \
-    src/io/JsonInterface.h \
-    src/io/error.h \
     src/gui/ScoreView.h \
     src/gui/PageLayout.h \
     src/gui/PageAnnotation.h \
     src/gui/PageAnnotationTemplate.h \
     src/gui/PageSize.h \
-    src/gui/ScoreLayout.h \
-    src/core/Note.h \
-    src/core/Bar.h \
-    src/core/NoteStream.h \
-    src/core/Score.h
+    src/gui/ScoreLayout.h
 
 DISTFILES += \
     README.md \

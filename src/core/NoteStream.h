@@ -57,6 +57,9 @@ public:
     /** Returns a multi-line ascii string representing the data */
     QString toString() const;
 
+    bool operator == (const NoteStream& rhs) const;
+    bool operator != (const NoteStream& rhs) const { return !(*this == rhs); }
+
     // --- setter ---
 
     /** Read/Write reference to @p idx'th Bar */

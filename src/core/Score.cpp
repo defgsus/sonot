@@ -53,6 +53,12 @@ Score::~Score()
     delete p_;
 }
 
+bool Score::operator == (const Score& rhs) const
+{
+    return p_->streams == rhs.p_->streams
+        && p_->properties == rhs.p_->properties;
+}
+
 QJsonObject Score::toJson() const
 {
     QJsonArray jstreams;
@@ -150,6 +156,12 @@ void Score::clearScore()
     p_->streams.clear();
 }
 
+void Score::setNoteStream(size_t idx, const NoteStream& s)
+{
+    SONOT_ASSERT_LT(idx, numNoteStreams(), "in Score::setNoteStream()");
+    p_->streams[idx] = s;
+}
+
 void Score::appendNoteStream(const NoteStream& s)
 {
     p_->streams.append(s);
@@ -173,7 +185,7 @@ void Score::removeNoteStream(size_t idx)
 
 // ----------------------- index ------------------------------
 
-Score::Index Score::createIndex(
+Score::Index Score::index(
         size_t stream, size_t bar, size_t row, size_t column) const
 {
     Index idx;
@@ -183,6 +195,21 @@ Score::Index Score::createIndex(
     idx.p_row = row;
     idx.p_column = column;
     return idx;
+}
+
+QString Score::Index::toString() const
+{
+    return QString("(%1,%2,%3,%4)")
+            .arg(p_stream).arg(p_bar).arg(p_row).arg(p_column);
+}
+
+bool Score::Index::operator == (const Index& rhs) const
+{
+    return p_score == rhs.p_score
+        && p_stream == rhs.p_stream
+        && p_bar == rhs.p_bar
+        && p_row == rhs.p_row
+        && p_column == rhs.p_column;
 }
 
 bool Score::Index::isValid() const
@@ -223,7 +250,7 @@ bool Score::Index::nextNote()
                 return false;
             else
             {
-                if (score()->noteStream(stream()+1).bar(0).numRows() < row())
+                if (score()->noteStream(stream()+1).bar(0).numRows() <= row())
                     return false;
                 ++p_stream;
                 p_bar = 0;
@@ -232,7 +259,7 @@ bool Score::Index::nextNote()
         }
         else
         {
-            if (getNoteStream().bar(bar()+1).numRows() < row())
+            if (getNoteStream().bar(bar()+1).numRows() <= row())
                 return false;
             ++p_bar;
             p_column = 0;
@@ -256,7 +283,7 @@ bool Score::Index::prevNote()
             else
             {
                 auto st = score()->noteStream(stream()-1);
-                if (st.bar(st.numBars()-1).numRows() < row())
+                if (st.bar(st.numBars()-1).numRows() <= row())
                     return false;
                 --p_stream;
                 p_bar = st.numBars() - 1;
@@ -265,7 +292,7 @@ bool Score::Index::prevNote()
         }
         else
         {
-            if (getNoteStream().bar(bar()-1).numRows() < row())
+            if (getNoteStream().bar(bar()-1).numRows() <= row())
                 return false;
             --p_bar;
             p_column = getBar().length() - 1;
@@ -273,6 +300,56 @@ bool Score::Index::prevNote()
     }
     else
         --p_column;
+    return true;
+}
+
+bool Score::Index::nextBar()
+{
+    if (!isValid())
+        return false;
+    if (bar() + 1 >= getNoteStream().numBars())
+    {
+        if (stream() + 1 >= score()->numNoteStreams())
+            return false;
+        else
+        {
+            ++p_stream;
+            p_bar = 0;
+            p_column = 0;
+            p_row = 0;
+        }
+    }
+    else
+    {
+        ++p_bar;
+        p_column = 0;
+        p_row = 0;
+    }
+    return true;
+}
+
+bool Score::Index::prevBar()
+{
+    if (!isValid())
+        return false;
+    if (bar() == 0)
+    {
+        if (stream() == 0)
+            return false;
+        else
+        {
+            --p_stream;
+            p_bar = getNoteStream().numBars() - 1;
+            p_column = 0;
+            p_row = 0;
+        }
+    }
+    else
+    {
+        --p_bar;
+        p_column = 0;
+        p_row = 0;
+    }
     return true;
 }
 

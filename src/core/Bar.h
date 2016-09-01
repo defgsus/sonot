@@ -51,6 +51,9 @@ public:
     /** Is any of the Notes annotated? */
     bool isAnnotated() const;
 
+    bool operator == (const Bar& rhs) const;
+    bool operator != (const Bar& rhs) const { return !(*this == rhs); }
+
     // --- setter ---
 
     void resize(size_t length, size_t numRows);

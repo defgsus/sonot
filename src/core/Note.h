@@ -69,6 +69,9 @@ public:
 
     QString annotation() const { return p_annotation_; }
 
+    bool operator == (const Note& rhs) const;
+    bool operator != (const Note& rhs) const { return !(*this == rhs); }
+
     // --- setter ---
 
     Note& setValue(int8_t n) { p_value_ = n; return *this; }

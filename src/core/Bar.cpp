@@ -37,6 +37,14 @@ Bar::Bar(size_t length, size_t numRows)
 
 }
 
+bool Bar::operator == (const Bar& rhs) const
+{
+    return p_numNotes_ == rhs.p_numNotes_
+        && p_numRows_ == rhs.p_numRows_
+        && p_data_ == rhs.p_data_;
+}
+
+
 const Note& Bar::note(size_t column, size_t row) const
 {
     SONOT_ASSERT_LT(column, p_numNotes_, "in Bar::note()");
@@ -57,6 +65,8 @@ void Bar::resize(size_t length, size_t numRows)
         v[y * length + x] = note(x, y);
 
     p_data_.swap(v);
+    p_numNotes_ = length;
+    p_numRows_ = numRows;
 }
 
 void Bar::setNote(size_t column, size_t row, const Note &n)

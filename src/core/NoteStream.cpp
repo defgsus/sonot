@@ -33,6 +33,11 @@ NoteStream::NoteStream()
 
 }
 
+bool NoteStream::operator == (const NoteStream& rhs) const
+{
+    return p_data_ == rhs.p_data_;
+}
+
 size_t NoteStream::numNotes() const
 {
     size_t n = 0;
