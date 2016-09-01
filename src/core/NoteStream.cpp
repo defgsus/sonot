@@ -41,9 +41,9 @@ size_t NoteStream::numNotes() const
     return n;
 }
 
-uint8_t NoteStream::numRows() const
+size_t NoteStream::numRows() const
 {
-    uint8_t n = 0;
+    size_t n = 0;
     for (const Bar& b : p_data_)
         n = std::max(n, b.numRows());
     return n;
@@ -114,8 +114,8 @@ QString NoteStream::toString() const
             s[uint(y*w + x)] = '|';
         x += 1;
         // note values
-        for (int8_t y=0; y<b.numRows(); ++y)
-        for (int8_t i=0; i<b.length(); ++i)
+        for (size_t y=0; y<b.numRows(); ++y)
+        for (size_t i=0; i<b.length(); ++i)
         {
             const Note n = b.note(i, y);
             if (n.isNote())

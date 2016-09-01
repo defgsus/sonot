@@ -170,6 +170,9 @@ void Score::removeNoteStream(size_t idx)
     p_->streams.removeAt(idx);
 }
 
+
+// ----------------------- index ------------------------------
+
 Score::Index Score::createIndex(
         size_t stream, size_t bar, size_t row, size_t column) const
 {
@@ -190,5 +193,87 @@ bool Score::Index::isValid() const
         && column() < score()->noteStream(stream()).bar(bar()).length();
 }
 
+const NoteStream& Score::Index::getNoteStream() const
+{
+    SONOT_ASSERT(isValid(), "in Score::Index::getNoteStream()");
+    return score()->noteStream(stream());
+}
+
+const Bar& Score::Index::getBar() const
+{
+    SONOT_ASSERT(isValid(), "in Score::Index::getBar()");
+    return score()->noteStream(stream()).bar(bar());
+}
+
+const Note& Score::Index::getNote() const
+{
+    SONOT_ASSERT(isValid(), "in Score::Index::getNote()");
+    return score()->noteStream(stream()).bar(bar()).note(column(), row());
+}
+
+bool Score::Index::nextNote()
+{
+    if (!isValid())
+        return false;
+    if (column() + 1 >= getBar().length())
+    {
+        if (bar() + 1 >= getNoteStream().numBars())
+        {
+            if (stream() + 1 >= score()->numNoteStreams())
+                return false;
+            else
+            {
+                if (score()->noteStream(stream()+1).bar(0).numRows() < row())
+                    return false;
+                ++p_stream;
+                p_bar = 0;
+                p_column = 0;
+            }
+        }
+        else
+        {
+            if (getNoteStream().bar(bar()+1).numRows() < row())
+                return false;
+            ++p_bar;
+            p_column = 0;
+        }
+    }
+    else
+        ++p_column;
+    return true;
+}
+
+bool Score::Index::prevNote()
+{
+    if (!isValid())
+        return false;
+    if (column() == 0)
+    {
+        if (bar() == 0)
+        {
+            if (stream() == 0)
+                return false;
+            else
+            {
+                auto st = score()->noteStream(stream()-1);
+                if (st.bar(st.numBars()-1).numRows() < row())
+                    return false;
+                --p_stream;
+                p_bar = st.numBars() - 1;
+                p_column = getBar().length() - 1;
+            }
+        }
+        else
+        {
+            if (getNoteStream().bar(bar()-1).numRows() < row())
+                return false;
+            --p_bar;
+            p_column = getBar().length() - 1;
+        }
+    }
+    else
+        --p_column;
+    return true;
+}
 
 } // namespace Sonot

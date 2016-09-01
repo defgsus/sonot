@@ -27,6 +27,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
+class Note;
+class Bar;
 class NoteStream;
 
 /** Collection of NoteStream and custom properties */
@@ -42,22 +44,34 @@ public:
     struct Index
     {
         Score* score() const { return p_score; }
+        /** The NoteStream index (zero-based) */
         size_t stream() const { return p_stream; }
+        /** The index of the Bar within the NoteStream (zero-based) */
         size_t bar() const { return p_bar; }
-        uint8_t row() const { return p_row; }
-        uint8_t column() const { return p_column; }
+        /** The index of the row in the Bar (zero-based) */
+        size_t row() const { return p_row; }
+        /** The index of the Note in the Bar (zero-based) */
+        size_t column() const { return p_column; }
 
         /** Returns true if the index is within the range of
             the NoteStream, Bar, it's rows and columns.
             The check is performed against the current Score. */
         bool isValid() const;
 
+        const NoteStream& getNoteStream() const;
+        const Bar& getBar() const;
+        const Note& getNote() const;
+
+        /** Iterates to the next Note, or returns false if not possible.
+            This function never changes the isValid() state. */
+        bool nextNote();
+        bool prevNote();
+
     private:
         friend class Score;
         Index() { }
         Score* p_score;
-        size_t p_stream, p_bar;
-        uint8_t p_row, p_column;
+        size_t p_stream, p_bar, p_row, p_column;
     };
 
 
@@ -88,7 +102,7 @@ public:
     /** Returns an index to the specified note.
         If any of the indices is out of range an invalid Index is returned.
         @note The returned Index is tied to this Score instance and
-        only valid during it's lifetime. */
+        must only be referenced during it's lifetime. */
     Index createIndex(
             size_t stream, size_t bar, size_t row, size_t column) const;
 

@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
-Bar::Bar(uint8_t length, uint8_t numRows)
+Bar::Bar(size_t length, size_t numRows)
     : p_numNotes_   (length)
     , p_numRows_    (numRows)
     , p_data_       (p_numNotes_ * p_numRows_, Note(Note::Space))
@@ -37,7 +37,7 @@ Bar::Bar(uint8_t length, uint8_t numRows)
 
 }
 
-const Note& Bar::note(uint8_t column, uint8_t row) const
+const Note& Bar::note(size_t column, size_t row) const
 {
     SONOT_ASSERT_LT(column, p_numNotes_, "in Bar::note()");
     SONOT_ASSERT_LT(row, p_numRows_, "in Bar::note()");
@@ -45,21 +45,21 @@ const Note& Bar::note(uint8_t column, uint8_t row) const
     return p_data_[row * p_numNotes_ + column];
 }
 
-void Bar::resize(uint8_t length, uint8_t numRows)
+void Bar::resize(size_t length, size_t numRows)
 {
     std::vector<Note> v(length * numRows, Note(Note::Space));
 
-    const uint8_t
+    const size_t
             rows = std::min(numRows, p_numRows_),
             cols = std::min(length, p_numNotes_);
-    for (uint8_t y = 0; y < rows; ++y)
-    for (uint8_t x = 0; x < cols; ++x)
+    for (size_t y = 0; y < rows; ++y)
+    for (size_t x = 0; x < cols; ++x)
         v[y * length + x] = note(x, y);
 
     p_data_.swap(v);
 }
 
-void Bar::setNote(uint8_t column, uint8_t row, const Note &n)
+void Bar::setNote(size_t column, size_t row, const Note &n)
 {
     SONOT_ASSERT_LT(column, length(), "in Bar::setNote ");
     SONOT_ASSERT_LT(row, numRows(), "in Bar::setNote");
@@ -79,8 +79,8 @@ QJsonObject Bar::toJson() const
     JsonHelper json("Bar");
 
     QJsonObject o;
-    o.insert("len", QJsonValue(p_numNotes_));
-    o.insert("rows", QJsonValue(p_numRows_));
+    o.insert("len", QJsonValue((qint64)p_numNotes_));
+    o.insert("rows", QJsonValue((qint64)p_numRows_));
 
     std::vector<int> v;
     for (const Note& n : p_data_)
@@ -90,8 +90,8 @@ QJsonObject Bar::toJson() const
     if (isAnnotated())
     {
         QJsonObject ann;
-        for (uint8_t row=0; row<p_numRows_; ++row)
-        for (uint8_t col=0; col<p_numNotes_; ++col)
+        for (size_t row=0; row<p_numRows_; ++row)
+        for (size_t col=0; col<p_numNotes_; ++col)
         {
             const Note& n = p_data_[row*p_numNotes_+col];
             if (!n.isAnnotated())
@@ -118,7 +118,7 @@ void Bar::fromJson(const QJsonObject& o)
     std::vector<Note> notes;
     for (int i=0; i<jnotes.size(); ++i)
     {
-        int8_t n = jnotes[i].toInt(Note::Invalid);
+        size_t n = jnotes[i].toInt(Note::Invalid);
         notes.push_back(Note(n));
     }
 

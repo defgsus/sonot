@@ -66,12 +66,24 @@ void testNoteStream()
     std::cout << "\n" << score.toJsonString().toStdString()
               << "\n" << score2.noteStream(0).toString().toStdString()
               << std::endl;
+
+    auto idx = score.createIndex(0,0,0,0);
+    do
+    {
+        std::cout << "," << idx.getNote().toNoteString().toStdString();
+    } while (idx.nextNote());
+    std::cout << std::endl;
+    do
+    {
+        std::cout << "," << idx.getNote().toNoteString().toStdString();
+    } while (idx.prevNote());
+    std::cout << std::endl;
 }
 #endif
 
 int main(int argc, char *argv[])
 {
-    //testNoteStream(); return 0;
+    testNoteStream(); return 0;
 
     QApplication a(argc, argv);
     Sonot::MainWindow w;

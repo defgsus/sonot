@@ -49,7 +49,7 @@ public:
     /** Returns the accumulated number of notes */
     size_t numNotes() const;
     /** Returns the maximum number of rows of all Bars */
-    uint8_t numRows() const;
+    size_t numRows() const;
 
     /** Read reference to @p idx'th Bar */
     const Bar& bar(size_t idx) const;
