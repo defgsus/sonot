@@ -27,7 +27,8 @@ SOURCES += \
     src/gui/ScoreLayout.cpp \
     src/core/Note.cpp \
     src/core/Bar.cpp \
-    src/core/NoteStream.cpp
+    src/core/NoteStream.cpp \
+    src/core/Score.cpp
 
 HEADERS  += \
     src/gui/MainWindow.h \
@@ -42,7 +43,8 @@ HEADERS  += \
     src/gui/ScoreLayout.h \
     src/core/Note.h \
     src/core/Bar.h \
-    src/core/NoteStream.h
+    src/core/NoteStream.h \
+    src/core/Score.h
 
 DISTFILES += \
     README.md \

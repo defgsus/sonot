@@ -46,82 +46,114 @@ public:
     // ----------- pure methods --------------
 
     /** Return a QJsonObject with all data inside.
-        Should throw a descriptive IoException on any errors. */
+        Should throw a descriptive Sonot::Exception on any errors. */
     virtual QJsonObject toJson() const = 0;
 
     /** Initializes the object from the QJsonObject.
-        Should throw a descriptive IoException on severe errors. */
+        Should throw a descriptive Sonot::Exception on severe errors. */
     virtual void fromJson(const QJsonObject&) = 0;
 
     // ------------ convenience --------------
 
     /** Converts this object's data to a Json string.
         Uses toJson().
-        @throws IoException on any error */
+        @throws Sonot::Exception on any error */
     virtual QString toJsonString(bool compact = true) const;
 
     /** Initializes this objects's data from a json string.
         Uses fromJson().
-        @throws IoException on any error */
+        @throws Sonot::Exception on any error */
     virtual void fromJsonString(const QString&);
 
     /** Stores the json string to a file.
         Uses toJsonString().
-        @throws IoException on any error */
+        @throws Sonot::Exception on any error */
     virtual void saveJsonFile(
             const QString& filename, bool compact = true) const;
 
     /** Initializes this object's data from a json file.
         Uses fromJsonString().
-        @throws IoException on any error */
+        @throws Sonot::Exception on any error */
     virtual void loadJsonFile(const QString& filename);
 
 };
 
-/** Collection of helper functions for json parsing.
-    Most functions throw Exception with the className defined in the constructor */
+
+
+/** Collection of helper functions for json value conversion.
+    Most functions throw Sonot::Exception with the className
+    defined in the constructor */
 class JsonHelper
 {
 public:
 
     JsonHelper(const char* className)
-        : p_json_helper_classname_(className) { }
+        : p_classname_(className) { }
     JsonHelper(const QString& className)
-        : p_json_helper_classname_(className) { }
+        : p_classname_(className) { }
 
     // --- info ---
 
+    /** The name given in constructor */
+    const QString& className() const { return p_classname_; }
+
+    /** Returns the name of the json type */
     static const char* typeName(const QJsonValue&);
 
     // -- convert to json --
 
+    /** @{ */
+    /** Wraps the type into a json value.
+        Unwrap the value with expect() or expectChild() */
     static QJsonValue wrap(const QRectF&);
     static QJsonValue wrap(const QColor&);
+    /** @} */
 
+    /** Converts the vector of type T to a json array.
+        Unwrap with fromArray() */
     template <typename T>
     static QJsonArray toArray(const std::vector<T>&);
 
 
     // -- throwing getters --
 
+    /** Converts the json value to type T.
+        @throws Sonot::Exception if not convertible. */
     template <typename T>
     T expect(const QJsonValue&);
 
+    /** Gets the child value and converts it to type T.
+        @throws Sonot::Exception if child not found or not convertible. */
     template <typename T>
     T expectChild(const QJsonObject& parent, const QString& key);
 
+    /** Returns the child value.
+        @throws Sonot::Exception if child not found. */
     QJsonValue expectChildValue(const QJsonObject& parent, const QString& key);
+
+    /** Converts the QJsonValue to a QJsonArray.
+        @throws Sonot::Exception if not an array. */
     QJsonArray expectArray(const QJsonValue&);
+
+    /** Converts the QJsonValue to a QJsonObject.
+        @throws Sonot::Exception if not an object. */
     QJsonObject expectObject(const QJsonValue&);
 
+    /** Converts the json array to a vector of type T.
+        Previous contents of @p dst are erased.
+        @throws Sonot::Exception if an element is not convertible to T. */
     template <typename T>
     void fromArray(std::vector<T>& dst, const QJsonArray& src);
 
+    /** Converts the json value to a vector of type T.
+        Previous contents of @p dst are erased.
+        @throws Sonot::Exception if @p src is not an array
+        or an element is not convertible to T. */
     template <typename T>
     void fromArray(std::vector<T>& dst, const QJsonValue& src);
 
 private:
-    QString p_json_helper_classname_;
+    QString p_classname_;
 };
 
 

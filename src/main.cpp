@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #if 1
 #include <QJsonObject>
 #include "core/NoteStream.h"
+#include "core/Score.h"
 #include <iostream>
 void testNoteStream()
 {
@@ -33,11 +34,11 @@ void testNoteStream()
 
     for (int i=0; i<4; ++i)
     {
-        Bar b(4, 3+rand()%2);
+        Bar b(4+rand()%2, 3+rand()%2);
         b.setNote(0, 0, Note(Note::C+i*2));
         b.setNote(1, 0, Note(Note::D));
         b.setNote(2, 0, Note(Note::Space));
-        b.setNote(3, 0, Note(Note::F).setAnnotation("3,0"));
+        b.setNote(3, 1, Note(Note::F).setAnnotation("3,1"));
         b.setNote(i, rand()%b.numRows(), Note(Note::C+rand()%12));
         b.setNote(i, rand()%b.numRows(), Note(Note::C+rand()%12));
 
@@ -53,7 +54,18 @@ void testNoteStream()
               << "\n" << s2.toString().toStdString()
               << std::endl;
 
+    Score score, score2;
+    score.setTitle("Amazing Haze");
+    score.setAuthor("Convenieous Bar");
+    score.setCopyright("(c) 1964");
+    score.setProperty("version", 23);
+    score.appendNoteStream(s);
+    score.appendNoteStream(s2);
+    score2.fromJson(score.toJson());
 
+    std::cout << "\n" << score.toJsonString().toStdString()
+              << "\n" << score2.noteStream(0).toString().toStdString()
+              << std::endl;
 }
 #endif
 
