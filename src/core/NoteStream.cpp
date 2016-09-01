@@ -41,9 +41,9 @@ size_t NoteStream::numNotes() const
     return n;
 }
 
-int8_t NoteStream::numRows() const
+uint8_t NoteStream::numRows() const
 {
-    int8_t n = 0;
+    uint8_t n = 0;
     for (const Bar& b : p_data_)
         n = std::max(n, b.numRows());
     return n;

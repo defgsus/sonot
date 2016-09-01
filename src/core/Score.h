@@ -33,6 +33,36 @@ class NoteStream;
 class Score : public JsonInterface
 {
 public:
+
+    // --- types ---
+
+    /** Type to index a specific note.
+        @note The Index is tied to the Score instance and
+        must only be used during the lifetime of the Score instance! */
+    struct Index
+    {
+        Score* score() const { return p_score; }
+        size_t stream() const { return p_stream; }
+        size_t bar() const { return p_bar; }
+        uint8_t row() const { return p_row; }
+        uint8_t column() const { return p_column; }
+
+        /** Returns true if the index is within the range of
+            the NoteStream, Bar, it's rows and columns.
+            The check is performed against the current Score. */
+        bool isValid() const;
+
+    private:
+        friend class Score;
+        Index() { }
+        Score* p_score;
+        size_t p_stream, p_bar;
+        uint8_t p_row, p_column;
+    };
+
+
+    // --- ctor ---
+
     Score();
     ~Score();
 
@@ -54,6 +84,13 @@ public:
     QString title() const { return property("title").toString(); }
     QString author() const { return property("author").toString(); }
     QString copyright() const { return property("copyright").toString(); }
+
+    /** Returns an index to the specified note.
+        If any of the indices is out of range an invalid Index is returned.
+        @note The returned Index is tied to this Score instance and
+        only valid during it's lifetime. */
+    Index createIndex(
+            size_t stream, size_t bar, size_t row, size_t column) const;
 
     // ---- setter ----
 

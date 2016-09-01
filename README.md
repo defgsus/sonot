@@ -34,7 +34,8 @@ Framework: Qt, License: GPL
     | |N |N | N| |
     | |NN|N |N | |
     |------------|
-
+       || || ||
+        column
 
 
 ## GENERAL DATA

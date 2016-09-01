@@ -32,7 +32,7 @@ namespace Sonot {
 class Bar : public JsonInterface
 {
 public:
-    Bar(int8_t length = 0, int8_t numRows = 0);
+    Bar(uint8_t length = 0, uint8_t numRows = 0);
 
     // --- io ---
 
@@ -41,28 +41,28 @@ public:
 
     // --- getter ---
 
-    int8_t length() const { return p_numNotes_; }
-    int8_t numRows() const { return p_numRows_; }
+    uint8_t length() const { return p_numNotes_; }
+    uint8_t numRows() const { return p_numRows_; }
 
     /** Returns the note at given column and row.
         @warning No range checking! */
-    const Note& note(int8_t column, int8_t row) const;
+    const Note& note(uint8_t column, uint8_t row) const;
 
     /** Is any of the Notes annotated? */
     bool isAnnotated() const;
 
     // --- setter ---
 
-    void resize(int8_t length, int8_t numRows);
-    void setLength(int8_t length) { resize(length, p_numRows_); }
-    void setNumRows(int8_t rows) { resize(p_numNotes_, rows); }
+    void resize(uint8_t length, uint8_t numRows);
+    void setLength(uint8_t length) { resize(length, p_numRows_); }
+    void setNumRows(uint8_t rows) { resize(p_numNotes_, rows); }
 
     /** Stores the Note at given column and row.
         @warning No range checking! */
-    void setNote(int8_t column, int8_t row, const Note& n);
+    void setNote(uint8_t column, uint8_t row, const Note& n);
 
 private:
-    int8_t p_numNotes_, p_numRows_;
+    uint8_t p_numNotes_, p_numRows_;
     std::vector<Note> p_data_;
 };
 

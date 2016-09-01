@@ -170,4 +170,25 @@ void Score::removeNoteStream(size_t idx)
     p_->streams.removeAt(idx);
 }
 
+Score::Index Score::createIndex(
+        size_t stream, size_t bar, size_t row, size_t column) const
+{
+    Index idx;
+    idx.p_score = const_cast<Score*>(this);
+    idx.p_stream = stream;
+    idx.p_bar = bar;
+    idx.p_row = row;
+    idx.p_column = column;
+    return idx;
+}
+
+bool Score::Index::isValid() const
+{
+    return stream() < (size_t)score()->noteStreams().size()
+        && bar() < score()->noteStream(stream()).numBars()
+        && row() < score()->noteStream(stream()).bar(bar()).numRows()
+        && column() < score()->noteStream(stream()).bar(bar()).length();
+}
+
+
 } // namespace Sonot
