@@ -83,7 +83,7 @@ void testNoteStream()
 
 int main(int argc, char *argv[])
 {
-    testNoteStream(); return 0;
+    //testNoteStream(); return 0;
 
     QApplication a(argc, argv);
     Sonot::MainWindow w;

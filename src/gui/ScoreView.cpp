@@ -29,10 +29,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QBrush>
 
 #include "ScoreView.h"
+#include "ScoreDocument.h"
+#include "ScoreLayout.h"
 #include "TextItem.h"
 #include "PageAnnotationTemplate.h"
 #include "PageLayout.h"
-#include "ScoreLayout.h"
+#include "core/Score.h"
 
 namespace Sonot {
 
@@ -52,7 +54,6 @@ struct ScoreView::Private
         , brushBackground       (QColor(155,155,155))
         , brushPageBackground   (QColor(255,255,240))
         , penScoreRow           (QColor(180,180,180))
-        , pageSpacing           (2., 10.)
     {
 
     }
@@ -62,15 +63,6 @@ struct ScoreView::Private
     void onMatrixChanged();
     void setAction(Action);
 
-    // --- transformation ---
-
-    int pageNumber(int pageIndex) const;
-    QPointF pagePosition(int pageIndex) const;
-    /** Returns the page index for a given point in document-space.
-        Returns -1 if p is not on a page. */
-    int pageIndexForDocumentPosition(const QPointF& p) const;
-
-    PageAnnotation getPageAnnotation(int pageIndex) const;
 
     // --- drawing ---
 
@@ -78,16 +70,15 @@ struct ScoreView::Private
 
     void paintBackground(QPainter* p, const QRect& updateRect) const;
     void paintPage(QPainter* p, const QRect& updateRect, int pageIndex) const;
-    void paintPageAnnotation(QPainter* p, const QRect& updateRect, int pageIndex) const;
+    void paintPageAnnotation
+            (QPainter* p, const QRect& updateRect, int pageIndex) const;
     void paintScore(QPainter* p, const QRect& updateRect, int pageIndex) const;
 
     ScoreView* p;
 
-    PageLayout pageLayout;
-    ScoreLayout scoreLayout;
-    QTransform matrix, imatrix;
+    ScoreDocument document;
 
-    PageAnnotationTemplate annotationTemplate;
+    QTransform matrix, imatrix;
 
     // -- gui --
 
@@ -100,18 +91,15 @@ struct ScoreView::Private
     QBrush  brushBackground,
             brushPageBackground;
     QPen    penScoreRow;
-    QPointF pageSpacing;
 };
 
 
 
 ScoreView::ScoreView(QWidget *parent)
-    : QWidget   (parent)
-    , p_        (new Private(this))
+    : QWidget       (parent)
+    , p_            (new Private(this))
 {
     grabKeyboard();
-
-    p_->annotationTemplate.init("default");
 
     p_->matrix.scale(2., 2.);
 
@@ -128,7 +116,8 @@ ScoreView::~ScoreView()
 
 void ScoreView::goToPage(int pageIndex, double margin)
 {
-    auto p = p_->pagePosition(pageIndex) - QPointF(margin, margin);
+    auto p = p_->document.pagePosition(pageIndex)
+                            - QPointF(margin, margin);
 
     // current matrix without translation
     auto m = p_->matrix;
@@ -166,8 +155,8 @@ void ScoreView::showRect(const QRectF& dst, double bo)
 
 void ScoreView::showPage(int pageIndex, double margin_mm)
 {
-    auto r = p_->pageLayout.pageRect();
-    r.moveTo(p_->pagePosition(pageIndex));
+    auto r = p_->document.pageRect();
+    r.moveTo(p_->document.pagePosition(pageIndex));
     showRect(r, margin_mm);
 }
 
@@ -224,7 +213,7 @@ void ScoreView::mousePressEvent(QMouseEvent* e)
     }
 }
 
-void ScoreView::mouseReleaseEvent(QMouseEvent* e)
+void ScoreView::mouseReleaseEvent(QMouseEvent* )
 {
     p_->setAction(Private::A_NOTHING);
 }
@@ -271,46 +260,6 @@ void ScoreView::mouseMoveEvent(QMouseEvent* e)
 
 
 
-// ################# transformation #################################
-
-
-int ScoreView::Private::pageNumber(int pageIndex) const
-{
-    return pageIndex + 1;
-}
-
-QPointF ScoreView::Private::pagePosition(int pageIndex) const
-{
-    auto r = pageLayout.pageRect();
-    ++pageIndex;
-    return QPointF(
-                (pageIndex % 2) * (r.width() + pageSpacing.x()),
-                (pageIndex / 2) * (r.height() + pageSpacing.y()));
-}
-
-int ScoreView::Private::pageIndexForDocumentPosition(const QPointF& p0) const
-{
-    if (p0.x() < 0.)
-        return -1;
-    auto r = pageLayout.pageRect();
-    QPointF p(p0);
-    p -= r.topLeft();
-    p.rx() /= (r.width() + pageSpacing.x());
-    p.ry() /= (r.height() + pageSpacing.y());
-    if (p.rx() >= 2. || p.ry() < 0.)
-        return -1;
-
-    return int(p.ry()) * 2 + int(p.rx()) - 1;
-}
-
-PageAnnotation ScoreView::Private::getPageAnnotation(int pageIndex) const
-{
-    const PageAnnotationTemplate * anno = &annotationTemplate;
-    if (!anno)
-        return PageAnnotation();
-
-    return anno->getPage(pageIndex);
-}
 
 
 // ########################### DRAWING ##############################
@@ -341,7 +290,9 @@ void ScoreView::Private::paintPage(
         QPainter *p, const QRect& updateRect, int pageIndex) const
 {
     auto mat = matrix;
-    auto pagePos = pagePosition(pageIndex);
+    auto pageLayout = document.pageLayout(pageIndex);
+    auto pagePos = document.pagePosition(pageIndex);
+
     mat.translate(pagePos.x(), pagePos.y());
 
     {
@@ -374,11 +325,12 @@ void ScoreView::Private::paintPage(
 void ScoreView::Private::paintPageAnnotation(
         QPainter* p, const QRect& /*updateRect*/, int pageIndex) const
 {
-    PageAnnotation anno = getPageAnnotation(pageIndex);
+    PageAnnotation anno = document.pageAnnotation(pageIndex);
 
+    auto pageLayout = document.pageLayout(pageIndex);
     auto pageRect = pageLayout.pageRect();
     auto contentRect = pageLayout.contentRect(pageIndex);
-    auto pageNum = pageNumber(pageIndex);
+    auto pageNum = document.pageNumberForIndex(pageIndex);
 
     for (const TextItem& item : anno.textItems())
     {
@@ -394,6 +346,9 @@ void ScoreView::Private::paintPageAnnotation(
 
         auto text = item.text();
         text.replace("#page", QString::number(pageNum));
+        auto props = document.score().properties();
+        for (auto i = props.begin(); i!=props.end(); ++i)
+            text.replace("#" + i.key(), i.value().toString());
 
         if (text.isEmpty())
             continue;
@@ -408,6 +363,8 @@ void ScoreView::Private::paintPageAnnotation(
 void ScoreView::Private::paintScore(
         QPainter* p, const QRect& /*updateRect*/, int pageIndex) const
 {
+    auto pageLayout = document.pageLayout(pageIndex);
+    auto scoreLayout = document.scoreLayout(pageIndex);
     auto srect = pageLayout.scoreRect(pageIndex);
 
     double y = 0.;

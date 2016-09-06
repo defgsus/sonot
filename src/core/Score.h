@@ -102,6 +102,7 @@ public:
 
     /** Returns the given property, or invalid QVariant */
     QVariant property(const QString& key) const;
+    const QMap<QString, QVariant>& properties() const;
 
     size_t numNoteStreams() const;
     const NoteStream& noteStream(size_t idx) const;

@@ -110,6 +110,8 @@ void Score::fromJson(const QJsonObject& o)
     p_->properties.swap(props);
 }
 
+const QMap<QString, QVariant>& Score::properties() const { return p_->properties; }
+
 QVariant Score::property(const QString &key) const
 {
     auto i = p_->properties.find(key);
