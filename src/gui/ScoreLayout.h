@@ -58,6 +58,15 @@ public:
 
     double lineHeight(int numRows) const;
 
+    // --- setter ---
+
+    void setNoteSpacing(double v) { p_noteSpacing_ = v; }
+    void setRowSpacing(double v) { p_rowSpacing_ = v; }
+    void setLineSpacing(double v) { p_lineSpacing_ = v; }
+    void setMinBarWidth(double v) { p_minBarWidth_ = v; }
+    void setMaxBarWidth(double v) { p_maxBarWidth_ = v; }
+    void setNoteSize(double v) { p_noteSize_ = v; }
+
 private:
 
     double

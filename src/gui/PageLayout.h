@@ -58,6 +58,10 @@ public:
     /** Is pageIndex in contentRect() zero-based or one-based? */
     bool isZeroBased() const { return p_zeroBased_; }
 
+    // ---- setter ----
+
+    void setPageSize(const PageSize& p) { p_pageSize_ = p; }
+
 private:
 
     PageSize p_pageSize_;
