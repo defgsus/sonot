@@ -20,7 +20,7 @@ include(src/gui/gui.pri)
 SOURCES += \
     src/main.cpp
 
-
 DISTFILES += \
     README.md \
     .gitignore
+

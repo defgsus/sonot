@@ -278,6 +278,14 @@ QJsonValue JsonHelper::expectChildValue(
     return parent.value(key);
 }
 
+QJsonArray JsonHelper::expectChildArray(
+        const QJsonObject& parent, const QString& key)
+{
+    if (!parent.contains(key))
+        SONOTE_JSON_ERROR("Expected '" << key << "' array, not found");
+    return expectArray(parent.value(key));
+}
+
 QJsonObject JsonHelper::expectChildObject(
         const QJsonObject& parent, const QString& key)
 {

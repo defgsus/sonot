@@ -21,10 +21,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef SONOTSRC_PAGELAYOUT_H
 #define SONOTSRC_PAGELAYOUT_H
 
+#include <QtCore>
 #include <QRectF>
 
 #include "PageSize.h"
 #include "io/JsonInterface.h"
+#include "io/Properties.h"
 
 namespace Sonot {
 
@@ -33,6 +35,8 @@ namespace Sonot {
     */
 class PageLayout : public JsonInterface
 {
+    Q_DECLARE_TR_FUNCTIONS(PageLayout)
+
 public:
     PageLayout();
     void init();
@@ -62,18 +66,15 @@ public:
 
     void setPageSize(const PageSize& p) { p_pageSize_ = p; }
 
+    Properties& marginsOdd() { return p_margins_[0]; }
+    Properties& marginsEven() { return p_margins_[1]; }
+    Properties& scoreMarginsOdd() { return p_margins_[2]; }
+    Properties& scoreMarginsEven() { return p_margins_[3]; }
+
 private:
 
     PageSize p_pageSize_;
-    double
-        p_marginLeft_[2],
-        p_marginRight_[2],
-        p_marginTop_[2],
-        p_marginBottom_[2],
-        p_scoreMarginLeft_[2],
-        p_scoreMarginRight_[2],
-        p_scoreMarginTop_[2],
-        p_scoreMarginBottom_[2];
+    Properties p_margins_[4];
     bool p_zeroBased_;
 };
 

@@ -33,48 +33,71 @@ namespace {
 
 PageLayout::PageLayout()
     : p_pageSize_   (PageSize::F_ISO_A4)
+    , p_margins_    ({ Properties("margins-odd"),
+                       Properties("margins-even"),
+                       Properties("margins-top"),
+                       Properties("margins-bottom")})
     , p_zeroBased_  (true)
 {
-    init();
+    // content
+    p_margins_[ODD].set(
+                "left", tr("left margin"),
+                tr("distance to left page border"),
+                20., 1.);
+    p_margins_[ODD].set(
+                "right", tr("right margin"),
+                tr("distance to right page border"),
+                30., 1.);
+    p_margins_[ODD].set(
+                "top", tr("top margin"),
+                tr("distance to top page border"),
+                20., 1.);
+    p_margins_[ODD].set(
+                "bottom", tr("bottom margin"),
+                tr("distance to bottom page border"),
+                30., 1.);
+    p_margins_[EVEN] = p_margins_[ODD];
+    p_margins_[EVEN].set("left", 30.);
+    p_margins_[EVEN].set("right", 20.);
+
+    // score
+    p_margins_[2+ODD].set(
+                "left", tr("left score margin"),
+                tr("distance of score to left content border"),
+                5., 1.);
+    p_margins_[2+ODD].set(
+                "right", tr("right score margin"),
+                tr("distance of score to right content border"),
+                5., 1.);
+    p_margins_[2+ODD].set(
+                "top", tr("top score margin"),
+                tr("distance of score to top content border"),
+                20., 1.);
+    p_margins_[2+ODD].set(
+                "bottom", tr("bottom score margin"),
+                tr("distance of score to bottom content border"),
+                10., 1.);
+    p_margins_[2+EVEN] = p_margins_[2+ODD];
 }
 
 bool PageLayout::operator == (const PageLayout& o) const
 {
-#define SONOT__COMP(mem__) \
-            mem__[0] == o.mem__[0] && mem__[1] == o.mem__[1]
-
     return p_pageSize_ == o.p_pageSize_
         && p_zeroBased_ == o.p_zeroBased_
-        && SONOT__COMP(p_marginLeft_)
-        && SONOT__COMP(p_marginRight_)
-        && SONOT__COMP(p_marginTop_)
-        && SONOT__COMP(p_marginBottom_)
-        && SONOT__COMP(p_scoreMarginLeft_)
-        && SONOT__COMP(p_scoreMarginRight_)
-        && SONOT__COMP(p_scoreMarginTop_)
-        && SONOT__COMP(p_scoreMarginBottom_)
-            ;
-#undef SONOT__COMP
+        && p_margins_[0] == o.p_margins_[0]
+        && p_margins_[1] == o.p_margins_[1]
+        && p_margins_[2] == o.p_margins_[2]
+        && p_margins_[3] == o.p_margins_[3];
 }
 
 QJsonObject PageLayout::toJson() const
 {
     QJsonObject o;
     o.insert("page-size", p_pageSize_.toJson());
-
-    for (int i=0; i<2; ++i)
-    {
-        QJsonObject p;
-        p.insert("margin-left", p_marginLeft_[i]);
-        p.insert("margin-right", p_marginRight_[i]);
-        p.insert("margin-top", p_marginTop_[i]);
-        p.insert("margin-bottom", p_marginBottom_[i]);
-        p.insert("score-margin-left",   p_scoreMarginLeft_[i]);
-        p.insert("score-margin-right",  p_scoreMarginRight_[i]);
-        p.insert("score-margin-top",    p_scoreMarginTop_[i]);
-        p.insert("score-margin-bottom", p_scoreMarginBottom_[i]);
-        o.insert(i == ODD ? "odd" : "even", p);
-    }
+    o.insert("margins-odd", p_margins_[ODD].toJson());
+    o.insert("margins-even", p_margins_[EVEN].toJson());
+    o.insert("score-margins-odd", p_margins_[2+ODD].toJson());
+    o.insert("score-margins-even", p_margins_[2+EVEN].toJson());
     return o;
 }
 
@@ -83,22 +106,10 @@ void PageLayout::fromJson(const QJsonObject& o)
     JsonHelper json("PageLayout");
     PageLayout tmp;
     tmp.p_pageSize_.fromJson(json.expectChildObject(o, "page-size"));
-    for (int i=0; i<2; ++i)
-    {
-        QJsonObject p = json.expectChildObject(o, i == ODD ? "odd" : "even");
-        tmp.p_marginLeft_[i] =   json.expectChild<double>(p, "margin-left");
-        tmp.p_marginRight_[i] =  json.expectChild<double>(p, "margin-right");
-        tmp.p_marginTop_[i] =    json.expectChild<double>(p, "margin-top");
-        tmp.p_marginBottom_[i] = json.expectChild<double>(p, "margin-bottom");
-        tmp.p_scoreMarginLeft_[i] =
-                json.expectChild<double>(p, "score-margin-left");
-        tmp.p_scoreMarginRight_[i] =
-                json.expectChild<double>(p, "score-margin-right");
-        tmp.p_scoreMarginTop_[i] =
-                json.expectChild<double>(p, "score-margin-top");
-        tmp.p_scoreMarginBottom_[i] =
-                json.expectChild<double>(p, "score-margin-bottom");
-    }
+    tmp.p_margins_[ODD].fromJson(json.expectChildObject(o, "margins-odd"));
+    tmp.p_margins_[EVEN].fromJson(json.expectChildObject(o, "margins-even"));
+    tmp.p_margins_[2+ODD].fromJson(json.expectChildObject(o, "score-margins-odd"));
+    tmp.p_margins_[2+EVEN].fromJson(json.expectChildObject(o, "score-margins-even"));
 
     *this = tmp;
 }
@@ -107,6 +118,7 @@ void PageLayout::init()
 {
     p_pageSize_.setFormat(PageSize::F_ISO_A4);
 
+#if 0
     p_marginLeft_[ODD] = 20.;   p_marginLeft_[EVEN] = 30.;
     p_marginRight_[ODD] = 30.;  p_marginRight_[EVEN] = 20.;
     p_marginTop_[ODD] =         p_marginTop_[EVEN] = 20.;
@@ -116,6 +128,7 @@ void PageLayout::init()
     p_scoreMarginRight_[ODD] = 5.;   p_scoreMarginRight_[EVEN] = 5.;
     p_scoreMarginTop_[ODD] =         p_scoreMarginTop_[EVEN] = 20.;
     p_scoreMarginBottom_[ODD] =      p_scoreMarginBottom_[EVEN] = 10.;
+#endif
 }
 
 QRectF PageLayout::contentRect(int pageNum) const
@@ -125,12 +138,18 @@ QRectF PageLayout::contentRect(int pageNum) const
 
     int idx = (pageNum & 1) == 0 ? EVEN : ODD;
 
+    const double
+            marginLeft = p_margins_[idx].get("left").toDouble(),
+            marginRight = p_margins_[idx].get("right").toDouble(),
+            marginTop = p_margins_[idx].get("top").toDouble(),
+            marginBottom = p_margins_[idx].get("bottom").toDouble();
+
     auto r = pageRect();
     return QRectF(
-            r.left()   + p_marginLeft_[idx],
-            r.top()    + p_marginTop_[idx],
-            r.width()  - p_marginLeft_[idx] - p_marginRight_[idx],
-            r.height() - p_marginTop_[idx] - p_marginBottom_[idx]);
+            r.left()   + marginLeft,
+            r.top()    + marginTop,
+            r.width()  - marginLeft - marginRight,
+            r.height() - marginTop - marginBottom);
 }
 
 
@@ -142,12 +161,19 @@ QRectF PageLayout::scoreRect(int pageNum) const
         ++pageNum;
 
     int idx = (pageNum & 1) == 0 ? EVEN : ODD;
+    idx += 2;
+
+    const double
+            marginLeft = p_margins_[idx].get("left").toDouble(),
+            marginRight = p_margins_[idx].get("right").toDouble(),
+            marginTop = p_margins_[idx].get("top").toDouble(),
+            marginBottom = p_margins_[idx].get("bottom").toDouble();
 
     return QRectF(
-            r.left()   + p_scoreMarginLeft_[idx],
-            r.top()    + p_scoreMarginTop_[idx],
-            r.width()  - p_scoreMarginLeft_[idx] - p_scoreMarginRight_[idx],
-            r.height() - p_scoreMarginTop_[idx]  - p_scoreMarginBottom_[idx]);
+            r.left()   + marginLeft,
+            r.top()    + marginTop,
+            r.width()  - marginLeft - marginRight,
+            r.height() - marginTop - marginBottom);
 }
 
 } // namespace Sonot

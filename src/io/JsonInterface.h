@@ -137,9 +137,13 @@ public:
         @throws Sonot::Exception if not an object. */
     QJsonObject expectObject(const QJsonValue&);
 
-    /** Returns the child to be of type object.
+    /** Returns the child of type object.
         @throws Sonot::Exception if child not found or not convertible. */
     QJsonObject expectChildObject(const QJsonObject& parent, const QString& key);
+
+    /** Returns the child of type array.
+        @throws Sonot::Exception if child not found or not convertible. */
+    QJsonArray expectChildArray(const QJsonObject& parent, const QString& key);
 
     /** Converts the json array to a vector of type T.
         Previous contents of @p dst are erased.
