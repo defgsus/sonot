@@ -24,23 +24,36 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <vector>
 
 #include "TextItem.h"
+#include "io/JsonInterface.h"
 
 namespace Sonot {
 
 
-class PageAnnotation
+/** Collection of TextItems per page */
+class PageAnnotation : public JsonInterface
 {
 public:
     PageAnnotation();
 
+    // --- io ---
+
+    QJsonObject toJson() const override;
+    void fromJson(const QJsonObject&) override;
+
+    // -- getter --
+
     const std::vector<TextItem>& textItems() const { return p_textItems; }
-          std::vector<TextItem>& textItems()       { return p_textItems; }
+
+    bool operator == (const PageAnnotation& o) const;
+    bool operator != (const PageAnnotation& o) const { return !(*this == o); }
+
+    // -- setter --
 
     void clear() { p_textItems.clear(); }
 
+    std::vector<TextItem>& textItems() { return p_textItems; }
+
 private:
-    //PageAnnotation(const PageAnnotation&) delete;
-    //void operator(const PageAnnotation&) delete;
 
     std::vector<TextItem> p_textItems;
 };

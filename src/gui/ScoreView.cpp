@@ -345,6 +345,10 @@ void ScoreView::Private::paintPageAnnotation(
         }
 
         auto text = item.text();
+        if (text.isEmpty())
+            continue;
+
+        // fill in tags
         text.replace("#page", QString::number(pageNum));
         auto props = document.score().properties();
         for (auto i = props.begin(); i!=props.end(); ++i)

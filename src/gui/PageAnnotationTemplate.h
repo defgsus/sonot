@@ -25,20 +25,34 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QMap>
 
 #include "PageAnnotation.h"
-
+#include "io/JsonInterface.h"
 
 namespace Sonot {
 
-class PageAnnotationTemplate
+/** Container of PageAnnotation per page */
+class PageAnnotationTemplate : public JsonInterface
 {
 public:
     PageAnnotationTemplate();
+
+    // --- io ---
+
+    QJsonObject toJson() const override;
+    void fromJson(const QJsonObject&) override;
+
+    // --- getter ---
 
     /** Returns the page annotation for id, or empty annotation */
     PageAnnotation getPage(const QString& id) const;
 
     /** Returns the annotation for given page index. */
     PageAnnotation getPage(int pageIndex) const;
+
+    bool operator == (const PageAnnotationTemplate& o) const;
+    bool operator != (const PageAnnotationTemplate& o) const
+                                            { return !(*this == o); }
+
+    // --- setter ---
 
     /** Stores a page annotation for id */
     void setPage(const QString& id, const PageAnnotation&);

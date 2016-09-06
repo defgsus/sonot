@@ -39,6 +39,19 @@ TextItem::TextItem()
 
 }
 
+bool TextItem::operator == (const TextItem& o) const
+{
+    return p_boxAlign_ == o.p_boxAlign_
+        && p_textAlign_ == o.p_textAlign_
+        && p_textFlags_ == o.p_textFlags_
+        && p_fontFlags_ == o.p_fontFlags_
+        && p_pointSize_ == o.p_pointSize_
+        && p_color_ == o.p_color_
+        && p_boundingBox_ == o.p_boundingBox_
+        && p_text_ == o.p_text_;
+}
+
+
 QJsonObject TextItem::toJson() const
 {
     JsonHelper json("TextItem");

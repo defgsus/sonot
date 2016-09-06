@@ -21,6 +21,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef SONOTSRC_SCOREDOCUMENT_H
 #define SONOTSRC_SCOREDOCUMENT_H
 
+#include "io/JsonInterface.h"
+
 class QPointF;
 class QRectF;
 
@@ -34,11 +36,19 @@ class PageAnnotation;
 class PageAnnotationTemplate;
 
 /** Wrapper around Score and layout classes */
-class ScoreDocument
+class ScoreDocument : public JsonInterface
 {
 public:
     ScoreDocument();
+    ScoreDocument(const ScoreDocument& o);
     ~ScoreDocument();
+
+    ScoreDocument& operator = (const ScoreDocument& o);
+
+    // --- io ---
+
+    QJsonObject toJson() const override;
+    void fromJson(const QJsonObject&) override;
 
     // ----- getter -------
 

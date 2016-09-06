@@ -44,6 +44,17 @@ void ScoreLayout::init()
     p_noteSize_ = 4.;
 }
 
+bool ScoreLayout::operator == (const ScoreLayout& o) const
+{
+    return p_noteSpacing_ == o.p_noteSpacing_
+        && p_rowSpacing_  == o.p_rowSpacing_
+        && p_lineSpacing_ == o.p_lineSpacing_
+        && p_minBarWidth_ == o.p_minBarWidth_
+        && p_maxBarWidth_ == o.p_maxBarWidth_
+        && p_noteSize_    == o.p_noteSize_
+        ;
+}
+
 QJsonObject ScoreLayout::toJson() const
 {
     QJsonObject o;

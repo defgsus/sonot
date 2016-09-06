@@ -24,19 +24,28 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QRectF>
 
 #include "PageSize.h"
+#include "io/JsonInterface.h"
 
 namespace Sonot {
 
 /** Layout settings per odd/even page pair.
     Mainly controls size and margins
     */
-class PageLayout
+class PageLayout : public JsonInterface
 {
 public:
     PageLayout();
     void init();
 
+    // --- io ---
+
+    QJsonObject toJson() const override;
+    void fromJson(const QJsonObject&) override;
+
     // --- getter ---
+
+    bool operator == (const PageLayout& o) const;
+    bool operator != (const PageLayout& o) const { return !(*this == o); }
 
     PageSize pageSize() const { return p_pageSize_; }
     /** The whole page (starting at <0,0>) */

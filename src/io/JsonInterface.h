@@ -102,12 +102,10 @@ public:
 
     // -- convert to json --
 
-    /** @{ */
     /** Wraps the type into a json value.
         Unwrap the value with expect() or expectChild() */
-    static QJsonValue wrap(const QRectF&);
-    static QJsonValue wrap(const QColor&);
-    /** @} */
+    template <typename T>
+    static QJsonValue wrap(const T&);
 
     /** Converts the vector of type T to a json array.
         Unwrap with fromArray() */
@@ -138,6 +136,10 @@ public:
     /** Converts the QJsonValue to a QJsonObject.
         @throws Sonot::Exception if not an object. */
     QJsonObject expectObject(const QJsonValue&);
+
+    /** Returns the child to be of type object.
+        @throws Sonot::Exception if child not found or not convertible. */
+    QJsonObject expectChildObject(const QJsonObject& parent, const QString& key);
 
     /** Converts the json array to a vector of type T.
         Previous contents of @p dst are erased.

@@ -34,8 +34,12 @@ public:
     ScoreLayout();
     void init();
 
+    // ---- io ----
+
     QJsonObject toJson() const;
     void fromJson(const QJsonObject &);
+
+    // ---- getter ----
 
     double noteSpacing() const { return p_noteSpacing_; }
     double rowSpacing() const { return p_rowSpacing_; }
@@ -44,6 +48,9 @@ public:
     double maxBarWidth() const { return p_maxBarWidth_; }
 
     double noteSize() const { return p_noteSize_; }
+
+    bool operator == (const ScoreLayout& o) const;
+    bool operator != (const ScoreLayout& o) const { return !(*this == o); }
 
     // --- convenience ---
 

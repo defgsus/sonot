@@ -119,6 +119,18 @@ namespace
     };
 
     template <>
+    struct JsonValueTraits<QSizeF>
+    {
+        static QJsonValue to(const QSizeF& r)
+        {
+            QJsonArray a;
+            a.append(r.width());
+            a.append(r.height());
+            return a;
+        }
+    };
+
+    template <>
     struct JsonValueTraits<QColor>
     {
         static QJsonValue to(const QColor& c)
@@ -205,6 +217,20 @@ QRectF JsonHelper::expect(const QJsonValue& v)
 }
 
 template <>
+QSizeF JsonHelper::expect(const QJsonValue& v)
+{
+    if (!v.isArray())
+        SONOTE_JSON_ERROR("Expected json array (of size), got " << typeName(v));
+    auto ja = v.toArray();
+    if (ja.size() < 2)
+        SONOTE_JSON_ERROR("Expected json array of length 2, got length " << ja.size());
+    std::vector<double> a;
+    fromArray(a, ja);
+    return QSizeF(a[0], a[1]);
+}
+
+
+template <>
 QColor JsonHelper::expect(const QJsonValue& v)
 {
     if (!v.isString())
@@ -252,6 +278,13 @@ QJsonValue JsonHelper::expectChildValue(
     return parent.value(key);
 }
 
+QJsonObject JsonHelper::expectChildObject(
+        const QJsonObject& parent, const QString& key)
+{
+    if (!parent.contains(key))
+        SONOTE_JSON_ERROR("Expected '" << key << "' object, not found");
+    return expectObject(parent.value(key));
+}
 
 
 
@@ -279,34 +312,39 @@ void JsonHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
     fromArray(dst, expectArray(src));
 }
 
-
-QJsonValue JsonHelper::wrap(const QRectF& r)
+template <typename T>
+QJsonValue JsonHelper::wrap(const T& r)
 {
-    return JsonValueTraits<QRectF>::to(r);
+    return JsonValueTraits<T>::to(r);
 }
 
-QJsonValue JsonHelper::wrap(const QColor& r)
-{
-    return JsonValueTraits<QColor>::to(r);
-}
 
 // --- template instantiation ---
 
-#define SONOTE__INSTANTIATE(T__) \
+#define SONOT__INSTANTIATE(T__) \
+template QJsonValue JsonHelper::wrap<T__>(const T__&);
+
+SONOT__INSTANTIATE(QRectF);
+SONOT__INSTANTIATE(QSizeF);
+SONOT__INSTANTIATE(QColor);
+
+#undef SONOT__INSTANTIATE
+#define SONOT__INSTANTIATE(T__) \
 template T__ JsonHelper::expectChild<T__>(const QJsonObject& parent, const QString& key); \
 template QJsonArray JsonHelper::toArray<T__>( const std::vector<T__>&); \
 template void JsonHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonArray& src); \
 template void JsonHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonValue& src);
 
-SONOTE__INSTANTIATE(int)
-SONOTE__INSTANTIATE(float)
-SONOTE__INSTANTIATE(double)
-SONOTE__INSTANTIATE(size_t)
-SONOTE__INSTANTIATE(QString)
-SONOTE__INSTANTIATE(QRectF)
-SONOTE__INSTANTIATE(QColor)
+SONOT__INSTANTIATE(int)
+SONOT__INSTANTIATE(float)
+SONOT__INSTANTIATE(double)
+SONOT__INSTANTIATE(size_t)
+SONOT__INSTANTIATE(QString)
+SONOT__INSTANTIATE(QRectF)
+SONOT__INSTANTIATE(QSizeF)
+SONOT__INSTANTIATE(QColor)
 
 
-#undef SONOTE__INSTANTIATE
+#undef SONOT__INSTANTIATE
 
 } // namespace Sonot

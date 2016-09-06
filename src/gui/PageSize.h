@@ -23,10 +23,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QSizeF>
 #include <QRectF>
+#include <QStringList>
+
+#include "io/JsonInterface.h"
 
 namespace Sonot {
 
-class PageSize
+class PageSize : public JsonInterface
 {
 public:
 
@@ -35,6 +38,8 @@ public:
         F_CUSTOM,
         F_ISO_A4
     };
+    static const QStringList formatIds;
+    static Format formatFromId(const QString& id);
 
     /** Constructor with preset type */
     explicit PageSize(Format);
@@ -49,6 +54,11 @@ public:
         : p_size_   (s)
         , p_format_ (F_CUSTOM) { }
 
+    // --- io ---
+
+    QJsonObject toJson() const override;
+    void fromJson(const QJsonObject&) override;
+
     // --- getter ---
 
     Format format() const { return p_format_; }
@@ -56,6 +66,10 @@ public:
     double height() const { return p_size_.height(); }
     QSizeF size() const { return p_size_; }
     QRectF rect() const { return QRectF(0,0, width(), height()); }
+    QString formatId() const;
+
+    bool operator == (const PageSize& o) const;
+    bool operator != (const PageSize& o) const { return !(*this == o); }
 
     // --- setter ---
 

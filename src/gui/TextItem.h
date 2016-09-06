@@ -35,7 +35,7 @@ namespace Sonot {
 class TextItem : public JsonInterface
 {
 public:
-    /** Flags for font selection.
+    /** Flags for font,
         order MUST NOT change for json persistence! */
     enum FontFlag
     {
@@ -69,6 +69,9 @@ public:
     QRectF alignedBoundingBox(const QRectF& parent) const;
 
     QFont font() const;
+
+    bool operator == (const TextItem& o) const;
+    bool operator != (const TextItem& o) const { return !(*this == o); }
 
     // -- setter --
 

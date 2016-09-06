@@ -18,6 +18,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonValue>
+
 #include "PageAnnotation.h"
 
 namespace Sonot {
@@ -27,5 +31,38 @@ PageAnnotation::PageAnnotation()
 {
 
 }
+
+QJsonObject PageAnnotation::toJson() const
+{
+    QJsonArray a;
+    for (const TextItem& t : p_textItems)
+        a.append( t.toJson() );
+    QJsonObject o;
+    o.insert("text-items", a);
+    return o;
+}
+
+void PageAnnotation::fromJson(const QJsonObject& o)
+{
+    JsonHelper json("PageAnnotation");
+    QJsonArray a = json.expectArray(json.expectChildValue(o, "text-items"));
+
+    std::vector<TextItem> items;
+    for (int i=0; i<a.size(); ++i)
+    {
+        TextItem item;
+        item.fromJson(json.expectObject(a.at(i)));
+        items.push_back(item);
+    }
+
+    p_textItems.swap(items);
+}
+
+bool PageAnnotation::operator == (const PageAnnotation& o) const
+{
+    return p_textItems == o.p_textItems;
+}
+
+
 
 } // namespace Sonot

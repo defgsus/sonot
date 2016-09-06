@@ -18,6 +18,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include <QJsonObject>
+#include <QJsonValue>
+
 #include "ScoreDocument.h"
 #include "core/Score.h"
 #include "PageAnnotationTemplate.h"
@@ -46,6 +49,8 @@ struct ScoreDocument::Private
     PageAnnotationTemplate pageAnnotationTemplate;
     PageLayout pageLayout;
 
+    // -- config --
+
     QPointF pageSpacing;
 };
 
@@ -57,11 +62,51 @@ ScoreDocument::ScoreDocument()
     p_->score.setAuthor("Dorian Gray");
 }
 
+ScoreDocument::ScoreDocument(const ScoreDocument& o)
+    : p_        (new Private(this))
+{
+    *this = o;
+}
+
 ScoreDocument::~ScoreDocument()
 {
     delete p_;
 }
 
+ScoreDocument& ScoreDocument::operator = (const ScoreDocument& o)
+{
+    p_->score = o.p_->score;
+    p_->scoreLayout = o.p_->scoreLayout;
+    p_->pageAnnotationTemplate = o.p_->pageAnnotationTemplate;
+    p_->pageLayout = o.p_->pageLayout;
+
+    p_->pageSpacing = o.p_->pageSpacing;
+    return *this;
+}
+
+QJsonObject ScoreDocument::toJson() const
+{
+    JsonHelper json("ScoreDocument");
+    QJsonObject o;
+    o.insert("score", p_->score.toJson());
+    o.insert("score-layout", p_->scoreLayout.toJson());
+    o.insert("page-layout", p_->pageLayout.toJson());
+    o.insert("annotation", p_->pageAnnotationTemplate.toJson());
+    return o;
+}
+
+void ScoreDocument::fromJson(const QJsonObject& o)
+{
+    JsonHelper json("ScoreDocument");
+    ScoreDocument tmp;
+    tmp.p_->score.fromJson( json.expectChildObject(o, "score") );
+    tmp.p_->scoreLayout.fromJson( json.expectChildObject(o, "score-layout") );
+    tmp.p_->pageLayout.fromJson( json.expectChildObject(o, "page-layout") );
+    tmp.p_->pageAnnotationTemplate.fromJson(
+                json.expectChildObject(o, "annotation") );
+
+    *this = tmp;
+}
 
 
 const Score& ScoreDocument::score() const
