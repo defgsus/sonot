@@ -21,7 +21,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef SONOTSRC_SCORELAYOUT_H
 #define SONOTSRC_SCORELAYOUT_H
 
+#include <QtCore>
+
 #include "io/JsonInterface.h"
+#include "io/Properties.h"
 
 class QFont;
 
@@ -30,9 +33,9 @@ namespace Sonot {
 
 class ScoreLayout : public JsonInterface
 {
+    Q_DECLARE_TR_FUNCTIONS(ScoreLayout)
 public:
     ScoreLayout();
-    void init();
 
     // ---- io ----
 
@@ -41,13 +44,15 @@ public:
 
     // ---- getter ----
 
-    double noteSpacing() const { return p_noteSpacing_; }
-    double rowSpacing() const { return p_rowSpacing_; }
-    double lineSpacing() const { return p_lineSpacing_; }
-    double minBarWidth() const { return p_minBarWidth_; }
-    double maxBarWidth() const { return p_maxBarWidth_; }
+    const Properties& props() const { return p_props_; }
 
-    double noteSize() const { return p_noteSize_; }
+    double noteSpacing() const { return p_props_.get("note-spacing").toDouble(); }
+    double rowSpacing() const { return p_props_.get("row-spacing").toDouble(); }
+    double lineSpacing() const { return p_props_.get("line-spacing").toDouble(); }
+    double minBarWidth() const { return p_props_.get("min-bar-width").toDouble(); }
+    double maxBarWidth() const { return p_props_.get("max-bar-width").toDouble(); }
+
+    double noteSize() const { return p_props_.get("note-size").toDouble(); }
 
     bool operator == (const ScoreLayout& o) const;
     bool operator != (const ScoreLayout& o) const { return !(*this == o); }
@@ -60,23 +65,17 @@ public:
 
     // --- setter ---
 
-    void setNoteSpacing(double v) { p_noteSpacing_ = v; }
-    void setRowSpacing(double v) { p_rowSpacing_ = v; }
-    void setLineSpacing(double v) { p_lineSpacing_ = v; }
-    void setMinBarWidth(double v) { p_minBarWidth_ = v; }
-    void setMaxBarWidth(double v) { p_maxBarWidth_ = v; }
-    void setNoteSize(double v) { p_noteSize_ = v; }
+    Properties& props() { return p_props_; }
+
+    void setNoteSpacing(double v) { p_props_.set("note-spacing", v); }
+    void setRowSpacing(double v) {  p_props_.set("row-spacing", v); }
+    void setLineSpacing(double v) { p_props_.set("line-spacing", v); }
+    void setMinBarWidth(double v) { p_props_.set("min-bar-width", v); }
+    void setMaxBarWidth(double v) { p_props_.set("max-bar-width", v); }
+    void setNoteSize(double v) {    p_props_.set("note-size", v); }
 
 private:
-
-    double
-        p_noteSpacing_,
-        p_rowSpacing_,
-        p_lineSpacing_,
-        p_minBarWidth_,
-        p_maxBarWidth_,
-
-        p_noteSize_;
+    Properties p_props_;
 };
 
 } // namespace Sonot

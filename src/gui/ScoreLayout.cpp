@@ -28,44 +28,38 @@ namespace Sonot {
 
 
 ScoreLayout::ScoreLayout()
+    : p_props_      ("score-layout")
 {
-    init();
+    p_props_.set("note-spacing", tr("note spacing"),
+                 tr("The distance between adjacent notes"),
+                 3., .1);
+    p_props_.set("row-spacing", tr("row spacing"),
+                 tr("The vertical distance between rows"),
+                 7., .1);
+    p_props_.set("line-spacing", tr("line spacing"),
+                 tr("The vertical distance between lines of score"),
+                 12., 1.);
+    p_props_.set("min-bar-width", tr("bar width (minimum)"),
+                 tr("The minimum width of a bar"),
+                 24., 1.);
+    p_props_.set("max-bar-width", tr("bar width (maximum)"),
+                 tr("The maximum width of a bar"),
+                 48., 1.);
+    p_props_.set("note-size", tr("note size"),
+                 tr("The size of note items"),
+                 4., 1.);
 }
 
-void ScoreLayout::init()
-{
-    p_noteSpacing_ = 3.;
-    p_rowSpacing_ = 7.;
-    p_lineSpacing_ = 12.;
-
-    p_minBarWidth_ = 24.;
-    p_maxBarWidth_ = 24.*2.;
-
-    p_noteSize_ = 4.;
-}
 
 bool ScoreLayout::operator == (const ScoreLayout& o) const
 {
-    return p_noteSpacing_ == o.p_noteSpacing_
-        && p_rowSpacing_  == o.p_rowSpacing_
-        && p_lineSpacing_ == o.p_lineSpacing_
-        && p_minBarWidth_ == o.p_minBarWidth_
-        && p_maxBarWidth_ == o.p_maxBarWidth_
-        && p_noteSize_    == o.p_noteSize_
-        ;
+    return p_props_ == o.p_props_;
 }
 
 QJsonObject ScoreLayout::toJson() const
 {
     QJsonObject o;
-    o.insert("note-spacing", QJsonValue(p_noteSpacing_));
-    o.insert("row-spacing", QJsonValue(p_rowSpacing_));
-    o.insert("line-spacing", QJsonValue(p_lineSpacing_));
-
-    o.insert("min-bar-width", QJsonValue(p_minBarWidth_));
-    o.insert("max-bar-width", QJsonValue(p_maxBarWidth_));
-
-    o.insert("note-size", QJsonValue(p_noteSize_));
+    o.insert("props", p_props_.toJson());
     return o;
 }
 
@@ -73,14 +67,7 @@ void ScoreLayout::fromJson(const QJsonObject& o)
 {
     JsonHelper json("ScoreLayout");
     ScoreLayout l;
-    l.p_noteSpacing_ = json.expectChild<double>(o, "note-spacing");
-    l.p_rowSpacing_ = json.expectChild<double>(o, "row-spacing");
-    l.p_lineSpacing_ = json.expectChild<double>(o, "line-spacing");
-
-    l.p_minBarWidth_ = json.expectChild<double>(o, "min-bar-width");
-    l.p_maxBarWidth_ = json.expectChild<double>(o, "max-bar-width");
-
-    l.p_noteSize_ = json.expectChild<double>(o, "note-size");
+    l.p_props_.fromJson(json.expectChildObject(o, "props"));
 
     *this = l;
 }
@@ -88,7 +75,7 @@ void ScoreLayout::fromJson(const QJsonObject& o)
 QFont ScoreLayout::font() const
 {
     QFont f;
-    f.setPointSizeF(p_noteSize_);
+    f.setPointSizeF(noteSize());
     f.setBold(true);
     return f;
 }

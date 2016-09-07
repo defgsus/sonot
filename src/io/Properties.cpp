@@ -20,12 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <tuple>
 
-#include <QJsonObject>
-#include <QJsonArray>
-#include <QJsonValue>
-
 #include "Properties.h"
-#include "error.h"
 
 #if 0
 #   include <QDebug>
@@ -36,26 +31,81 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
-#if 0
-bool Properties::isAlignment(const QVariant & v) { return !strcmp(v.typeName(), "MO::Properties::Alignment"); }
-const Properties::NamedStates Properties::alignmentStates = Properties::NamedStates("Alignment",
+Properties::NamedValues Properties::namedValuesQtAlignment()
 {
-                { "left",           QVariant::fromValue(Alignment(A_LEFT)) },
-                { "right",          QVariant::fromValue(Alignment(A_RIGHT)) },
-                { "top",            QVariant::fromValue(Alignment(A_TOP)) },
-                { "bottom",         QVariant::fromValue(Alignment(A_BOTTOM)) },
-                { "top-left",       QVariant::fromValue(Alignment(A_TOP | A_LEFT)) },
-                { "top-right",      QVariant::fromValue(Alignment(A_TOP | A_RIGHT)) },
-                { "bottom-left",    QVariant::fromValue(Alignment(A_BOTTOM | A_LEFT)) },
-                { "bottom-right",   QVariant::fromValue(Alignment(A_BOTTOM | A_RIGHT)) },
-                { "vcenter-left",   QVariant::fromValue(Alignment(A_VCENTER | A_LEFT)) },
-                { "vcenter-right",  QVariant::fromValue(Alignment(A_VCENTER | A_RIGHT)) },
-                { "top-hcenter",    QVariant::fromValue(Alignment(A_TOP | A_HCENTER)) },
-                { "bottom-hcenter", QVariant::fromValue(Alignment(A_BOTTOM | A_HCENTER)) },
-                { "center",         QVariant::fromValue(Alignment(A_CENTER)) },
-});
-#endif
+    Properties::NamedValues nv;
+    nv.setIsFlags(true);
+    nv.set("absolute", tr("absolute"),
+           tr("No alignment"),
+           int(Qt::AlignAbsolute));
+    nv.set("v-center", tr("vertical center"),
+           tr("Align vertically in center"),
+           int(Qt::AlignVCenter));
+    nv.set("h-center", tr("horizontal center"),
+           tr("Align horizontally in center"),
+           int(Qt::AlignHCenter));
+    nv.set("left", tr("left"),
+           tr("Align on left side"),
+           int(Qt::AlignLeft));
+    nv.set("right", tr("right"),
+           tr("Align on right side"),
+           int(Qt::AlignRight));
+    nv.set("top", tr("top"),
+           tr("Align on top"),
+           int(Qt::AlignTop));
+    nv.set("bottom", tr("bottom"),
+           tr("Align on bottom"),
+           int(Qt::AlignBottom));
+    return nv;
+}
 
+Properties::NamedValues Properties::namedValuesQtTextFlag()
+{
+    /** @todo These are only the ones supported by QPainter::drawText() */
+    Properties::NamedValues nv;
+    nv.setIsFlags(true);
+    nv.set("dont-clip", tr("no clipping"),
+           tr("Text will not be clipped by surrounding box"),
+           int(Qt::TextDontClip));
+    nv.set("single-line", tr("single line"),
+           tr("Treats all whitespace as spaces and prints just one line"),
+           int(Qt::TextSingleLine));
+    nv.set("expand-tabs", tr("expand tabs"),
+           tr("Makes the tab character move to the next tab stop"),
+           int(Qt::TextExpandTabs));
+    nv.set("show-mnemonic", tr("show mnemonic"),
+           tr("Displays the string \"&P\" as underlined P, "
+              "for an ampersand, use \"&&\""),
+           int(Qt::TextShowMnemonic));
+    nv.set("word-wrap", tr("wrap words"),
+           tr("Breaks lines at appropriate points, e.g. at word boundaries"),
+           int(Qt::TextWordWrap));
+    nv.set("include-spaces", tr("include traling spaces"),
+           tr("When this option is set, trailing spaces will "
+              "be included to align the text"),
+           (Qt::TextIncludeTrailingSpaces));
+    return nv;
+}
+
+
+
+
+// --------------------- Properties::Property ------------------------------
+
+
+bool Properties::Property::operator == (const Property& o) const
+{
+    bool ret;
+    if (p_val_.canConvert(QMetaType::Double))
+    {
+        double v1 = p_val_.toDouble(),
+               v2 = o.p_val_.toDouble();
+        ret = (std::abs(v1 - v2) < 0.00000001);
+    }
+    else ret = p_val_ == o.p_val_;
+    //qDebug() << "COMPARE " << ret << p_val_ << o.p_val_;
+    return ret;
+}
 
 QList<Properties::NamedValues::Value>
     Properties::Property::namedValuesByIndex() const
@@ -73,8 +123,35 @@ QList<Properties::NamedValues::Value>
     return vals;
 }
 
+bool Properties::Property::testFlag(const QVariant &flag) const
+{
+    return (flag.toLongLong() & p_val_.toLongLong()) == flag.toLongLong();
+}
+
+QString Properties::Property::toString() const
+{
+    if (!hasNamedValues())
+        return value().toString();
+    if (!namedValues().isFlags())
+        return QString("[%1]").arg( namedValues().getByValue(value()).name );
+    QString s;
+    for (const NamedValues::Value& v : namedValues())
+    {
+        if (!testFlag(v.v))
+            continue;
+        if (!s.isEmpty())
+            s += ",";
+        s += v.name;
+    }
+    return "[" + s + "]";
+}
 
 // --------------------- Properties::NamedValues ------------------------------
+
+Properties::NamedValues::NamedValues()
+    : p_curIndex_   (0)
+    , p_isFlags_    (false)
+{ }
 
 bool Properties::NamedValues::hasValue(const QVariant &v) const
 {
@@ -179,342 +256,7 @@ void Properties::clear(const QString &id)
 }
 
 
-QJsonObject Properties::toJson() const
-{
-    QJsonObject main;
-    main.insert("id", p_id_);
 
-    QJsonArray array;
-    for (const Property& p : p_map_)
-    {
-        QJsonObject o;
-        o.insert("id", p.id());
-        if (p.hasNamedValues())
-        {
-            // write value-id of NamedValue
-            auto nv = p.namedValues().getByValue(p.value());
-            o.insert("nv", nv.id);
-        }
-        else
-        {
-            // write value from QVariant
-            o.insert("v", QJsonValue::fromVariant(p.value()));
-        }
-
-        array.append(o);
-    }
-    main.insert("props", array);
-
-    return main;
-}
-
-void Properties::fromJson(const QJsonObject& main)
-{
-    JsonHelper json("Properties");
-    Properties tmp(*this);
-
-    QJsonArray array = json.expectChildArray(main, "props");
-
-    for (int i=0; i<array.size(); ++i)
-    {
-        QJsonObject o = json.expectObject(array.at(i));
-
-        QString id = json.expectChild<QString>(o, "id");
-        Property p = tmp.getProperty(id);
-
-        if (p.hasNamedValues())
-        {
-            QString vid = json.expectChild<QString>(o, "nv");
-            if (!p.namedValues().has(vid))
-                SONOT_IO_ERROR("Unknown value-id '" << id << "' in json "
-                               "for property '" << id << "'");
-            tmp.set(id, p.namedValues().get(vid).v);
-        }
-        else
-        {
-            QVariant v = json.expectChildValue(o, "v").toVariant();
-            // convert to runtime-type
-            if (p.isValid())
-            {
-                auto vtype = p.value().type();
-                if (vtype != v.type() && v.convert(vtype))
-                {
-                    SONOT_IO_ERROR("Unexpected value type '" << v.typeName()
-                                   << "' in json for property '" << id << "', "
-                                   "expected '" << p.value().typeName() << "'");
-                }
-            }
-            tmp.set(id, v);
-        }
-
-    }
-
-    *this = tmp;
-}
-
-
-#if 0
-void Properties::serialize(IO::DataStream & io) const
-{
-    io.writeHeader("props", 1);
-
-    // Note: Reimplementation of QDataStream << QMap<QString,QVariant>
-    // because overloading operator << does not catch enums
-    io << quint64(p_map_.size());
-    for (auto i = p_map_.begin(); i != p_map_.end(); ++i)
-    {
-        io << i.key();
-
-        // store id of named values
-        if (i.value().hasNamedValues())
-        {
-            auto nv = i.value().namedValues().getByValue(
-                        i.value().value());
-            io << qint8(1) << nv.id;
-        }
-
-        // non-user types use the QVariant version
-        else
-        if (QMetaType::Type(i.value().value().type()) < QMetaType::User)
-            io << qint8(0) << i.value().value();
-
-        // handle special compound types
-#define SONOT__IO(type__, flag__) \
-        if (!strcmp(i.value().value().typeName(), #type__)) \
-        { \
-            io << qint8(flag__) \
-               << i.value().value().value<type__>(); \
-        }
-        else
-        SONOT__IO(QVector<float>, 24)
-        else
-        SONOT__IO(QVector<double>, 25)
-        else
-        SONOT__IO(QVector<int>, 26)
-        else
-        SONOT__IO(QVector<uint>, 27)
-        else
-        SONOT__IO(QVector<unsigned>, 28)
-
-        else
-        {
-            io << qint8(-1);
-            MO_IO_WARNING(WRITE, "Properties::serialize() unhandled QVariant '"
-                       << i.value().value().typeName() << "'");
-        }
-#undef SONOT__IO
-
-    }
-}
-
-void Properties::deserialize(IO::DataStream & io)
-{
-    //const auto ver =
-            io.readHeader("props", 1);
-
-    // reconstruct map
-    Map temp;
-    quint64 num;
-    io >> num;
-    for (quint64 i=0; i<num; ++i)
-    {
-        QString key;
-        qint8 type;
-        QVariant v;
-        io >> key >> type;
-        if (type == -1)
-        {
-            MO_IO_WARNING(READ, "Properties::deserialize() can't restore "
-                       "unhandled QVariant for '" << key << "'");
-            continue;
-        }
-
-#define SONOT__IO(type__, flag__) \
-        if (type == flag__) \
-        { \
-            type__ val__; \
-            io >> val__; \
-            v = QVariant::fromValue(val__); \
-        }
-
-        // default QVariant
-        if (type == 0)
-            io >> v;
-
-        // named values
-        else if (type == 1)
-        {
-            QString id;
-            io >> id;
-            if (!has(key))
-            {
-                MO_IO_WARNING(READ, "Properties::deserialize() '" << key
-                              << "' unknown named-value, ignored");
-                continue;
-            }
-            auto p = getProperty(key);
-            if (!p.hasNamedValues())
-            {
-                MO_IO_WARNING(READ, "Properties::deserialize() '" << key
-                              << "' is expected to be a named value but is not, ignored");
-                continue;
-            }
-            if (!p.namedValues().has(id))
-            {
-                MO_IO_WARNING(READ, "Properties::deserialize() '" << key
-                              << "' unknown named-value id '" << id << "', ignored");
-                continue;
-            }
-            v = p.namedValues().get(id).v;
-        }
-
-        // user types
-        else
-        SONOT__IO(QVector<float>, 24)
-        else
-        SONOT__IO(QVector<double>, 25)
-        else
-        SONOT__IO(QVector<int>, 26)
-        else
-        SONOT__IO(QVector<uint>, 27)
-        else
-        SONOT__IO(QVector<unsigned>, 28)
-
-        // unknown
-        else
-        {
-            MO_IO_WARNING(READ, "Properties::deserialize() ignoring unknown usertype " << type
-                       << " for item '" << key << "'");
-            continue;
-        }
-
-        Property prop;
-        prop.p_val_ = v;
-        temp.insert(key, prop);
-    }
-
-    // finally assign
-    for (auto i = temp.begin(); i != temp.end(); ++i)
-    {
-        set(i.key(), i.value().value());
-    }
-}
-
-void Properties::serialize(IO::XmlStream & io) const
-{
-    io.createSection("properties");
-
-        io.write("version", 1);
-
-        for (auto i = p_map_.begin(); i != p_map_.end(); ++i)
-        {
-            io.createSection("property");
-
-                io.write("id", i.key());
-
-                // named values are stored by id
-                if (i.value().hasNamedValues())
-                {
-                    auto nv = i.value().namedValues().getByValue(
-                                i.value().value());
-                    io.write("nv", nv.id);
-                }
-
-                // for everything else we count on XmlStream to handle the QVariant
-                else
-                //if (QMetaType::Type(i.value().value().type()) < QMetaType::User)
-                    io.write("v", i.value().value());
-#if 0
-                else
-                {
-                    MO_IO_WARNING(WRITE, "Properties::serialize() unhandled QVariant '"
-                               << i.value().value().typeName() << "'");
-                }
-#endif
-            io.endSection();
-        }
-
-    io.endSection();
-}
-
-/** @todo move to io/streamoperators_qt.h */
-std::ostream& operator << (std::ostream& s, const QVariant& v)
-{
-    QString val;
-    if (v.type() == QVariant::Size)
-    {
-        auto t = v.toSize();
-        val = QString("%1,%2").arg(t.width()).arg(t.height());
-    }
-    else
-        val = v.toString();
-
-    s << "QVariant(" << val << "/" << v.typeName() << ")";
-    return s;
-}
-
-
-void Properties::deserialize(IO::XmlStream& io)
-{
-    Properties tmp;
-
-    io.verifySection("properties");
-
-        const int ver = io.expectInt("version");
-        Q_UNUSED(ver);
-
-        while (io.nextSubSection())
-        {
-            if (io.section() == "property")
-            {
-                QString id = io.expectString("id");
-
-                // general variant value?
-                if (io.hasAttribute("v"))
-                {
-                    QVariant v = io.expectVariant("v");
-                    //MO_DEBUG("read " << id << ", " << v);
-                    tmp.set(id, v);
-                }
-
-                // named value
-                else if (io.hasAttribute("nv"))
-                {
-                    QString nv = io.expectString("nv");
-
-                    if (!has(id))
-                    {
-                        MO_IO_WARNING(READ, "Properties::deserialize() '" << id
-                                      << "' unknown named-value, ignored");
-                        io.leaveSection();
-                        continue;
-                    }
-                    auto p = getProperty(id);
-                    if (!p.hasNamedValues())
-                    {
-                        MO_IO_WARNING(READ, "Properties::deserialize() '" << id
-                                      << "' is expected to be a named value but is not, ignored");
-                        io.leaveSection();
-                        continue;
-                    }
-                    if (!p.namedValues().has(nv))
-                    {
-                        MO_IO_WARNING(READ, "Properties::deserialize() '" << id
-                                      << "' unknown named-value id '" << nv << "', ignored");
-                        io.leaveSection();
-                        continue;
-                    }
-                    tmp.set(id, p.namedValues().get(nv).v);
-                }
-            }
-
-            io.leaveSection();
-        }
-
-    // get all new values
-    unify(tmp);
-}
-#endif
 
 
 const Properties::Property& Properties::getProperty(const QString &id) const
@@ -552,7 +294,8 @@ QVariant Properties::get(const QString &id) const
 #define SONOT__GETTER(mem__, ret__) \
     auto i = mem__.find(id); \
     if (i == mem__.end()) \
-        SONOT_DEBUG_PROP("Properties::get[" #mem__ "](\"" << id << "\") unknown"); \
+        SONOT_DEBUG_PROP("Properties::get[" #mem__ "](\"" \
+                         << id << "\") unknown"); \
     if (i == mem__.end()) \
         return ret__;
 
@@ -700,6 +443,71 @@ void Properties::setNamedValues(const QString &id, const NamedValues &names)
     i.value().p_nv_ = names;
 }
 
+void Properties::clearFlags(const QString &id)
+{
+    SONOT_DEBUG_PROP("Properties::clearFlags(" << id << ")");
+
+    auto p = getProperty(id);
+    if (!p.isValid() || !p.hasNamedValues() || !p.namedValues().isFlags())
+    {
+        SONOT_DEBUG_PROP("Properties::clearFlags(" << id << ") for "
+                         "non-flag value");
+        return;
+    }
+    SONOT__GETPROP
+    i.value().p_val_ = QVariant(qlonglong(0));
+}
+
+void Properties::setFlags(
+        const QString &id, const std::vector<QString> &flagIds)
+{
+    QList<QString> ids;
+    for (const QString& id : flagIds)
+        ids << id;
+    setFlags(id, ids);
+}
+
+void Properties::setFlags(
+        const QString &id, const QList<QString> &flagIds)
+{
+    SONOT_DEBUG_PROP("Properties::setFlags(" << id << ", "
+                     << flagIds << ")");
+
+    auto p = getProperty(id);
+    if (!p.isValid() || !p.hasNamedValues() || !p.namedValues().isFlags())
+    {
+        SONOT_DEBUG_PROP("Properties::setFlags(" << id << ") for "
+                         "non-flag value");
+        return;
+    }
+    SONOT__GETPROP
+
+    qlonglong flags = i.value().value().toLongLong();
+    for (const QString& fid : flagIds)
+    {
+        QVariant v = p.namedValues().get(fid).v;
+        if (!v.isNull())
+        {
+            bool ok;
+            qlonglong flag = v.toLongLong(&ok);
+            //qDebug() << flag << fid;
+            if (ok)
+                flags |= flag;
+        }
+    }
+#if 0
+    QString k;
+    for (int i = 1; i < (1<<15); i <<= 1)
+    {
+        k += (flags & i) != 0 ? "x" : ".";
+    }
+    qDebug() << flags << k << Qt::Alignment((int)flags);
+#endif
+    i.value().p_val_ = QVariant(flags);
+}
+
+
+
 void Properties::setVisible(const QString &id, bool vis)
 {
     SONOT_DEBUG_PROP("Properties::setVisible '" << id << "' " << vis);
@@ -720,7 +528,8 @@ void Properties::setWidgetCallback(
 
 bool Properties::change(const QString &id, const QVariant & v)
 {
-    SONOT_DEBUG_PROP("property '" << id << "': " << v << " type "<< v.typeName() << " (" << v.type() << ")");
+    SONOT_DEBUG_PROP("property '" << id << "': " << v
+                     << " type "<< v.typeName() << " (" << v.type() << ")");
     auto i = p_map_.find(id);
     if (i == p_map_.end())
         return false;
@@ -758,21 +567,41 @@ bool Properties::isVisible(const QString &id) const
     return false;
 }
 
+bool Properties::testFlag(const QString &id, const QVariant &flag) const
+{
+    auto p = getProperty(id);
+    if (p.isValid())
+        return p.testFlag(flag);
+    else
+        return false;
+}
+
 QString Properties::toString(const QString &indent) const
 {
     QString r;
     for (auto i = begin(); i != end(); ++i)
     {
-        /** @todo print correct value for all types */
-        r += indent + i.key() + ": " + i.value().value().toString()
-                + "; // " + QString::number(i.value().value().type())
+        r += indent + i.key() + ": " + i.value().toString()
+                + "; /* " + QString::number(i.value().value().type())
                 + " " + i.value().value().typeName();
         if (i.value().hasNamedValues())
             r += " (" + QString::number(i.value().namedValues().p_val_.size())
                     + " NamedValues)";
         if (!i.value().isVisible())
             r += " (off)";
-        r += "\n";
+        r += " */\n";
+    }
+    return r;
+}
+
+QString Properties::toCompactString() const
+{
+    QString r;
+    for (auto i = begin(); i != end(); ++i)
+    {
+        if (!r.isEmpty())
+            r += ", ";
+        r += i.key() + ":" + i.value().toString();
     }
     return r;
 }

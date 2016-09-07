@@ -27,14 +27,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QString>
 
-#define SONOT_ERROR(arg__) \
-    { throw ::Sonot::Exception() << arg__; }
+#define SONOT_ERROR_IMPL_(arg__) \
+    { throw ::Sonot::Exception() << arg__ \
+            << "\n" << __FILE__ << ":" << __LINE__; }
 
-#define SONOT_IO_ERROR(arg__) \
-    { throw ::Sonot::Exception() << "IO: " << arg__; }
+#define SONOT_ERROR(arg__) SONOT_ERROR_IMPL_(arg__)
+
+#define SONOT_IO_ERROR(arg__) SONOT_ERROR_IMPL_("IO: " << arg__)
 
 #define SONOT_PROG_ERROR(arg__) \
-    { throw ::Sonot::Exception() << __FILE__ << ":" << __LINE__ << " " << arg__; }
+    SONOT_ERROR_IMPL_("PROGRAMMERS FAULT; " << arg__)
+
 
 #define SONOT_ASSERT(cond__, arg__) \
     { if (!(cond__)) SONOT_PROG_ERROR(arg__); }

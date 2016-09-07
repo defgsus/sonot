@@ -1,4 +1,4 @@
-/***************************************************************************
+/********************* ******************************************************
 
 Copyright (C) 2016  stefan.berke @ modular-audio-graphics.com
 
@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QJsonArray>
+#include <QVariant>
 #include <QString>
 #include <QColor>
 #include <QRectF>
@@ -32,8 +33,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "io/JsonInterface.h"
 #include "io/error.h"
 
-#define SONOTE_JSON_ERROR(arg__) \
-    SONOT_IO_ERROR("[JSON: " << p_classname_ << "] " << arg__)
+#define SONOT_JSON_ERROR(arg__) \
+    { const QString ctx__ = context(); \
+      if (ctx__.isEmpty()) \
+        SONOT_IO_ERROR("[JSON: " << p_classname_ << "] " << arg__) \
+      else \
+        SONOT_IO_ERROR("[JSON: " << p_classname_ << " | " \
+            << ctx__ << "] " << arg__); }
 
 namespace Sonot {
 
@@ -162,7 +168,7 @@ template <>
 double JsonHelper::expect(const QJsonValue& v)
 {
     if (!v.isDouble())
-        SONOTE_JSON_ERROR("Expected double value, got " << typeName(v));
+        SONOT_JSON_ERROR("Expected double value, got " << typeName(v));
     return v.toDouble();
 }
 
@@ -176,13 +182,13 @@ template <>
 int JsonHelper::expect(const QJsonValue& v)
 {
     if (!v.isDouble() && !v.isString())
-        SONOTE_JSON_ERROR("Expected int value, got " << typeName(v));
+        SONOT_JSON_ERROR("Expected int value, got " << typeName(v));
     if (v.isString())
     {
         bool ok;
         int k = v.toString().toInt(&ok);
         if (!ok)
-            SONOTE_JSON_ERROR("Expected int value, got non-int string '"
+            SONOT_JSON_ERROR("Expected int value, got non-int string '"
                         << v.toString() << "'");
         return k;
     }
@@ -199,7 +205,7 @@ template <>
 QString JsonHelper::expect(const QJsonValue& v)
 {
     if (!v.isString())
-        SONOTE_JSON_ERROR("Expected string value, got " << typeName(v));
+        SONOT_JSON_ERROR("Expected string value, got " << typeName(v));
     return v.toString();
 }
 
@@ -207,10 +213,10 @@ template <>
 QRectF JsonHelper::expect(const QJsonValue& v)
 {
     if (!v.isArray())
-        SONOTE_JSON_ERROR("Expected json array (of rect), got " << typeName(v));
+        SONOT_JSON_ERROR("Expected json array (of rect), got " << typeName(v));
     auto ja = v.toArray();
     if (ja.size() < 4)
-        SONOTE_JSON_ERROR("Expected json array of length 4, got length " << ja.size());
+        SONOT_JSON_ERROR("Expected json array of length 4, got length " << ja.size());
     std::vector<double> a;
     fromArray(a, ja);
     return QRectF(a[0], a[1], a[2], a[3]);
@@ -220,10 +226,10 @@ template <>
 QSizeF JsonHelper::expect(const QJsonValue& v)
 {
     if (!v.isArray())
-        SONOTE_JSON_ERROR("Expected json array (of size), got " << typeName(v));
+        SONOT_JSON_ERROR("Expected json array (of size), got " << typeName(v));
     auto ja = v.toArray();
     if (ja.size() < 2)
-        SONOTE_JSON_ERROR("Expected json array of length 2, got length " << ja.size());
+        SONOT_JSON_ERROR("Expected json array of length 2, got length " << ja.size());
     std::vector<double> a;
     fromArray(a, ja);
     return QSizeF(a[0], a[1]);
@@ -234,15 +240,59 @@ template <>
 QColor JsonHelper::expect(const QJsonValue& v)
 {
     if (!v.isString())
-        SONOTE_JSON_ERROR("Expected color string, got " << typeName(v));
+        SONOT_JSON_ERROR("Expected color string, got " << typeName(v));
     QString s = expect<QString>(v);
     bool ok;
     unsigned int c = s.mid(1).toUInt(&ok, 16);
     if (!ok)
-        SONOTE_JSON_ERROR("Error parsing color string '" << s << "'");
+        SONOT_JSON_ERROR("Error parsing color string '" << s << "'");
     return QColor::fromRgba(c);
 }
 
+QVariant JsonHelper::expectQVariant(
+        const QJsonValue& v, QVariant::Type expected)
+{
+    QVariant ret;
+
+    if (!v.isObject())
+    {
+        ret = v.toVariant();
+        if (!ret.isValid())
+            SONOT_JSON_ERROR("Expected QVariant compatible json value, "
+                             "got '" << typeName(v) << "'");
+    }
+    else
+    {
+        QJsonObject o = v.toObject();
+        const QString typeName = expectChild<QString>(o, "t");
+        QVariant::Type type =
+                QVariant::nameToType(typeName.toStdString().c_str());
+        if (type == QVariant::Invalid)
+            SONOT_JSON_ERROR("Illegal QVariant type '" << typeName << "' in "
+                             "json object");
+        switch (type)
+        {
+            case QVariant::Color: ret = expectChild<QColor>(o, "v"); break;
+            case QVariant::RectF: ret = expectChild<QRectF>(o, "v"); break;
+            default:
+                SONOT_JSON_ERROR("Unsupported QVariant type '" << typeName
+                                 << "' in json object");
+        }
+    }
+
+    // explicit type conversion
+    if (expected != QVariant::Invalid)
+    {
+        if (expected != ret.type() && !ret.convert(expected))
+        {
+            SONOT_IO_ERROR("Can't convert value type '" << ret.typeName()
+                           << "' in json to '"
+                           << QVariant::typeToName(expected) << "'");
+        }
+    }
+
+    return ret;
+}
 
 
 template <typename T>
@@ -250,7 +300,7 @@ T JsonHelper::expectChild(
         const QJsonObject& parent, const QString& key)
 {
     if (!parent.contains(key))
-        SONOTE_JSON_ERROR("Expected '" << key << "' value ("
+        SONOT_JSON_ERROR("Expected '" << key << "' value ("
                           << typeid(T).name() << "), not found");
     return expect<T>( parent.value(key) );
 }
@@ -259,14 +309,14 @@ T JsonHelper::expectChild(
 QJsonArray JsonHelper::expectArray(const QJsonValue& v)
 {
     if (!v.isArray())
-        SONOTE_JSON_ERROR("Expected json array, got " << typeName(v));
+        SONOT_JSON_ERROR("Expected json array, got " << typeName(v));
     return v.toArray();
 }
 
 QJsonObject JsonHelper::expectObject(const QJsonValue& v)
 {
     if (!v.isObject())
-        SONOTE_JSON_ERROR("Expected json object, got " << typeName(v));
+        SONOT_JSON_ERROR("Expected json object, got " << typeName(v));
     return v.toObject();
 }
 
@@ -274,7 +324,7 @@ QJsonValue JsonHelper::expectChildValue(
         const QJsonObject& parent, const QString& key)
 {
     if (!parent.contains(key))
-        SONOTE_JSON_ERROR("Expected '" << key << "' value, not found");
+        SONOT_JSON_ERROR("Expected '" << key << "' value, not found");
     return parent.value(key);
 }
 
@@ -282,7 +332,7 @@ QJsonArray JsonHelper::expectChildArray(
         const QJsonObject& parent, const QString& key)
 {
     if (!parent.contains(key))
-        SONOTE_JSON_ERROR("Expected '" << key << "' array, not found");
+        SONOT_JSON_ERROR("Expected '" << key << "' array, not found");
     return expectArray(parent.value(key));
 }
 
@@ -290,8 +340,17 @@ QJsonObject JsonHelper::expectChildObject(
         const QJsonObject& parent, const QString& key)
 {
     if (!parent.contains(key))
-        SONOTE_JSON_ERROR("Expected '" << key << "' object, not found");
+        SONOT_JSON_ERROR("Expected '" << key << "' object, not found");
     return expectObject(parent.value(key));
+}
+
+QVariant JsonHelper::expectChildQVariant(
+        const QJsonObject& parent, const QString& key,
+        QVariant::Type expectedType)
+{
+    if (!parent.contains(key))
+        SONOT_JSON_ERROR("Expected '" << key << "' qvariant, not found");
+    return expectQVariant(parent.value(key), expectedType);
 }
 
 
@@ -324,6 +383,34 @@ template <typename T>
 QJsonValue JsonHelper::wrap(const T& r)
 {
     return JsonValueTraits<T>::to(r);
+}
+
+QJsonValue JsonHelper::wrap(const QVariant& v)
+{
+    // store with QVariant conversion
+    {
+        QJsonValue o = QJsonValue::fromVariant(v);
+        if (!o.isNull())
+            return o;
+    }
+
+    // handle compound types supported by QVariant
+    QJsonObject o;
+    o.insert("t", QString(v.typeName()));
+    switch (v.type())
+    {
+        case QVariant::Color:
+            o.insert("v", wrap(v.value<QColor>()));
+        break;
+        case QVariant::RectF:
+            o.insert("v", wrap(v.value<QRectF>()));
+        break;
+        default:
+            SONOT_IO_ERROR("Can't save QVariant::" << v.typeName()
+                           << "to json, not implemented!");
+    }
+
+    return o;
 }
 
 

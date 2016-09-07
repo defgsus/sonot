@@ -28,46 +28,58 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace Sonot {
 
 TextItem::TextItem()
-    : p_boxAlign_       (Qt::AlignAbsolute)
-    , p_textAlign_      (Qt::AlignCenter)
-    , p_textFlags_      (Qt::TextDontClip)
-    , p_fontFlags_      (F_NONE)
-    , p_pointSize_      (8.)
-    , p_color_          (Qt::black)
-    , p_boundingBox_    (0,0,10,10)
+    : p_props_      ("text-item")
 {
+    p_props_.set("text", tr("text"),
+                 tr("The text to print"),
+                 QString(""));
+    p_props_.set("align-box", tr("box alignment"),
+                 tr("Alignment of the containing box"),
+                 Properties::namedValuesQtAlignment(),
+                 int(Qt::AlignAbsolute));
+    p_props_.set("align-text", tr("text alignment"),
+                 tr("Alignment of the text within containing box"),
+                 Properties::namedValuesQtAlignment(),
+                 int(Qt::AlignCenter));
+    p_props_.set("text-flags", tr("text options"),
+                 tr("Options regarding the flow of text"),
+                 Properties::namedValuesQtTextFlag(),
+                 int(Qt::TextDontClip));
+    p_props_.set("font-flags", tr("font options"),
+                 tr("Options on the used font"),
+                 fontFlagNamedValues(),
+                 int(0));
+    p_props_.set("font-size", tr("font size"),
+                 tr("The size of the font in mm"),
+                 8.);
+    p_props_.set("color", tr("color"),
+                 tr("The color of the text"),
+                 QColor(Qt::black));
+    p_props_.set("box", tr("bounding box"),
+                 tr("The box surrounding and aligning the text"),
+                 QRectF(0,0,10,10));
+}
 
+Properties::NamedValues TextItem::fontFlagNamedValues()
+{
+    Properties::NamedValues f;
+    f.setIsFlags(true);
+    f.set("italic", tr("italic"), int(F_ITALIC));
+    f.set("bold", tr("bold"), int(F_BOLD));
+    f.set("underline", tr("underline"), int(F_UNDERLINE));
+    return f;
 }
 
 bool TextItem::operator == (const TextItem& o) const
 {
-    return p_boxAlign_ == o.p_boxAlign_
-        && p_textAlign_ == o.p_textAlign_
-        && p_textFlags_ == o.p_textFlags_
-        && p_fontFlags_ == o.p_fontFlags_
-        && p_pointSize_ == o.p_pointSize_
-        && p_color_ == o.p_color_
-        && p_boundingBox_ == o.p_boundingBox_
-        && p_text_ == o.p_text_;
+    return p_props_ == o.p_props_;
 }
 
 
 QJsonObject TextItem::toJson() const
 {
-    JsonHelper json("TextItem");
-
     QJsonObject o;
-    o.insert("ver", 1);
-    o.insert("text", QJsonValue(p_text_));
-    o.insert("box", json.wrap(p_boundingBox_));
-    o.insert("point-size", p_pointSize_);
-    /** @todo supposing Qt::AlignmentFlag values never change */
-    o.insert("box-align", QJsonValue((int)p_boxAlign_));
-    o.insert("text-align", QJsonValue((int)p_textAlign_));
-    /** @todo supposing Qt::TextFlag values never change */
-    o.insert("text-flags", QJsonValue((int)p_textFlags_));
-    o.insert("font-flags", QJsonValue((int)p_fontFlags_));
-    o.insert("color", json.wrap(p_color_));
+    o.insert("props", p_props_.toJson());
 
     return o;
 }
@@ -75,16 +87,9 @@ QJsonObject TextItem::toJson() const
 void TextItem::fromJson(const QJsonObject& o)
 {
     JsonHelper json("TextItem");
-    TextItem t;
 
-    t.p_text_ = json.expectChild<QString>(o, "text");
-    t.p_boundingBox_ = json.expectChild<QRectF>(o, "box");
-    t.p_pointSize_ = json.expectChild<double>(o, "point-size");
-    t.p_boxAlign_ = (Qt::Alignment)json.expectChild<int>(o, "box-align");
-    t.p_textAlign_ = (Qt::Alignment)json.expectChild<int>(o, "text-align");
-    t.p_textFlags_ = (Qt::TextFlag)json.expectChild<int>(o, "text-flags");
-    t.p_fontFlags_ = (FontFlag)json.expectChild<int>(o, "font-flags");
-    t.p_color_ = json.expectChild<QColor>(o, "color");
+    TextItem t;
+    t.p_props_.fromJson( json.expectChildObject(o, "props") );
 
     *this = t;
 }
@@ -94,28 +99,30 @@ QRectF TextItem::alignedBoundingBox(const QRectF& p) const
 {
     auto r = boundingBox();
 
-    if (p_boxAlign_.testFlag(Qt::AlignVCenter))
+    auto boxAlign = boxAlignment();
+
+    if (boxAlign.testFlag(Qt::AlignVCenter))
     {
         r.moveTop(p.top() + (p.height() - r.height()) / 2.);
     }
-    else if (p_boxAlign_.testFlag(Qt::AlignTop))
+    else if (boxAlign.testFlag(Qt::AlignTop))
     {
         r.moveTop(p.top() + r.top());
     }
-    else if (p_boxAlign_.testFlag(Qt::AlignBottom))
+    else if (boxAlign.testFlag(Qt::AlignBottom))
     {
         r.moveBottom(p.bottom());
     }
 
-    if (p_boxAlign_.testFlag(Qt::AlignHCenter))
+    if (boxAlign.testFlag(Qt::AlignHCenter))
     {
         r.moveLeft(p.left() + (p.width() - r.width()) / 2.);
     }
-    else if (p_boxAlign_.testFlag(Qt::AlignLeft))
+    else if (boxAlign.testFlag(Qt::AlignLeft))
     {
         r.moveLeft(p.left() + r.left());
     }
-    else if (p_boxAlign_.testFlag(Qt::AlignRight))
+    else if (boxAlign.testFlag(Qt::AlignRight))
     {
         r.moveRight(p.right());
     }
@@ -128,11 +135,12 @@ QFont TextItem::font() const
     QFont f;
 
     //f.setFamily("Verdana");
-    f.setPointSizeF(p_pointSize_);
+    f.setPointSizeF(fontSize());
 
-    f.setItalic(p_fontFlags_ & F_ITALIC);
-    f.setBold(p_fontFlags_ & F_BOLD);
-    f.setUnderline(p_fontFlags_ & F_UNDERLINE);
+    auto flags = fontFlags();
+    f.setItalic(flags & F_ITALIC);
+    f.setBold(flags & F_BOLD);
+    f.setUnderline(flags & F_UNDERLINE);
 
     return f;
 }

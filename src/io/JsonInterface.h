@@ -23,12 +23,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <vector>
 #include <QString>
+#include <QStringList>
+#include <QVariant>
 
 class QJsonObject;
 class QJsonArray;
 class QJsonValue;
-class QRectF;
-class QColor;
 
 namespace Sonot {
 
@@ -97,8 +97,15 @@ public:
     /** The name given in constructor */
     const QString& className() const { return p_classname_; }
 
+    /** Description of current context */
+    QString context() const
+        { return p_context_.isEmpty() ? QString() : p_context_.last(); }
+
     /** Returns the name of the json type */
     static const char* typeName(const QJsonValue&);
+
+    void beginContext(const QString& c) { p_context_.append(c); }
+    void endContext() { p_context_.pop_back(); }
 
     // -- convert to json --
 
@@ -106,6 +113,13 @@ public:
         Unwrap the value with expect() or expectChild() */
     template <typename T>
     static QJsonValue wrap(const T&);
+
+    /** Wraps a QVariant into a json value.
+        For extended (compound) types,
+        an appropriate json object will be returned.
+        @see expectQVariant() for converting back.
+        @todo Not many types supported yet. */
+    static QJsonValue wrap(const QVariant& v);
 
     /** Converts the vector of type T to a json array.
         Unwrap with fromArray() */
@@ -125,9 +139,12 @@ public:
     template <typename T>
     T expectChild(const QJsonObject& parent, const QString& key);
 
-    /** Returns the child value.
-        @throws Sonot::Exception if child not found. */
-    QJsonValue expectChildValue(const QJsonObject& parent, const QString& key);
+    /** Converts @p v to a QVariant.
+        Supports compound types stored with wrap(QVariant).
+        If @p type is not QVariant::Invalid, an explicit conversion
+        to the QVariant type is attempted. */
+    QVariant expectQVariant(const QJsonValue& v,
+                            QVariant::Type expectedType = QVariant::Invalid);
 
     /** Converts the QJsonValue to a QJsonArray.
         @throws Sonot::Exception if not an array. */
@@ -137,6 +154,10 @@ public:
         @throws Sonot::Exception if not an object. */
     QJsonObject expectObject(const QJsonValue&);
 
+    /** Returns the child value.
+        @throws Sonot::Exception if child not found. */
+    QJsonValue expectChildValue(const QJsonObject& parent, const QString& key);
+
     /** Returns the child of type object.
         @throws Sonot::Exception if child not found or not convertible. */
     QJsonObject expectChildObject(const QJsonObject& parent, const QString& key);
@@ -144,6 +165,12 @@ public:
     /** Returns the child of type array.
         @throws Sonot::Exception if child not found or not convertible. */
     QJsonArray expectChildArray(const QJsonObject& parent, const QString& key);
+
+    /** Returns the QVariant stored in child.
+        @throws Sonot::Exception if child not found or not convertible. */
+    QVariant expectChildQVariant(
+            const QJsonObject& parent, const QString& key,
+            QVariant::Type expectedType = QVariant::Invalid);
 
     /** Converts the json array to a vector of type T.
         Previous contents of @p dst are erased.
@@ -160,6 +187,7 @@ public:
 
 private:
     QString p_classname_;
+    QStringList p_context_;
 };
 
 

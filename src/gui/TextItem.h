@@ -21,11 +21,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef SONOTSRC_TEXTITEM_H
 #define SONOTSRC_TEXTITEM_H
 
+#include <QtCore>
 #include <QString>
 #include <QRectF>
 #include <QColor>
 
 #include "io/JsonInterface.h"
+#include "io/Properties.h"
 
 class QFont;
 
@@ -34,9 +36,9 @@ namespace Sonot {
 /** @brief Class for storing/displaying a text on the score sheet */
 class TextItem : public JsonInterface
 {
+    Q_DECLARE_TR_FUNCTIONS(TextItem)
 public:
-    /** Flags for font,
-        order MUST NOT change for json persistence! */
+    /** Flags for font */
     enum FontFlag
     {
         F_NONE = 0,
@@ -44,6 +46,7 @@ public:
         F_BOLD = 2,
         F_UNDERLINE = 4
     };
+    static Properties::NamedValues fontFlagNamedValues();
 
     TextItem();
 
@@ -54,16 +57,22 @@ public:
 
     // -- getter --
 
-    QString text() const { return p_text_; }
-    Qt::Alignment boxAlignment() const { return p_boxAlign_; }
-    Qt::Alignment textAlignment() const { return p_textAlign_; }
-    Qt::TextFlag textFlags() const { return p_textFlags_; }
-    FontFlag fontFlags() const { return p_fontFlags_; }
-    double fontSize() const { return p_pointSize_; }
-    const QColor& color() const { return p_color_; }
+    QString text() const { return p_props_.get("text").toString(); }
+    Qt::Alignment boxAlignment() const
+        { return (Qt::Alignment)p_props_.get("align-box").toInt(); }
+    Qt::Alignment textAlignment() const
+        { return (Qt::Alignment)p_props_.get("align-text").toInt(); }
+    Qt::TextFlag textFlags() const
+        { return (Qt::TextFlag)p_props_.get("text-flags").toInt(); }
+    FontFlag fontFlags() const
+        { return (FontFlag)p_props_.get("font-flags").toInt(); }
+    double fontSize() const { return p_props_.get("font-size").toDouble(); }
+    QColor color() const
+        { return p_props_.get("color").value<QColor>(); }
 
     /** The bounding rectangle */
-    const QRectF& boundingBox() const { return p_boundingBox_; }
+    QRectF boundingBox() const
+        { return p_props_.get("box").value<QRectF>(); }
 
     /** Returns the boundingRect() aligned to enclosing @p parent rectangle. */
     QRectF alignedBoundingBox(const QRectF& parent) const;
@@ -73,13 +82,16 @@ public:
     bool operator == (const TextItem& o) const;
     bool operator != (const TextItem& o) const { return !(*this == o); }
 
+    const Properties& props() const { return p_props_; }
+
     // -- setter --
 
-    void setBoundingBox(const QRectF& rect) { p_boundingBox_ = rect; }
-    void setBoxAlignment(Qt::Alignment a) { p_boxAlign_ = a; }
+    void setBoundingBox(const QRectF& rect) { p_props_.set("box", rect); }
+    void setBoxAlignment(Qt::Alignment a) { p_props_.set("align-box", int(a)); }
 
-    void setText(const QString& t) { p_text_ = t; }
-    void setTextAlignment(Qt::Alignment a) { p_textAlign_ = a; }
+    void setText(const QString& t) { p_props_.set("text", t); }
+    void setTextAlignment(Qt::Alignment a)
+        { p_props_.set("align-text", int(a)); }
     /** Accepts or-combinations of
             Qt::TextDontClip
             Qt::TextSingleLine
@@ -87,21 +99,15 @@ public:
             Qt::TextShowMnemonic
             Qt::TextWordWrap
             Qt::TextIncludeTrailingSpaces */
-    void setTextFlags(int a) { p_textFlags_ = Qt::TextFlag(a); }
+    void setTextFlags(int a) { p_props_.set("text-flags", int(a)); }
     /** Accepts or-combinations of FontFlag */
-    void setFontFlags(int a) { p_fontFlags_ = FontFlag(a); }
-    void setFontSize(double pointSize) { p_pointSize_ = pointSize; }
-    void setColor(const QColor& c) { p_color_ = c; }
+    void setFontFlags(int a) { p_props_.set("font-flags", int(a)); }
+    void setFontSize(double pointSize) { p_props_.set("font-size", pointSize); }
+    void setColor(const QColor& c) { p_props_.set("color", c); }
 
 private:
 
-    Qt::Alignment p_boxAlign_, p_textAlign_;
-    Qt::TextFlag p_textFlags_;
-    FontFlag p_fontFlags_;
-    double p_pointSize_;
-    QColor p_color_;
-    QRectF p_boundingBox_;
-    QString p_text_;
+    Properties p_props_;
 };
 
 } // namespace Sonot

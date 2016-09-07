@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <functional>
 
+#include <QtCore>
 #include <QVariant>
 #include <QMap>
 #include <QRectF>
@@ -42,6 +43,7 @@ namespace Sonot {
 */
 class Properties : public JsonInterface
 {
+    Q_DECLARE_TR_FUNCTIONS(Properties)
 public:
 
     // --------------- types --------------------
@@ -68,6 +70,8 @@ public:
             size_t index;
         };
 
+        NamedValues();
+
         bool has(const QString &id) const { return p_val_.contains(id); }
         bool hasValue(const QVariant &v) const;
         /** Returns the Value for id, or an invalid Value */
@@ -75,10 +79,19 @@ public:
         /** Returns the Value matching v, or an invalid Value */
         const Value& getByValue(const QVariant& v) const;
 
+        /** When true, values can be OR-ed together */
+        bool isFlags() const { return p_isFlags_; }
+
         void set(const QString& id, const QString& name,
                  const QVariant& v);
         void set(const QString& id, const QString& name,
                  const QString& statusTip, const QVariant& v);
+
+        /** Enable the use of the values as flags.
+            When true, values should be OR-able.
+            @note values will be treated as qlonglong for
+            flag testing and json i/o. */
+        void setIsFlags(bool e) { p_isFlags_ = e; }
 
         /** Access to values, sorted by id */
         QMap<QString, Value>::const_iterator begin() const
@@ -91,7 +104,14 @@ public:
         friend Properties;
         QMap<QString, Value> p_val_;
         size_t p_curIndex_;
+        bool p_isFlags_;
     };
+
+    /** Returns NamedValues for Qt::AlignmentFlag */
+    static NamedValues namedValuesQtAlignment();
+
+    /** Returns NamedValues for Qt::TextFlag */
+    static NamedValues namedValuesQtTextFlag();
 
 
     struct Property
@@ -99,9 +119,9 @@ public:
         Property() : p_subType_(-1), p_idx_(0), p_vis_(true) { }
 
         /** Only compares value! */
-        bool operator != (const Property& o) const { return p_val_ != o.p_val_; }
+        bool operator != (const Property& o) const { return !(*this == o); }
         /** Only compares value! */
-        bool operator == (const Property& o) const { return !((*this) != o); }
+        bool operator == (const Property& o) const;
 
         bool isValid() const { return !p_val_.isNull(); }
 
@@ -122,6 +142,14 @@ public:
         const NamedValues& namedValues() const { return p_nv_; }
         /** Associated NamedValues class, if any, sorted by creation index */
         QList<NamedValues::Value> namedValuesByIndex() const;
+
+        /** Tests if @p flag is contained in the current value.
+            The current value is interpreted as qlonglong OR-combination.
+            @see NamedValues::setIsFlags() */
+        bool testFlag(const QVariant& flag) const;
+
+        /** Returns the value of this Property as string */
+        QString toString() const;
 
         // ---- gui stuff ----
 
@@ -204,17 +232,31 @@ public:
     bool has(const QString& id) const { return p_map_.contains(id); }
 
     /** Returns the default value for the property, or an invalid QVariant */
-    bool hasDefault(const QString& id) const { return getProperty(id).defaultValue().isValid(); }
-    bool hasMin(const QString& id) const { return getProperty(id).minimum().isValid(); }
-    bool hasMax(const QString& id) const { return getProperty(id).maximum().isValid(); }
-    bool hasStep(const QString& id) const { return getProperty(id).step().isValid(); }
-    bool hasName(const QString& id) const { return !getProperty(id).name().isNull(); }
-    bool hasTip(const QString& id) const { return !getProperty(id).tip().isNull(); }
-    bool hasSubType(const QString& id) const { return getProperty(id).subType() != -1; }
+    bool hasDefault(const QString& id) const
+        { return getProperty(id).defaultValue().isValid(); }
+    bool hasMin(const QString& id) const
+        { return getProperty(id).minimum().isValid(); }
+    bool hasMax(const QString& id) const
+        { return getProperty(id).maximum().isValid(); }
+    bool hasStep(const QString& id) const
+        { return getProperty(id).step().isValid(); }
+    bool hasName(const QString& id) const
+        { return !getProperty(id).name().isNull(); }
+    bool hasTip(const QString& id) const
+        { return !getProperty(id).tip().isNull(); }
+    bool hasSubType(const QString& id) const
+        { return getProperty(id).subType() != -1; }
     bool isVisible(const QString& id) const;
+
+    /** Tests if @p flag is contained in the current value of @p id.
+        The current value is interpreted as qlonglong OR-combination.
+        @see Property::testFlag(), NamedValues::setIsFlags() */
+    bool testFlag(const QString& id, const QVariant& flag) const;
 
     /** Returns a css-style list of all properties */
     QString toString(const QString& indent = "") const;
+    /** Returns a single line of all Property string representations */
+    QString toCompactString() const;
 
     // -------------- iterator ------------------
 
@@ -260,6 +302,15 @@ public:
     template <class T>
     void set(const QString& id, const QString& name, const QString& statusTip,
              const NamedValues& names, const T& v);
+
+    /** Clears the flags of Property @p id
+        if Property::namedValues().isFlags() is true */
+    void clearFlags(const QString& id);
+
+    /** ORs the value of Property @p id with the NamedValues identified
+        by @p flagIds, if Property::namedValues().isFlags() is true */
+    void setFlags(const QString& id, const QList<QString>& flagIds);
+    void setFlags(const QString& id, const std::vector<QString>& flagIds);
 
     /** @} */
 
