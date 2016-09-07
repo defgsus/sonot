@@ -99,7 +99,7 @@ ScoreView::ScoreView(QWidget *parent)
     : QWidget       (parent)
     , p_            (new Private(this))
 {
-    grabKeyboard();
+    //grabKeyboard();
 
     p_->matrix.scale(2., 2.);
 
@@ -111,7 +111,8 @@ ScoreView::~ScoreView()
     delete p_;
 }
 
-
+const ScoreDocument& ScoreView::scoreDocument() const { return p_->document; }
+ScoreDocument& ScoreView::scoreDocument() { return p_->document; }
 
 
 void ScoreView::goToPage(int pageIndex, double margin)

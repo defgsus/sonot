@@ -88,6 +88,8 @@ public:
 
     void setScore(const Score&);
 
+    void setPageAnnotation(int pageIdx, const PageAnnotation& p);
+
     void setPageSpacing(const QPointF& f) { props().set("page-spacing", f); }
     void setProperties(const Properties& p);
 

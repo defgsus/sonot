@@ -86,6 +86,8 @@ public:
 
     // -- setter --
 
+    void setProperties(const Properties& p) { p_props_ = p; }
+
     void setBoundingBox(const QRectF& rect) { p_props_.set("box", rect); }
     void setBoxAlignment(Qt::Alignment a) { p_props_.set("align-box", int(a)); }
 

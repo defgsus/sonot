@@ -38,7 +38,7 @@ struct ScoreDocument::Private
         pageAnnotationTemplate.init("default");
 
         props.set("page-spacing", tr("page spacing"),
-                  tr("Spacing between displayde pages"),
+                  tr("Spacing between displayed pages"),
                   QPointF(2, 10));
     }
 
@@ -186,6 +186,14 @@ int ScoreDocument::pageIndexForDocumentPosition(const QPointF& p0) const
 }
 
 
+void ScoreDocument::setPageAnnotation(int pageIndex, const PageAnnotation &p)
+{
+    const QString pageId = pageIndex == 0 ? "title"
+                                          : (pageIndex & 1) == 1 ? "left"
+                                                                 : "right";
+
+    p_->pageAnnotationTemplate.setPage(pageId, p);
+}
 
 
 void ScoreDocument::setScore(const Score& s)

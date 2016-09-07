@@ -7,7 +7,9 @@ HEADERS += \
     src/gui/PageAnnotationTemplate.h \
     src/gui/PageSize.h \
     src/gui/ScoreLayout.h \
-    src/gui/ScoreDocument.h
+    src/gui/ScoreDocument.h \
+    $$PWD/PropertiesView.h \
+    $$PWD/PropertyWidget.h
 
 SOURCES += \
     src/gui/MainWindow.cpp \
@@ -18,4 +20,6 @@ SOURCES += \
     src/gui/PageAnnotationTemplate.cpp \
     src/gui/PageSize.cpp \
     src/gui/ScoreLayout.cpp \
-    src/gui/ScoreDocument.cpp
+    src/gui/ScoreDocument.cpp \
+    $$PWD/PropertiesView.cpp \
+    $$PWD/PropertyWidget.cpp

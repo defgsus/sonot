@@ -38,10 +38,10 @@ Properties::NamedValues Properties::namedValuesQtAlignment()
     nv.set("absolute", tr("absolute"),
            tr("No alignment"),
            int(Qt::AlignAbsolute));
-    nv.set("v-center", tr("vertical center"),
+    nv.set("v-center", tr("center vertically"),
            tr("Align vertically in center"),
            int(Qt::AlignVCenter));
-    nv.set("h-center", tr("horizontal center"),
+    nv.set("h-center", tr("center horizontally"),
            tr("Align horizontally in center"),
            int(Qt::AlignHCenter));
     nv.set("left", tr("left"),

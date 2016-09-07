@@ -18,8 +18,17 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include <QLayout>
+#include <QStatusBar>
+
 #include "MainWindow.h"
 #include "ScoreView.h"
+#include "ScoreDocument.h"
+#include "ScoreLayout.h"
+#include "PageLayout.h"
+#include "PageAnnotationTemplate.h"
+#include "TextItem.h"
+#include "PropertiesView.h"
 
 namespace Sonot {
 
@@ -34,6 +43,7 @@ struct MainWindow::Private
     MainWindow* p;
 
     ScoreView* scoreView;
+    PropertiesView* propsView;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -42,7 +52,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     setObjectName("MainWindow");
     setMinimumSize(320, 320);
-    setGeometry(0,0,500,600);
+    setGeometry(0,0,720,600);
     p_->createWidgets();
 
 }
@@ -54,9 +64,32 @@ MainWindow::~MainWindow()
 
 void MainWindow::Private::createWidgets()
 {
-    scoreView = new ScoreView(p);
-    scoreView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    p->setCentralWidget(scoreView);
+    p->setStatusBar(new QStatusBar(p));
+
+    p->setCentralWidget(new QWidget());
+    auto lh = new QHBoxLayout(p->centralWidget());
+
+        scoreView = new ScoreView(p);
+        scoreView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        lh->addWidget(scoreView);
+
+        propsView = new PropertiesView(p);
+        lh->addWidget(propsView);
+
+        propsView->setProperties(
+            //scoreView->scoreDocument().scoreLayout(0).props()
+            //scoreView->scoreDocument().pageLayout(0).marginsEven()
+            //scoreView->scoreDocument().pageAnnotation(0).
+            scoreView->scoreDocument().pageAnnotation(0).textItems()[0].props()
+            //TextItem().props()
+            );
+        connect(propsView, &PropertiesView::propertyChanged, [=]()
+        {
+            PageAnnotation anno = scoreView->scoreDocument().pageAnnotation(0);
+            anno.textItems()[0].setProperties(propsView->properties());
+            scoreView->scoreDocument().setPageAnnotation(0, anno);
+            scoreView->update();
+        });
 }
 
 void MainWindow::showEvent(QShowEvent*)

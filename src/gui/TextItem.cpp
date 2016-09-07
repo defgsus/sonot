@@ -33,6 +33,15 @@ TextItem::TextItem()
     p_props_.set("text", tr("text"),
                  tr("The text to print"),
                  QString(""));
+    p_props_.set("font-size", tr("font size"),
+                 tr("The size of the font in mm"),
+                 8.);
+    p_props_.set("color", tr("color"),
+                 tr("The color of the text"),
+                 QColor(Qt::black));
+    p_props_.set("box", tr("bounding box"),
+                 tr("The box surrounding and aligning the text"),
+                 QRectF(0,0,10,10));
     p_props_.set("align-box", tr("box alignment"),
                  tr("Alignment of the containing box"),
                  Properties::namedValuesQtAlignment(),
@@ -49,15 +58,6 @@ TextItem::TextItem()
                  tr("Options on the used font"),
                  fontFlagNamedValues(),
                  int(0));
-    p_props_.set("font-size", tr("font size"),
-                 tr("The size of the font in mm"),
-                 8.);
-    p_props_.set("color", tr("color"),
-                 tr("The color of the text"),
-                 QColor(Qt::black));
-    p_props_.set("box", tr("bounding box"),
-                 tr("The box surrounding and aligning the text"),
-                 QRectF(0,0,10,10));
 }
 
 Properties::NamedValues TextItem::fontFlagNamedValues()
