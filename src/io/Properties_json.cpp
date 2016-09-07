@@ -31,75 +31,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace Sonot {
 
 
-namespace {
-
-#if 0
-QJsonValue to_json(const QVariant& v)
-{
-    // store with QVariant conversion
-    {
-        QJsonValue o = QJsonValue::fromVariant(v);
-        if (!o.isNull())
-            return o;
-    }
-
-    // handle compound types supported by QVariant
-    JsonHelper json("Properties");
-    QJsonObject o;
-    o.insert("t", QString(v.typeName()));
-    /** @todo QVariant<->json support should move to JsonHelper */
-    switch (v.type())
-    {
-        case QVariant::Color:
-            o.insert("v", json.wrap(v.value<QColor>()));
-        break;
-        case QVariant::RectF:
-            o.insert("v", json.wrap(v.value<QRectF>()));
-        break;
-        default:
-            SONOT_IO_ERROR("Can't save QVariant::" << v.typeName()
-                           << "to json, not implemented!");
-    }
-
-    return o;
-}
-
-QVariant from_json(const QJsonValue& o, QVariant::Type expected,
-                   const QString& id, JsonHelper& json)
-{
-    // compound type ?
-    if (o.isObject())
-    {
-        QJsonValue v = json.expectChildValue(o, "v");
-
-    }
-
-    QVariant v = o.toVariant();
-
-    // convert to runtime-type
-    if (expected != QVariant::Invalid)
-    {
-        if (expected != v.type() && !v.convert(expected))
-        {
-            SONOT_IO_ERROR("Unexpected value type '" << v.typeName()
-                           << "' in json for property '" << id << "', "
-                           "expected '"
-                           << QVariant::typeToName(expected) << "'");
-        }
-    }
-
-    return v;
-}
-#endif
-
-} // namespace
-
-
 
 
 QJsonObject Properties::toJson() const
 {
-    JsonHelper json("Properties");
+    JsonHelper json("Properties:" + p_id_);
 
     QJsonObject main;
     main.insert("id", p_id_);
@@ -154,7 +90,7 @@ QJsonObject Properties::toJson() const
 
 void Properties::fromJson(const QJsonObject& main)
 {
-    JsonHelper json("Properties");
+    JsonHelper json("Properties:" + p_id_);
     Properties tmp(*this);
 
     QJsonArray array = json.expectChildArray(main, "values");

@@ -40,6 +40,7 @@ private slots:
 
     void testResize();
     void testKeepDataOnResize();
+    void testJsonProperties();
     void testJsonBar();
     void testJsonStream();
     void testJsonScore();
@@ -75,6 +76,12 @@ namespace QTest {
         return toString(idx.toString());
     }
 
+    template <>
+    char* toString(const Properties& p)
+    {
+        return toString(p.toCompactString());
+    }
+
 } // namespace QTest
 
 void SonotCoreTest::testResize()
@@ -106,6 +113,30 @@ void SonotCoreTest::testKeepDataOnResize()
 
     QCOMPARE(bar1, bar2);
 }
+
+void SonotCoreTest::testJsonProperties()
+{
+    Properties p("type-test");
+    p.set("double", tr("name"), tr("tool-tip"),
+                20., 1.);
+    p.set("int",    23);
+    p.set("float",  42.f);
+    p.set("uint",   666u);
+    p.set("long",   7777LL);
+    p.set("string", QString("holladihoh"));
+    p.set("rect",   QRectF(23, 42, 666, 7777));
+    p.set("size",   QSizeF(23, 42));
+    p.set("point",  QPointF(42, 23));
+    p.set("color",  QColor(10,20,30));
+
+    Properties p2("copy");
+    p2.fromJson(p.toJson());
+
+    qDebug() << p2.toCompactString();
+
+    QCOMPARE(p, p2);
+}
+
 
 void SonotCoreTest::testJsonBar()
 {
@@ -142,7 +173,7 @@ void SonotCoreTest::testJsonScore()
 
     score2.fromJsonString(score1.toJsonString());
     QCOMPARE(score1, score2);
-    qDebug() << score2.toJsonString();
+    //qDebug() << score2.toJsonString();
 }
 
 Score SonotCoreTest::createScoreForIndexTest()

@@ -54,9 +54,22 @@ Score::Score()
 
 }
 
+Score::Score(const Score &o)
+    : Score()
+{
+    *this = o;
+}
+
 Score::~Score()
 {
     delete p_;
+}
+
+Score& Score::operator = (const Score& o)
+{
+    p_->streams = o.p_->streams;
+    p_->props = o.p_->props;
+    return *this;
 }
 
 bool Score::operator == (const Score& rhs) const

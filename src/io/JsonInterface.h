@@ -112,19 +112,19 @@ public:
     /** Wraps the type into a json value.
         Unwrap the value with expect() or expectChild() */
     template <typename T>
-    static QJsonValue wrap(const T&);
+    QJsonValue wrap(const T&);
 
     /** Wraps a QVariant into a json value.
         For extended (compound) types,
         an appropriate json object will be returned.
         @see expectQVariant() for converting back.
         @todo Not many types supported yet. */
-    static QJsonValue wrap(const QVariant& v);
+    QJsonValue wrap(const QVariant& v);
 
     /** Converts the vector of type T to a json array.
         Unwrap with fromArray() */
     template <typename T>
-    static QJsonArray toArray(const std::vector<T>&);
+    QJsonArray toArray(const std::vector<T>&);
 
 
     // -- throwing getters --
@@ -186,6 +186,9 @@ public:
     void fromArray(std::vector<T>& dst, const QJsonValue& src);
 
 private:
+    template <typename T>
+    void p_expectArray_(const QJsonValue& src, std::vector<T>& dst,
+                        size_t size, const QString& forType);
     QString p_classname_;
     QStringList p_context_;
 };

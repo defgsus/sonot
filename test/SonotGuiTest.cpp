@@ -68,6 +68,7 @@ public:
     ScoreLayout createRandomScoreLayout();
     PageLayout createRandomPageLayout();
     TextItem createRandomTextItem();
+    ScoreDocument createRandomScoreDocument();
 
 private slots:
 
@@ -75,6 +76,7 @@ private slots:
     void testJsonScoreLayout();
     void testJsonPageLayout();
     void testJsonTextItem();
+    void testJsonScoreDocument();
 };
 
 // helper
@@ -153,6 +155,14 @@ TextItem SonotGuiTest::createRandomTextItem()
     return t;
 }
 
+ScoreDocument SonotGuiTest::createRandomScoreDocument()
+{
+    ScoreDocument s;
+    s.setPageSpacing(QPointF(rnd(1,10), rnd(1,10)));
+
+    return s;
+}
+
 
 void SonotGuiTest::testJsonProperties()
 {
@@ -188,6 +198,7 @@ void SonotGuiTest::testJsonScoreLayout()
 void SonotGuiTest::testJsonPageLayout()
 {
     PageLayout l2, l = createRandomPageLayout();
+    //qDebug() << "-----------" << l.toJsonString();
     l2.fromJsonString(l.toJsonString());
     PRINT(l2.toJsonString().toStdString());
     QCOMPARE(l, l2);
@@ -200,6 +211,16 @@ void SonotGuiTest::testJsonTextItem()
     t2.fromJsonString(t.toJsonString());
 
     QCOMPARE(t, t2);
+}
+
+void SonotGuiTest::testJsonScoreDocument()
+{
+    ScoreDocument s2, s = createRandomScoreDocument();
+    //PRINT(s.toJsonString().toStdString());
+    s2.fromJsonString(s.toJsonString());
+    //s2 = s;
+
+    QCOMPARE(s, s2);
 }
 
 QTEST_APPLESS_MAIN(SonotGuiTest)

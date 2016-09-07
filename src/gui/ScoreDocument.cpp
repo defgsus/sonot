@@ -32,10 +32,14 @@ namespace Sonot {
 struct ScoreDocument::Private
 {
     Private(ScoreDocument* p)
-        : p                     (p)
-        , pageSpacing           (2., 10.)
+        : p             (p)
+        , props         ("score-document")
     {
         pageAnnotationTemplate.init("default");
+
+        props.set("page-spacing", tr("page spacing"),
+                  tr("Spacing between displayde pages"),
+                  QPointF(2, 10));
     }
 
     ~Private()
@@ -51,7 +55,7 @@ struct ScoreDocument::Private
 
     // -- config --
 
-    QPointF pageSpacing;
+    Properties props;
 };
 
 ScoreDocument::ScoreDocument()
@@ -73,16 +77,30 @@ ScoreDocument::~ScoreDocument()
     delete p_;
 }
 
+const Properties& ScoreDocument::props() const { return p_->props; }
+Properties& ScoreDocument::props() { return p_->props; }
+void ScoreDocument::setProperties(const Properties &p) { p_->props = p; }
+
 ScoreDocument& ScoreDocument::operator = (const ScoreDocument& o)
 {
     p_->score = o.p_->score;
     p_->scoreLayout = o.p_->scoreLayout;
     p_->pageAnnotationTemplate = o.p_->pageAnnotationTemplate;
     p_->pageLayout = o.p_->pageLayout;
-
-    p_->pageSpacing = o.p_->pageSpacing;
+    p_->props = o.p_->props;
     return *this;
 }
+
+bool ScoreDocument::operator == (const ScoreDocument& o) const
+{
+    return p_->score == o.p_->score
+        && p_->scoreLayout == o.p_->scoreLayout
+        && p_->pageAnnotationTemplate == o.p_->pageAnnotationTemplate
+        && p_->pageLayout == o.p_->pageLayout
+        && p_->props == o.p_->props
+            ;
+}
+
 
 QJsonObject ScoreDocument::toJson() const
 {
@@ -92,6 +110,7 @@ QJsonObject ScoreDocument::toJson() const
     o.insert("score-layout", p_->scoreLayout.toJson());
     o.insert("page-layout", p_->pageLayout.toJson());
     o.insert("annotation", p_->pageAnnotationTemplate.toJson());
+    o.insert("props", p_->props.toJson());
     return o;
 }
 
@@ -104,6 +123,8 @@ void ScoreDocument::fromJson(const QJsonObject& o)
     tmp.p_->pageLayout.fromJson( json.expectChildObject(o, "page-layout") );
     tmp.p_->pageAnnotationTemplate.fromJson(
                 json.expectChildObject(o, "annotation") );
+    tmp.p_->props = p_->props;
+    tmp.p_->props.fromJson( json.expectChildObject(o, "props") );
 
     *this = tmp;
 }
@@ -142,10 +163,11 @@ int ScoreDocument::pageNumberForIndex(int pageIndex) const
 QPointF ScoreDocument::pagePosition(int pageIndex) const
 {
     auto r = pageRect();
+    auto spacing = pageSpacing();
     ++pageIndex;
     return QPointF(
-                (pageIndex % 2) * (r.width() + p_->pageSpacing.x()),
-                (pageIndex / 2) * (r.height() + p_->pageSpacing.y()));
+                (pageIndex % 2) * (r.width() + spacing.x()),
+                (pageIndex / 2) * (r.height() + spacing.y()));
 }
 
 int ScoreDocument::pageIndexForDocumentPosition(const QPointF& p0) const
@@ -153,10 +175,10 @@ int ScoreDocument::pageIndexForDocumentPosition(const QPointF& p0) const
     if (p0.x() < 0.)
         return -1;
     auto r = pageRect();
-    QPointF p(p0);
+    QPointF p(p0), spacing = pageSpacing();
     p -= r.topLeft();
-    p.rx() /= (r.width() + p_->pageSpacing.x());
-    p.ry() /= (r.height() + p_->pageSpacing.y());
+    p.rx() /= (r.width() + spacing.x());
+    p.ry() /= (r.height() + spacing.y());
     if (p.rx() >= 2. || p.ry() < 0.)
         return -1;
 

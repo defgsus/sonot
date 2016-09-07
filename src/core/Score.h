@@ -96,6 +96,9 @@ public:
     Score();
     ~Score();
 
+    Score(const Score& o);
+    Score& operator = (const Score& o);
+
     // --- io ---
 
     QJsonObject toJson() const override;

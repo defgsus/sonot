@@ -21,7 +21,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef SONOTSRC_SCOREDOCUMENT_H
 #define SONOTSRC_SCOREDOCUMENT_H
 
+#include <QtCore>
+
 #include "io/JsonInterface.h"
+#include "io/Properties.h"
 
 class QPointF;
 class QRectF;
@@ -38,12 +41,17 @@ class PageAnnotationTemplate;
 /** Wrapper around Score and layout classes */
 class ScoreDocument : public JsonInterface
 {
+    Q_DECLARE_TR_FUNCTIONS(ScoreDocument);
+
 public:
     ScoreDocument();
     ScoreDocument(const ScoreDocument& o);
     ~ScoreDocument();
 
     ScoreDocument& operator = (const ScoreDocument& o);
+
+    bool operator == (const ScoreDocument& rhs) const;
+    bool operator != (const ScoreDocument& rhs) const { return !(*this == rhs); }
 
     // --- io ---
 
@@ -59,8 +67,15 @@ public:
     const ScoreLayout& scoreLayout(int pageIdx) const;
     PageAnnotation pageAnnotation(int pageIdx) const;
 
+    const Properties& props() const;
+
+    // ---- helper ----
+
     /** Top-left position of given page */
     QPointF pagePosition(int pageIndex) const;
+
+    /** Spacing between displayed pages */
+    QPointF pageSpacing() const { return props().get("page-spacing").toPointF(); }
 
     /** Returns the page index for a given point in document-space.
         Returns -1 if p is not on a page. */
@@ -73,7 +88,11 @@ public:
 
     void setScore(const Score&);
 
+    void setPageSpacing(const QPointF& f) { props().set("page-spacing", f); }
+    void setProperties(const Properties& p);
+
 private:
+    Properties& props();
     struct Private;
     Private* p_;
 };

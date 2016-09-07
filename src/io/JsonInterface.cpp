@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QString>
 #include <QColor>
 #include <QRectF>
+#include <QPointF>
 
 #include "io/JsonInterface.h"
 #include "io/error.h"
@@ -97,53 +98,40 @@ namespace
 {
     /** Converter for arguments acceptable by QJsonValue constructor */
     template <typename T>
-    struct JsonValueTraits
-    {
-        static QJsonValue to(T v) { return QJsonValue(v); }
-        //static T from(const QJsonValue& v) { }
-    };
+    QJsonValue to_json(T v) { return QJsonValue(v); }
 
-    template <>
-    struct JsonValueTraits<size_t>
-    {
-        static QJsonValue to(size_t v) { return QJsonValue((qint64)v); }
-        //static size_t from(const QJsonValue& v) { return v.toInt(); }
-    };
+    QJsonValue to_json(size_t v) { return QJsonValue((qint64)v); }
 
-    template <>
-    struct JsonValueTraits<QRectF>
+    QJsonValue to_json(const QRectF& r)
     {
-        static QJsonValue to(const QRectF& r)
-        {
-            QJsonArray a;
-            a.append(r.left());
-            a.append(r.top());
-            a.append(r.width());
-            a.append(r.height());
-            return a;
-        }
-    };
+        QJsonArray a;
+        a.append(r.left());
+        a.append(r.top());
+        a.append(r.width());
+        a.append(r.height());
+        return a;
+    }
 
-    template <>
-    struct JsonValueTraits<QSizeF>
+    QJsonValue to_json(const QSizeF& r)
     {
-        static QJsonValue to(const QSizeF& r)
-        {
-            QJsonArray a;
-            a.append(r.width());
-            a.append(r.height());
-            return a;
-        }
-    };
+        QJsonArray a;
+        a.append(r.width());
+        a.append(r.height());
+        return a;
+    }
 
-    template <>
-    struct JsonValueTraits<QColor>
+    QJsonValue to_json(const QPointF& r)
     {
-        static QJsonValue to(const QColor& c)
-        {
-            return QJsonValue(QString("#%1").arg(c.rgba(), 8, 16, QChar('0')));
-        }
-    };
+        QJsonArray a;
+        a.append(r.x());
+        a.append(r.y());
+        return a;
+    }
+
+    QJsonValue to_json(const QColor& c)
+    {
+        return QJsonValue(QString("#%1").arg(c.rgba(), 8, 16, QChar('0')));
+    }
 }
 
 
@@ -209,30 +197,45 @@ QString JsonHelper::expect(const QJsonValue& v)
     return v.toString();
 }
 
+template <typename T>
+void JsonHelper::p_expectArray_(
+        const QJsonValue &src, std::vector<T> &dst,
+        size_t size, const QString &forType)
+{
+    if (!src.isArray())
+        SONOT_JSON_ERROR("Expected json array (" << forType << "), got "
+                         << typeName(src));
+    auto ja = src.toArray();
+    if (ja.size() != size)
+        SONOT_JSON_ERROR("Expected json array of length 4, got length "
+                         << ja.size());
+    fromArray(dst, ja);
+}
+
+
+
 template <>
 QRectF JsonHelper::expect(const QJsonValue& v)
 {
-    if (!v.isArray())
-        SONOT_JSON_ERROR("Expected json array (of rect), got " << typeName(v));
-    auto ja = v.toArray();
-    if (ja.size() < 4)
-        SONOT_JSON_ERROR("Expected json array of length 4, got length " << ja.size());
     std::vector<double> a;
-    fromArray(a, ja);
+    p_expectArray_(v, a, 4, "QRectF");
     return QRectF(a[0], a[1], a[2], a[3]);
 }
 
 template <>
 QSizeF JsonHelper::expect(const QJsonValue& v)
 {
-    if (!v.isArray())
-        SONOT_JSON_ERROR("Expected json array (of size), got " << typeName(v));
-    auto ja = v.toArray();
-    if (ja.size() < 2)
-        SONOT_JSON_ERROR("Expected json array of length 2, got length " << ja.size());
     std::vector<double> a;
-    fromArray(a, ja);
+    p_expectArray_(v, a, 2, "QSizeF");
     return QSizeF(a[0], a[1]);
+}
+
+template <>
+QPointF JsonHelper::expect(const QJsonValue& v)
+{
+    std::vector<double> a;
+    p_expectArray_(v, a, 2, "QPointF");
+    return QPointF(a[0], a[1]);
 }
 
 
@@ -275,6 +278,7 @@ QVariant JsonHelper::expectQVariant(
             case QVariant::Color: ret = expectChild<QColor>(o, "v"); break;
             case QVariant::RectF: ret = expectChild<QRectF>(o, "v"); break;
             case QVariant::SizeF: ret = expectChild<QSizeF>(o, "v"); break;
+            case QVariant::PointF: ret = expectChild<QPointF>(o, "v"); break;
             default:
                 SONOT_JSON_ERROR("Unsupported QVariant type '" << typeName
                                  << "' in json object");
@@ -361,8 +365,8 @@ template <typename T>
 QJsonArray JsonHelper::toArray(const std::vector<T>& data)
 {
     QJsonArray a;
-    for (T v : data)
-        a.append(JsonValueTraits<T>::to(v));
+    for (const T& v : data)
+        a.append(to_json(v));
     return a;
 }
 
@@ -383,7 +387,7 @@ void JsonHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
 template <typename T>
 QJsonValue JsonHelper::wrap(const T& r)
 {
-    return JsonValueTraits<T>::to(r);
+    return to_json(r);
 }
 
 QJsonValue JsonHelper::wrap(const QVariant& v)
@@ -401,17 +405,21 @@ QJsonValue JsonHelper::wrap(const QVariant& v)
     switch (v.type())
     {
         case QVariant::Color:
-            o.insert("v", wrap(v.value<QColor>()));
+            o.insert("v", to_json(v.value<QColor>()));
         break;
         case QVariant::RectF:
-            o.insert("v", wrap(v.value<QRectF>()));
+            o.insert("v", to_json(v.value<QRectF>()));
         break;
         case QVariant::SizeF:
-            o.insert("v", wrap(v.value<QSizeF>()));
+            o.insert("v", to_json(v.value<QSizeF>()));
+        break;
+        case QVariant::PointF:
+            o.insert("v", to_json(v.value<QPointF>()));
         break;
         default:
-            SONOT_IO_ERROR("Can't save QVariant::" << v.typeName()
-                           << " to json, not implemented!");
+            SONOT_JSON_ERROR("Can't save QVariant::" << v.typeName()
+                             << "(" << v.type() << ") to json, "
+                             "type not implemented!");
     }
 
     return o;
@@ -425,9 +433,21 @@ template QJsonValue JsonHelper::wrap<T__>(const T__&);
 
 SONOT__INSTANTIATE(QRectF);
 SONOT__INSTANTIATE(QSizeF);
+SONOT__INSTANTIATE(QPointF);
 SONOT__INSTANTIATE(QColor);
 
 #undef SONOT__INSTANTIATE
+
+#define SONOT__INSTANTIATE(T__) \
+template void JsonHelper::p_expectArray_<T__>( \
+            const QJsonValue& src, std::vector<T__>& dst, \
+            size_t size, const QString& forType);
+
+SONOT__INSTANTIATE(double);
+
+#undef SONOT__INSTANTIATE
+
+
 #define SONOT__INSTANTIATE(T__) \
 template T__ JsonHelper::expectChild<T__>(const QJsonObject& parent, const QString& key); \
 template QJsonArray JsonHelper::toArray<T__>( const std::vector<T__>&); \
@@ -441,6 +461,7 @@ SONOT__INSTANTIATE(size_t)
 SONOT__INSTANTIATE(QString)
 SONOT__INSTANTIATE(QRectF)
 SONOT__INSTANTIATE(QSizeF)
+SONOT__INSTANTIATE(QPointF)
 SONOT__INSTANTIATE(QColor)
 
 
