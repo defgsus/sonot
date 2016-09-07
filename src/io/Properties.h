@@ -271,6 +271,9 @@ public:
     /** Removes a single item */
     void clear(const QString& id);
 
+    /** Sets the Properties::id() */
+    void setId(const QString& properties_id) { p_id_ = properties_id; }
+
     /** Sets the given property (and default value) */
     void set(const QString& id, const QVariant& v);
 

@@ -40,15 +40,18 @@ private slots:
 
     void testResize();
     void testKeepDataOnResize();
-    void testBarJsonIO();
-    void testStreamJsonIO();
-    void testScoreJsonIO();
+    void testJsonBar();
+    void testJsonStream();
+    void testJsonScore();
     void testScoreIndexNextNote();
     void testScoreIndexPrevNote();
 };
 
 Bar SonotCoreTest::createRandomBar(size_t length, size_t numRows)
 {
+    QStringList anno;
+    anno << "bladiblub" << "annotation" << "anno 1900"
+         << "andante" << "piano forte";
     Bar b(length, numRows);
     for (size_t x = 0; x < length; ++x)
     for (size_t y = 0; y < numRows; ++y)
@@ -56,8 +59,8 @@ Bar SonotCoreTest::createRandomBar(size_t length, size_t numRows)
         if (rand()%10 <= 7)
         {
             Note note = Note(rand()%128);
-            if (rand()%10 <= 3)
-                note.setAnnotation("bladiblub");
+            if (rand()%10 < 2)
+                note.setAnnotation(anno[rand()%anno.size()]);
             b.setNote(x, y, note);
         }
     }
@@ -104,7 +107,7 @@ void SonotCoreTest::testKeepDataOnResize()
     QCOMPARE(bar1, bar2);
 }
 
-void SonotCoreTest::testBarJsonIO()
+void SonotCoreTest::testJsonBar()
 {
     Bar bar2, bar1 = createRandomBar(8,4);
 
@@ -112,7 +115,7 @@ void SonotCoreTest::testBarJsonIO()
     QCOMPARE(bar1, bar2);
 }
 
-void SonotCoreTest::testStreamJsonIO()
+void SonotCoreTest::testJsonStream()
 {
     NoteStream stream1, stream2;
     for (int i=0; i<5; ++i)
@@ -122,7 +125,7 @@ void SonotCoreTest::testStreamJsonIO()
     QCOMPARE(stream1, stream2);
 }
 
-void SonotCoreTest::testScoreJsonIO()
+void SonotCoreTest::testJsonScore()
 {
     Score score1, score2;
     for (int i=0; i<5; ++i)
@@ -135,10 +138,11 @@ void SonotCoreTest::testScoreJsonIO()
     score1.setTitle("Amazing Haze");
     score1.setAuthor("Convenieous Bar");
     score1.setCopyright("(c) 1964");
-    score1.setProperty("version", 23);
+    score1.props().set("version", 23);
 
     score2.fromJsonString(score1.toJsonString());
     QCOMPARE(score1, score2);
+    qDebug() << score2.toJsonString();
 }
 
 Score SonotCoreTest::createScoreForIndexTest()

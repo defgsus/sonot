@@ -33,13 +33,19 @@ namespace Sonot {
 struct Score::Private
 {
     Private(Score* p)
-        : p     (p)
-    { }
+        : p         (p)
+        , props     ("score")
+    {
+        props.set("title", tr("title"), tr("Title of the score"), QString());
+        props.set("author", tr("author"), tr("Authot of the music"), QString());
+        props.set("copyright", tr("copyright"),
+                tr("Copyright information"), QString());
+    }
 
     Score* p;
 
     QList<NoteStream> streams;
-    QMap<QString, QVariant> properties;
+    Properties props;
 };
 
 Score::Score()
@@ -56,8 +62,11 @@ Score::~Score()
 bool Score::operator == (const Score& rhs) const
 {
     return p_->streams == rhs.p_->streams
-        && p_->properties == rhs.p_->properties;
+        && p_->props == rhs.p_->props;
 }
+
+const Properties& Score::props() const { return p_->props;}
+Properties& Score::props() { return p_->props;}
 
 QJsonObject Score::toJson() const
 {
@@ -65,15 +74,11 @@ QJsonObject Score::toJson() const
     for (const NoteStream& s : p_->streams)
         jstreams.append(QJsonValue(s.toJson()));
 
-    QJsonObject jprops;
-    for (auto i = p_->properties.begin(); i!=p_->properties.end(); ++i)
-        jprops.insert(i.key(), QJsonValue::fromVariant(i.value()));
-
     QJsonObject o;
     if (!jstreams.isEmpty())
         o.insert("streams", jstreams);
-    if (!jprops.isEmpty())
-        o.insert("properties", jprops);
+
+    o.insert("props", p_->props.toJson());
 
     return o;
 }
@@ -81,7 +86,7 @@ QJsonObject Score::toJson() const
 void Score::fromJson(const QJsonObject& o)
 {
     QList<NoteStream> streams;
-    QMap<QString, QVariant> props;
+    Properties props(p_->props);
 
     JsonHelper json("Score");
 
@@ -96,29 +101,15 @@ void Score::fromJson(const QJsonObject& o)
         }
     }
 
-    if (o.contains("properties"))
+    if (o.contains("props"))
     {
-        auto jprops = json.expectObject(json.expectChildValue(o, "properties"));
-        QStringList keys = jprops.keys();
-        for (const QString& key : keys)
-        {
-            props.insert(key, jprops.value(key).toVariant());
-        }
+        props.fromJson(json.expectChildObject(o, "props"));
     }
 
     p_->streams.swap(streams);
-    p_->properties.swap(props);
+    p_->props.swap(props);
 }
 
-const QMap<QString, QVariant>& Score::properties() const { return p_->properties; }
-
-QVariant Score::property(const QString &key) const
-{
-    auto i = p_->properties.find(key);
-    if (i == p_->properties.end())
-        return QVariant();
-    return i.value();
-}
 
 size_t Score::numNoteStreams() const
 {
@@ -137,11 +128,6 @@ const QList<NoteStream>& Score::noteStreams() const
 }
 
 
-void Score::setProperty(const QString &key, const QVariant &prop)
-{
-    p_->properties.insert(key, prop);
-}
-
 void Score::clear()
 {
     clearProperties();
@@ -150,7 +136,7 @@ void Score::clear()
 
 void Score::clearProperties()
 {
-    p_->properties.clear();
+    p_->props.clear();
 }
 
 void Score::clearScore()

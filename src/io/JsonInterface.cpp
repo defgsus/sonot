@@ -274,6 +274,7 @@ QVariant JsonHelper::expectQVariant(
         {
             case QVariant::Color: ret = expectChild<QColor>(o, "v"); break;
             case QVariant::RectF: ret = expectChild<QRectF>(o, "v"); break;
+            case QVariant::SizeF: ret = expectChild<QSizeF>(o, "v"); break;
             default:
                 SONOT_JSON_ERROR("Unsupported QVariant type '" << typeName
                                  << "' in json object");
@@ -405,9 +406,12 @@ QJsonValue JsonHelper::wrap(const QVariant& v)
         case QVariant::RectF:
             o.insert("v", wrap(v.value<QRectF>()));
         break;
+        case QVariant::SizeF:
+            o.insert("v", wrap(v.value<QSizeF>()));
+        break;
         default:
             SONOT_IO_ERROR("Can't save QVariant::" << v.typeName()
-                           << "to json, not implemented!");
+                           << " to json, not implemented!");
     }
 
     return o;

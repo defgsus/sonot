@@ -25,65 +25,110 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
-const QStringList PageSize::formatIds =
+PageSize::PageSize()
+    : p_props_("page-size")
 {
-    "custom",
-    "a4"
-};
+    p_props_.set("format", tr("format"),
+                 tr("The format of the paper"),
+                 formatNamedValues(),
+                 int(F_ISO_A4));
+    p_props_.set("size", tr("custom size"),
+                 tr("Custom size of paper in mm"),
+                 formatSize(F_ISO_A4));
+}
+
+Properties::NamedValues PageSize::formatNamedValues()
+{
+    Properties::NamedValues nv;
+    nv.set("custom", tr("custom"),
+           tr("user defined format"),
+           int(F_CUSTOM));
+    nv.set("iso-a4", tr("ISO A4"),
+           tr("A4 format of ISO-..."),
+           F_ISO_A4);
+    return nv;
+}
+
+QSizeF PageSize::formatSize(Format f)
+{
+    switch (f)
+    {
+        case F_CUSTOM: return QSizeF();
+        case F_ISO_A4: return QSizeF(210, 297);
+    }
+    return QSizeF();
+}
 
 PageSize::PageSize(Format f)
+    : PageSize()
 {
     setFormat(f);
 }
 
-QString PageSize::formatId() const
+PageSize::PageSize(double width_mm, double height_mm)
+    : PageSize()
 {
-    return p_format_ < 0 || p_format_ >= formatIds.size()
-            ? "*unkown*" : formatIds[p_format_];
+    setSize(width_mm, height_mm);
 }
 
-PageSize::Format PageSize::formatFromId(const QString &id)
+PageSize::PageSize(const QSizeF& size_in_mm)
+    : PageSize()
 {
-    for (int i=0; i<formatIds.size(); ++i)
-        if (id == formatIds.at(i))
-            return Format(i);
-    return F_CUSTOM;
-}
-
-void PageSize::setFormat(Format f)
-{
-    p_format_ = f;
-
-    switch (p_format_)
-    {
-        case F_CUSTOM: break;
-        case F_ISO_A4: p_size_ = QSizeF(210, 297); break;
-    }
+    setSize(size_in_mm);
 }
 
 bool PageSize::operator == (const PageSize& o) const
 {
-    return p_size_ == o.p_size_
-        && p_format_ == o.p_format_;
+    return p_props_ == o.p_props_;
 }
+
+void PageSize::setFormat(Format f)
+{
+    if (f == F_CUSTOM)
+        return;
+
+    p_props_.set("format", int(f));
+    p_props_.set("size", formatSize(f));
+}
+
+void PageSize::setWidth(double mm)
+{
+    p_props_.set("format", int(F_CUSTOM));
+    p_props_.set("size", QSizeF(mm, height()));
+}
+
+void PageSize::setHeight(double mm)
+{
+    p_props_.set("format", int(F_CUSTOM));
+    p_props_.set("size", QSizeF(width(), mm));
+}
+
+void PageSize::setSize(const QSizeF& s)
+{
+    p_props_.set("format", int(F_CUSTOM));
+    p_props_.set("size", s);
+}
+
+void PageSize::setSize(double width_mm, double height_mm)
+{
+    setSize(QSizeF(width_mm, height_mm));
+}
+
+
 
 QJsonObject PageSize::toJson() const
 {
-    JsonHelper json("PageSize");
     QJsonObject o;
-    o.insert("size", json.wrap(p_size_));
-    o.insert("format", formatId());
+    o.insert("props", p_props_.toJson());
     return o;
 }
 
 void PageSize::fromJson(const QJsonObject& o)
 {
     JsonHelper json("PageSize");
-    QSizeF size = json.expectChild<QSizeF>(o, "size");
-    Format fmt = formatFromId(json.expectChild<QString>(o, "format"));
-
-    p_size_ = size;
-    p_format_ = fmt;
+    Properties p(p_props_);
+    p.fromJson(json.expectChildObject(o, "props"));
+    p_props_ = p;
 }
 
 

@@ -21,9 +21,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef SONOTSRC_SCORE_H
 #define SONOTSRC_SCORE_H
 
+#include <QtCore>
 #include <QVariant>
 
 #include "io/JsonInterface.h"
+#include "io/Properties.h"
 
 namespace Sonot {
 
@@ -34,6 +36,7 @@ class NoteStream;
 /** Collection of NoteStream and custom properties */
 class Score : public JsonInterface
 {
+    Q_DECLARE_TR_FUNCTIONS(Score)
 public:
 
     // --- types ---
@@ -100,18 +103,16 @@ public:
 
     // ---- getter ----
 
-    /** Returns the given property, or invalid QVariant */
-    QVariant property(const QString& key) const;
-    const QMap<QString, QVariant>& properties() const;
+    const Properties& props() const;
 
     size_t numNoteStreams() const;
     const NoteStream& noteStream(size_t idx) const;
 
     const QList<NoteStream>& noteStreams() const;
 
-    QString title() const { return property("title").toString(); }
-    QString author() const { return property("author").toString(); }
-    QString copyright() const { return property("copyright").toString(); }
+    QString title() const { return props().get("title").toString(); }
+    QString author() const { return props().get("author").toString(); }
+    QString copyright() const { return props().get("copyright").toString(); }
 
     /** Returns an index to the specified note.
         If any of the indices is out of range an invalid Index is returned.
@@ -129,16 +130,16 @@ public:
     void clearProperties();
     void clearScore();
 
-    void setProperty(const QString& key, const QVariant& prop);
+    Properties& props();
 
     void setNoteStream(size_t idx, const NoteStream&);
     void appendNoteStream(const NoteStream&);
     void insertNoteStream(size_t idx, const NoteStream&);
     void removeNoteStream(size_t idx);
 
-    void setTitle(const QString& s) { setProperty("title", QVariant(s)); }
-    void setAuthor(const QString& s) { setProperty("author", QVariant(s)); }
-    void setCopyright(const QString& s) { setProperty("copyright", QVariant(s)); }
+    void setTitle(const QString& s) { props().set("title", s); }
+    void setAuthor(const QString& s) { props().set("author", s); }
+    void setCopyright(const QString& s) { props().set("copyright", s); }
 
 private:
     struct Private;

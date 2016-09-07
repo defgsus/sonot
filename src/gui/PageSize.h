@@ -21,38 +21,47 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef SONOTSRC_PAGESIZE_H
 #define SONOTSRC_PAGESIZE_H
 
+#include <QtCore>
 #include <QSizeF>
 #include <QRectF>
 #include <QStringList>
 
 #include "io/JsonInterface.h"
+#include "io/Properties.h"
 
 namespace Sonot {
 
 class PageSize : public JsonInterface
 {
+    Q_DECLARE_TR_FUNCTIONS(PageSize)
+
+    /** Default initializer is private */
+    PageSize();
 public:
 
+    // --- types ---
+
+    /** The paper formats */
     enum Format
     {
         F_CUSTOM,
         F_ISO_A4
     };
-    static const QStringList formatIds;
-    static Format formatFromId(const QString& id);
+    static Properties::NamedValues formatNamedValues();
+
+    /** QSizeF for Format */
+    static QSizeF formatSize(Format);
+
+    // --- ctor ---
 
     /** Constructor with preset type */
     explicit PageSize(Format);
 
     /** Constructor for F_CUSTOM type */
-    PageSize(double width_mm, double height_mm)
-        : p_size_   (width_mm, height_mm)
-        , p_format_ (F_CUSTOM) { }
+    PageSize(double width_mm, double height_mm);
 
     /** Constructor for F_CUSTOM type */
-    PageSize(const QSizeF& s)
-        : p_size_   (s)
-        , p_format_ (F_CUSTOM) { }
+    PageSize(const QSizeF& size_in_mm);
 
     // --- io ---
 
@@ -61,30 +70,27 @@ public:
 
     // --- getter ---
 
-    Format format() const { return p_format_; }
-    double width() const { return p_size_.width(); }
-    double height() const { return p_size_.height(); }
-    QSizeF size() const { return p_size_; }
+    Format format() const { return (Format)p_props_.get("format").toInt(); }
+    double width() const { return p_props_.get("size").toSizeF().width(); }
+    double height() const { return p_props_.get("size").toSizeF().height(); }
+    QSizeF size() const { return p_props_.get("size").toSizeF(); }
     QRectF rect() const { return QRectF(0,0, width(), height()); }
-    QString formatId() const;
 
     bool operator == (const PageSize& o) const;
     bool operator != (const PageSize& o) const { return !(*this == o); }
 
+    const Properties& props() const { return p_props_; }
+
     // --- setter ---
 
     void setFormat(Format f);
-    void setWidth(double mm) { p_size_.setWidth(mm); p_format_ = F_CUSTOM; }
-    void setHeight(double mm) { p_size_.setHeight(mm); p_format_ = F_CUSTOM; }
-    void setSize(const QSize& s) { p_size_ = s; p_format_ = F_CUSTOM; }
-    void setSize(double width_mm, double height_mm)
-        { p_size_.setWidth(width_mm); p_size_.setHeight(height_mm);
-          p_format_ = F_CUSTOM; }
+    void setWidth(double mm);
+    void setHeight(double mm);
+    void setSize(const QSizeF& s);
+    void setSize(double width_mm, double height_mm);
 
 private:
-
-    QSizeF p_size_;
-    Format p_format_;
+    Properties p_props_;
 };
 
 } // namespace Sonot

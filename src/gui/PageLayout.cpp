@@ -35,8 +35,8 @@ PageLayout::PageLayout()
     : p_pageSize_   (PageSize::F_ISO_A4)
     , p_margins_    ({ Properties("margins-odd"),
                        Properties("margins-even"),
-                       Properties("margins-top"),
-                       Properties("margins-bottom")})
+                       Properties("score-margins-odd"),
+                       Properties("score-margins-even")})
     , p_zeroBased_  (true)
 {
     // content
@@ -57,6 +57,7 @@ PageLayout::PageLayout()
                 tr("distance to bottom page border"),
                 30., 1.);
     p_margins_[EVEN] = p_margins_[ODD];
+    p_margins_[EVEN].setId("margins-even");
     p_margins_[EVEN].set("left", 30.);
     p_margins_[EVEN].set("right", 20.);
 
@@ -78,6 +79,7 @@ PageLayout::PageLayout()
                 tr("distance of score to bottom content border"),
                 10., 1.);
     p_margins_[2+EVEN] = p_margins_[2+ODD];
+    p_margins_[2+EVEN].setId("score-margins-even");
 }
 
 bool PageLayout::operator == (const PageLayout& o) const

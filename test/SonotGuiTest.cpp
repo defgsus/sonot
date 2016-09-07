@@ -181,7 +181,7 @@ void SonotGuiTest::testJsonScoreLayout()
 {
     ScoreLayout l2, l = createRandomScoreLayout();
     l2.fromJsonString(l.toJsonString());
-    PRINT(l2.props().toString().toStdString());
+    PRINT(l2.props().toCompactString().toStdString());
     QCOMPARE(l, l2);
 }
 
@@ -189,7 +189,7 @@ void SonotGuiTest::testJsonPageLayout()
 {
     PageLayout l2, l = createRandomPageLayout();
     l2.fromJsonString(l.toJsonString());
-
+    PRINT(l2.toJsonString().toStdString());
     QCOMPARE(l, l2);
 }
 

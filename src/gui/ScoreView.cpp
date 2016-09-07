@@ -350,7 +350,7 @@ void ScoreView::Private::paintPageAnnotation(
 
         // fill in tags
         text.replace("#page", QString::number(pageNum));
-        auto props = document.score().properties();
+        auto props = document.score().props();
         for (auto i = props.begin(); i!=props.end(); ++i)
             text.replace("#" + i.key(), i.value().toString());
 
