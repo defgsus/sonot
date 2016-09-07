@@ -198,6 +198,11 @@ public:
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject&) override;
 
+    // ------------- static helper --------------
+
+    /** Returns the string representation of many QVariant types */
+    static QString qvariant_to_string(const QVariant&);
+
     // ---------------- getter ------------------
 
     /** Returns the Property for the given id, or an invalid Property */

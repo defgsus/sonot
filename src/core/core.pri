@@ -11,8 +11,9 @@ HEADERS += \
 SOURCES += \
     src/io/JsonInterface.cpp \
     src/io/Properties.cpp \
+    src/io/Properties_json.cpp \
+    src/io/Properties_qvariant_to_string.cpp \
     src/core/Note.cpp \
     src/core/Bar.cpp \
     src/core/NoteStream.cpp \
-    src/core/Score.cpp \
-    $$PWD/../io/Properties_json.cpp
+    src/core/Score.cpp

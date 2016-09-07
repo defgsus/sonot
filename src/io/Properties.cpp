@@ -131,7 +131,7 @@ bool Properties::Property::testFlag(const QVariant &flag) const
 QString Properties::Property::toString() const
 {
     if (!hasNamedValues())
-        return value().toString();
+        return qvariant_to_string(value());
     if (!namedValues().isFlags())
         return QString("[%1]").arg( namedValues().getByValue(value()).name );
     QString s;
@@ -145,6 +145,7 @@ QString Properties::Property::toString() const
     }
     return "[" + s + "]";
 }
+
 
 // --------------------- Properties::NamedValues ------------------------------
 
