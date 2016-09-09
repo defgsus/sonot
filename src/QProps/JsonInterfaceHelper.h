@@ -18,78 +18,32 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_JSONINTERFACE_H
-#define SONOTSRC_JSONINTERFACE_H
+#ifndef QPROPS_SRC_JSONINTERFACEHELPER_H
+#define QPROPS_SRC_JSONINTERFACEHELPER_H
 
 #include <vector>
+
 #include <QString>
-#include <QStringList>
+#include <QJsonValue>
+#include <QJsonObject>
+#include <QJsonArray>
 #include <QVariant>
+#include <QStringList>
 
-class QJsonObject;
-class QJsonArray;
-class QJsonValue;
+#include "qprops_global.h"
 
-namespace Sonot {
-
-/** Interface for loading/saving json data.
-    Users of the interface need to implement the
-    toJson() and fromJson() methods.
-    This enables converting to/from json strings and file io.
-*/
-class JsonInterface
-{
-public:
-
-    virtual ~JsonInterface() { }
-
-    // ----------- pure methods --------------
-
-    /** Return a QJsonObject with all data inside.
-        Should throw a descriptive Sonot::Exception on any errors. */
-    virtual QJsonObject toJson() const = 0;
-
-    /** Initializes the object from the QJsonObject.
-        Should throw a descriptive Sonot::Exception on severe errors. */
-    virtual void fromJson(const QJsonObject&) = 0;
-
-    // ------------ convenience --------------
-
-    /** Converts this object's data to a Json string.
-        Uses toJson().
-        @throws Sonot::Exception on any error */
-    virtual QString toJsonString(bool compact = true) const;
-
-    /** Initializes this objects's data from a json string.
-        Uses fromJson().
-        @throws Sonot::Exception on any error */
-    virtual void fromJsonString(const QString&);
-
-    /** Stores the json string to a file.
-        Uses toJsonString().
-        @throws Sonot::Exception on any error */
-    virtual void saveJsonFile(
-            const QString& filename, bool compact = true) const;
-
-    /** Initializes this object's data from a json file.
-        Uses fromJsonString().
-        @throws Sonot::Exception on any error */
-    virtual void loadJsonFile(const QString& filename);
-
-};
-
-
+namespace QProps {
 
 /** Collection of helper functions for json value conversion.
-    Most functions throw Sonot::Exception with the className
+    Most functions throw QProps::Exception with the className
     defined in the constructor */
-class JsonHelper
+class QPROPS_SHARED_EXPORT JsonInterfaceHelper
 {
 public:
 
-    JsonHelper(const char* className)
+    JsonInterfaceHelper(const char* className)
         : p_classname_(className) { }
-    JsonHelper(const QString& className)
+    JsonInterfaceHelper(const QString& className)
         : p_classname_(className) { }
 
     // --- info ---
@@ -101,11 +55,11 @@ public:
     QString context() const
         { return p_context_.isEmpty() ? QString() : p_context_.last(); }
 
-    /** Returns the name of the json type */
-    static const char* typeName(const QJsonValue&);
-
     void beginContext(const QString& c) { p_context_.append(c); }
     void endContext() { p_context_.pop_back(); }
+
+    /** Returns the name of the json type */
+    static const char* typeName(const QJsonValue&);
 
     // -- convert to json --
 
@@ -200,9 +154,8 @@ private:
 };
 
 
+} // namespace QProps
 
 
+#endif // QPROPS_SRC_JSONINTERFACEHELPER_H
 
-} // namespace Sonot
-
-#endif // SONOTSRC_JSONINTERFACE_H

@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QJsonValue>
 
 #include "PageSize.h"
+#include "QProps/JsonInterfaceHelper.h"
 
 namespace Sonot {
 
@@ -37,9 +38,9 @@ PageSize::PageSize()
                  formatSize(F_ISO_A4));
 }
 
-Properties::NamedValues PageSize::formatNamedValues()
+QProps::Properties::NamedValues PageSize::formatNamedValues()
 {
-    Properties::NamedValues nv;
+    QProps::Properties::NamedValues nv;
     nv.set("custom", tr("custom"),
            tr("user defined format"),
            int(F_CUSTOM));
@@ -125,8 +126,8 @@ QJsonObject PageSize::toJson() const
 
 void PageSize::fromJson(const QJsonObject& o)
 {
-    JsonHelper json("PageSize");
-    Properties p(p_props_);
+    QProps::JsonInterfaceHelper json("PageSize");
+    QProps::Properties p(p_props_);
     p.fromJson(json.expectChildObject(o, "props"));
     p_props_ = p;
 }

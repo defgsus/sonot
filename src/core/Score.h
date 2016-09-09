@@ -24,8 +24,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QtCore>
 #include <QVariant>
 
-#include "io/JsonInterface.h"
-#include "io/Properties.h"
+#include "QProps/JsonInterface.h"
+#include "QProps/Properties.h"
 
 namespace Sonot {
 
@@ -34,7 +34,7 @@ class Bar;
 class NoteStream;
 
 /** Collection of NoteStream and custom properties */
-class Score : public JsonInterface
+class Score : public QProps::JsonInterface
 {
     Q_DECLARE_TR_FUNCTIONS(Score)
 public:
@@ -106,7 +106,7 @@ public:
 
     // ---- getter ----
 
-    const Properties& props() const;
+    const QProps::Properties& props() const;
 
     size_t numNoteStreams() const;
     const NoteStream& noteStream(size_t idx) const;
@@ -133,7 +133,7 @@ public:
     void clearProperties();
     void clearScore();
 
-    Properties& props();
+    QProps::Properties& props();
 
     void setNoteStream(size_t idx, const NoteStream&);
     void appendNoteStream(const NoteStream&);

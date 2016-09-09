@@ -73,7 +73,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "Properties.h"
 
-namespace Sonot {
+namespace QProps {
 
 QString Properties::qvariant_to_string(const QVariant& v)
 {
@@ -84,22 +84,24 @@ QString Properties::qvariant_to_string(const QVariant& v)
     // use QDebug for a string representation
     QDebug deb(&s);
 
-#define SONOT__TO_STRING(Typename__, Enum__, Type__) \
+#define QPROPS__TO_STRING(Typename__, Enum__, Type__) \
     case QMetaType::Typename__: deb.nospace() << v.value<Type__>(); break;
 
     switch (QMetaType::Type(v.type()))
     {
 #ifdef QT_CORE_LIB
-        QT_FOR_EACH_STATIC_CORE_CLASS(SONOT__TO_STRING)
+        QT_FOR_EACH_STATIC_CORE_CLASS( QPROPS__TO_STRING )
 #endif
 #ifdef QT_GUI_LIB
-        QT_FOR_EACH_STATIC_GUI_CLASS(SONOT__TO_STRING)
+        QT_FOR_EACH_STATIC_GUI_CLASS( QPROPS__TO_STRING )
 #endif
         default: break;
     }
     return s;
-#undef SONOT__TO_STRING
+#undef QPROPS__TO_STRING
 }
 
 
-} // namespace Sonot
+} // namespace QProps
+
+

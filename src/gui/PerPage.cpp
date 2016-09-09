@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "PageAnnotation.h"
 #include "PageLayout.h"
 #include "ScoreLayout.h"
+#include "QProps/JsonInterfaceHelper.h"
 
 namespace Sonot {
 
@@ -41,7 +42,7 @@ QJsonObject PerPage<T>::toJson() const
 template <class T>
 void PerPage<T>::fromJson(const QJsonObject& o)
 {
-    JsonHelper json(QString("PerPage<%1>").arg(typeid(T).name()));
+    QProps::JsonInterfaceHelper json(QString("PerPage<%1>").arg(typeid(T).name()));
     QMap<QString, T> map;
     for (auto key : o.keys())
     {

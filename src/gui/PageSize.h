@@ -26,12 +26,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QRectF>
 #include <QStringList>
 
-#include "io/JsonInterface.h"
-#include "io/Properties.h"
+#include "QProps/JsonInterface.h"
+#include "QProps/Properties.h"
 
 namespace Sonot {
 
-class PageSize : public JsonInterface
+class PageSize : public QProps::JsonInterface
 {
     Q_DECLARE_TR_FUNCTIONS(PageSize)
 
@@ -47,7 +47,7 @@ public:
         F_CUSTOM,
         F_ISO_A4
     };
-    static Properties::NamedValues formatNamedValues();
+    static QProps::Properties::NamedValues formatNamedValues();
 
     /** QSizeF for Format */
     static QSizeF formatSize(Format);
@@ -79,7 +79,7 @@ public:
     bool operator == (const PageSize& o) const;
     bool operator != (const PageSize& o) const { return !(*this == o); }
 
-    const Properties& props() const { return p_props_; }
+    const QProps::Properties& props() const { return p_props_; }
 
     // --- setter ---
 
@@ -90,7 +90,7 @@ public:
     void setSize(double width_mm, double height_mm);
 
 private:
-    Properties p_props_;
+    QProps::Properties p_props_;
 };
 
 } // namespace Sonot

@@ -20,12 +20,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <algorithm>
 
-#include <QJsonObject>
-#include <QJsonArray>
 #include <QStringList>
 
 #include "Bar.h"
-#include "io/error.h"
+#include "QProps/JsonInterfaceHelper.h"
+#include "QProps/error.h"
 
 namespace Sonot {
 
@@ -47,8 +46,8 @@ bool Bar::operator == (const Bar& rhs) const
 
 const Note& Bar::note(size_t column, size_t row) const
 {
-    SONOT_ASSERT_LT(column, p_numNotes_, "in Bar::note()");
-    SONOT_ASSERT_LT(row, p_numRows_, "in Bar::note()");
+    QPROPS_ASSERT_LT(column, p_numNotes_, "in Bar::note()");
+    QPROPS_ASSERT_LT(row, p_numRows_, "in Bar::note()");
 
     return p_data_[row * p_numNotes_ + column];
 }
@@ -71,8 +70,8 @@ void Bar::resize(size_t length, size_t numRows)
 
 void Bar::setNote(size_t column, size_t row, const Note &n)
 {
-    SONOT_ASSERT_LT(column, length(), "in Bar::setNote ");
-    SONOT_ASSERT_LT(row, numRows(), "in Bar::setNote");
+    QPROPS_ASSERT_LT(column, length(), "in Bar::setNote ");
+    QPROPS_ASSERT_LT(row, numRows(), "in Bar::setNote");
     p_data_[row * p_numNotes_ + column] = n;
 }
 
@@ -86,7 +85,7 @@ bool Bar::isAnnotated() const
 
 QJsonObject Bar::toJson() const
 {
-    JsonHelper json("Bar");
+    QProps::JsonInterfaceHelper json("Bar");
 
     QJsonObject o;
     o.insert("len", QJsonValue((qint64)p_numNotes_));
@@ -116,14 +115,14 @@ QJsonObject Bar::toJson() const
 
 void Bar::fromJson(const QJsonObject& o)
 {
-    JsonHelper json("Bar");
+    QProps::JsonInterfaceHelper json("Bar");
     const int
             len = json.expectChild<int>(o, "len"),
             rows = json.expectChild<int>(o, "rows");
 
     QJsonArray jnotes = json.expectArray(json.expectChildValue(o, "notes"));
     if (jnotes.size() != len*rows)
-        SONOT_IO_ERROR("Mismatching note data size " << jnotes.size()
+        QPROPS_IO_ERROR("Mismatching note data size " << jnotes.size()
                        << ", expected " << len << "x" << rows);
     std::vector<Note> notes;
     for (int i=0; i<jnotes.size(); ++i)
@@ -141,10 +140,10 @@ void Bar::fromJson(const QJsonObject& o)
             bool ok;
             int k = key.toInt(&ok);
             if (!ok)
-                SONOT_IO_ERROR("Expected integer key in Bar object, got '"
+                QPROPS_IO_ERROR("Expected integer key in Bar object, got '"
                                << key << "'");
             if (k < 0 || size_t(k) >= notes.size())
-                SONOT_IO_ERROR("Integer key out of range in Bar object, got "
+                QPROPS_IO_ERROR("Integer key out of range in Bar object, got "
                                << k << ", expected [0," << notes.size() << ")");
             QString text = json.expectChild<QString>(ann, key);
             notes[k].setAnnotation(text);

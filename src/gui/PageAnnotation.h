@@ -24,13 +24,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <vector>
 
 #include "TextItem.h"
-#include "io/JsonInterface.h"
+#include "QProps/JsonInterface.h"
 
 namespace Sonot {
 
 
 /** Collection of TextItems per page */
-class PageAnnotation : public JsonInterface
+class PageAnnotation : public QProps::JsonInterface
 {
 public:
     PageAnnotation();

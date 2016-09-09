@@ -24,12 +24,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QString>
 #include <QMap>
 
-#include "io/JsonInterface.h"
+#include "QProps/JsonInterface.h"
 
 namespace Sonot {
 
 template <class T>
-class PerPage : public JsonInterface
+class PerPage : public QProps::JsonInterface
 {
 public:
 

@@ -15,7 +15,9 @@ TEMPLATE = app
 
 INCLUDEPATH += ./src
 
-include(src/core/core.pri)
+include(src/core.pri)
+include(src/QProps.pri)
+
 
 SOURCES += test/SonotCoreTest.cpp
 DEFINES += SRCDIR=\\\"$$PWD/\\\"

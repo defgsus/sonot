@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "core/NoteStream.h"
 #include "core/Score.h"
+#include "QProps/Properties.h"
 
 using namespace Sonot;
 
@@ -84,7 +85,7 @@ namespace QTest {
     }
 
     template <>
-    char* toString(const Properties& p)
+    char* toString(const QProps::Properties& p)
     {
         return toString(p.toCompactString());
     }
@@ -123,7 +124,7 @@ void SonotCoreTest::testKeepDataOnResize()
 
 void SonotCoreTest::testJsonProperties()
 {
-    Properties p("type-test");
+    QProps::Properties p("type-test");
     p.set("double", tr("name"), tr("tool-tip"), 20., 1.);
     p.set("int",    23);
     p.set("float",  42.f);
@@ -143,13 +144,13 @@ void SonotCoreTest::testJsonProperties()
     p.set("time",   QTime::currentTime());
     p.set("datetime",QDateTime::currentDateTime());
 
-    Properties p2("copy");
+    QProps::Properties p2("copy");
     p2.fromJson(p.toJson());
 
     //qDebug() << "ORG" << p.toString();
     //qDebug() << "CPY" << p2.toString();
 
-    for (const Properties::Property& prop : p)
+    for (const QProps::Properties::Property& prop : p)
         QCOMPARE(p.get(prop.id()), p2.get(prop.id()));
 
     QCOMPARE(p, p2);
@@ -157,12 +158,12 @@ void SonotCoreTest::testJsonProperties()
 
 void SonotCoreTest::testJsonPropertiesExplicitTypes()
 {
-    Properties p("type-test");
+    QProps::Properties p("type-test");
     p.set("int",    23);
     p.set("long",   -7777LL);
     p.set("ulong",  7777ULL);
 
-    Properties p2("copy");
+    QProps::Properties p2("copy");
     p2.fromJson(p.toJson());
     // see if exact type is kept
     QCOMPARE(p2.get("int").type(),  QVariant::Int);
@@ -170,7 +171,7 @@ void SonotCoreTest::testJsonPropertiesExplicitTypes()
     QCOMPARE(p2.get("ulong").type(), QVariant::ULongLong);
 
     p.setExplicitJsonTypes(false);
-    Properties p3("copy");
+    QProps::Properties p3("copy");
     p3.fromJson(p.toJson());
     // see if exact type is discarded
     QCOMPARE(p3.get("int").type(),  QVariant::Double);

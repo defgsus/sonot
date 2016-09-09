@@ -1,4 +1,4 @@
-/********************* ******************************************************
+/***************************************************************************
 
 Copyright (C) 2016  stefan.berke @ modular-audio-graphics.com
 
@@ -19,8 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ****************************************************************************/
 
 #include <cstddef>
-#include <QDebug>
-#include <QFile>
+
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QJsonParseError>
@@ -36,67 +35,21 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QTime>
 #include <QDateTime>
 
-#include "io/JsonInterface.h"
-#include "io/error.h"
+#include "JsonInterfaceHelper.h"
+#include "error.h"
 
-#define SONOT_JSON_ERROR(arg__) \
+#define QPROPS_JSON_ERROR(arg__) \
     { const QString ctx__ = context(); \
       if (ctx__.isEmpty()) \
-        SONOT_IO_ERROR("[JSON: " << p_classname_ << "] " << arg__) \
+        QPROPS_IO_ERROR("[JSON: " << p_classname_ << "] " << arg__) \
       else \
-        SONOT_IO_ERROR("[JSON: " << p_classname_ << " | " \
+        QPROPS_IO_ERROR("[JSON: " << p_classname_ << " | " \
             << ctx__ << "] " << arg__); }
 
-namespace Sonot {
-
-QString JsonInterface::toJsonString(bool compact) const
-{
-    QJsonDocument doc(toJson());
-    return QString::fromUtf8(doc.toJson(
-                compact ? QJsonDocument::Compact : QJsonDocument::Indented));
-}
-
-void JsonInterface::fromJsonString(const QString &jsonString)
-{
-    QJsonParseError error;
-    auto doc = QJsonDocument::fromJson(jsonString.toUtf8(), &error);
-    if (error.error != QJsonParseError::NoError)
-        SONOT_IO_ERROR("Error parsing json string: "
-                        << error.errorString().toStdString());
-    auto main = doc.object();
-    fromJson(main);
-}
+namespace QProps {
 
 
-void JsonInterface::saveJsonFile(const QString& filename, bool compact) const
-{
-    QString js = toJsonString(compact);
-
-    QFile file(filename);
-    if (!file.open(QFile::WriteOnly))
-        SONOT_IO_ERROR("Could not open '"
-                      << filename.toStdString() << "' for writing,\n"
-                      << file.errorString().toStdString());
-
-    file.write(js.toUtf8());
-}
-
-void JsonInterface::loadJsonFile(const QString &filename)
-{
-    QFile file(filename);
-    if (!file.open(QFile::ReadOnly))
-        SONOT_IO_ERROR("Could not open '"
-                      << filename.toStdString() << "' for reading,\n"
-                      << file.errorString().toStdString());
-
-    auto js = QString::fromUtf8(file.readAll());
-    file.close();
-
-    fromJsonString(js);
-}
-
-
-const char* JsonHelper::typeName(const QJsonValue& v)
+const char* JsonInterfaceHelper::typeName(const QJsonValue& v)
 {
     switch (v.type())
     {
@@ -112,44 +65,43 @@ const char* JsonHelper::typeName(const QJsonValue& v)
 }
 
 
-
 // #################### JSON object conversion ######################
 
-QJsonArray JsonHelper::expectArray(const QJsonValue& v)
+QJsonArray JsonInterfaceHelper::expectArray(const QJsonValue& v)
 {
     if (!v.isArray())
-        SONOT_JSON_ERROR("Expected json array, got " << typeName(v));
+        QPROPS_JSON_ERROR("Expected json array, got " << typeName(v));
     return v.toArray();
 }
 
-QJsonObject JsonHelper::expectObject(const QJsonValue& v)
+QJsonObject JsonInterfaceHelper::expectObject(const QJsonValue& v)
 {
     if (!v.isObject())
-        SONOT_JSON_ERROR("Expected json object, got " << typeName(v));
+        QPROPS_JSON_ERROR("Expected json object, got " << typeName(v));
     return v.toObject();
 }
 
-QJsonValue JsonHelper::expectChildValue(
+QJsonValue JsonInterfaceHelper::expectChildValue(
         const QJsonObject& parent, const QString& key)
 {
     if (!parent.contains(key))
-        SONOT_JSON_ERROR("Expected '" << key << "' value, not found");
+        QPROPS_JSON_ERROR("Expected '" << key << "' value, not found");
     return parent.value(key);
 }
 
-QJsonArray JsonHelper::expectChildArray(
+QJsonArray JsonInterfaceHelper::expectChildArray(
         const QJsonObject& parent, const QString& key)
 {
     if (!parent.contains(key))
-        SONOT_JSON_ERROR("Expected '" << key << "' array, not found");
+        QPROPS_JSON_ERROR("Expected '" << key << "' array, not found");
     return expectArray(parent.value(key));
 }
 
-QJsonObject JsonHelper::expectChildObject(
+QJsonObject JsonInterfaceHelper::expectChildObject(
         const QJsonObject& parent, const QString& key)
 {
     if (!parent.contains(key))
-        SONOT_JSON_ERROR("Expected '" << key << "' object, not found");
+        QPROPS_JSON_ERROR("Expected '" << key << "' object, not found");
     return expectObject(parent.value(key));
 }
 
@@ -261,7 +213,7 @@ namespace
 
 
 template <typename T>
-QJsonArray JsonHelper::toArray(const std::vector<T>& data)
+QJsonArray JsonInterfaceHelper::toArray(const std::vector<T>& data)
 {
     QJsonArray a;
     for (const T& v : data)
@@ -270,12 +222,12 @@ QJsonArray JsonHelper::toArray(const std::vector<T>& data)
 }
 
 template <typename T>
-QJsonValue JsonHelper::wrap(const T& r)
+QJsonValue JsonInterfaceHelper::wrap(const T& r)
 {
     return to_json(r);
 }
 
-QJsonValue JsonHelper::wrap(const QVariant& v, bool explicitType)
+QJsonValue JsonInterfaceHelper::wrap(const QVariant& v, bool explicitType)
 {
     // store with QVariant conversion
     if (!explicitType)
@@ -330,7 +282,7 @@ QJsonValue JsonHelper::wrap(const QVariant& v, bool explicitType)
         {
             QJsonValue jv = QJsonValue::fromVariant(v);
             if (jv.isNull())
-                SONOT_JSON_ERROR("Can't save QVariant::" << v.typeName()
+                QPROPS_JSON_ERROR("Can't save QVariant::" << v.typeName()
                              << "(" << v.type() << ") to json, "
                              "type not implemented!");
             o.insert("v", jv);
@@ -360,16 +312,16 @@ QJsonValue JsonHelper::wrap(const QVariant& v, bool explicitType)
 
 /** Internal helper that expects an array of specific length */
 template <typename T>
-void JsonHelper::p_expectArray_(
+void JsonInterfaceHelper::p_expectArray_(
         const QJsonValue &src, std::vector<T> &dst,
         size_t size, const QString &forType)
 {
     if (!src.isArray())
-        SONOT_JSON_ERROR("Expected json array (" << forType << "), got "
+        QPROPS_JSON_ERROR("Expected json array (" << forType << "), got "
                          << typeName(src));
     auto ja = src.toArray();
     if (ja.size() != size)
-        SONOT_JSON_ERROR("Expected json array of length 4, got length "
+        QPROPS_JSON_ERROR("Expected json array of length 4, got length "
                          << ja.size());
     fromArray(dst, ja);
 }
@@ -378,30 +330,30 @@ void JsonHelper::p_expectArray_(
 // expect specific types
 
 template <>
-double JsonHelper::expect(const QJsonValue& v)
+double JsonInterfaceHelper::expect(const QJsonValue& v)
 {
     if (!v.isDouble())
-        SONOT_JSON_ERROR("Expected double value, got " << typeName(v));
+        QPROPS_JSON_ERROR("Expected double value, got " << typeName(v));
     return v.toDouble();
 }
 
 template <>
-float JsonHelper::expect(const QJsonValue& v)
+float JsonInterfaceHelper::expect(const QJsonValue& v)
 {
     return expect<double>(v);
 }
 
 template <>
-int64_t JsonHelper::expect(const QJsonValue& v)
+int64_t JsonInterfaceHelper::expect(const QJsonValue& v)
 {
     if (!v.isDouble() && !v.isString())
-        SONOT_JSON_ERROR("Expected int value, got " << typeName(v));
+        QPROPS_JSON_ERROR("Expected int value, got " << typeName(v));
     if (v.isString())
     {
         bool ok;
         int k = v.toString().toLongLong(&ok);
         if (!ok)
-            SONOT_JSON_ERROR("Expected int value, got non-int string '"
+            QPROPS_JSON_ERROR("Expected int value, got non-int string '"
                         << v.toString() << "'");
         return k;
     }
@@ -409,103 +361,103 @@ int64_t JsonHelper::expect(const QJsonValue& v)
 }
 
 template <>
-int8_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+int8_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
-uint8_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+uint8_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
-int16_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+int16_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
-uint16_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+uint16_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
-int32_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+int32_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
-uint32_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+uint32_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
-uint64_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+uint64_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 
 
 template <>
-QString JsonHelper::expect(const QJsonValue& v)
+QString JsonInterfaceHelper::expect(const QJsonValue& v)
 {
     if (!v.isString())
-        SONOT_JSON_ERROR("Expected string value, got " << typeName(v));
+        QPROPS_JSON_ERROR("Expected string value, got " << typeName(v));
     return v.toString();
 }
 
 // -- compound types --
 // (typically stored as array)
 
-#define SONOT__EXPECT_COMPOUND_ARRAY2(QType__, Type__) \
+#define QPROPS__EXPECT_COMPOUND_ARRAY2(QType__, Type__) \
     template <> \
-    QType__ JsonHelper::expect(const QJsonValue& v) \
+    QType__ JsonInterfaceHelper::expect(const QJsonValue& v) \
     { \
         std::vector<Type__> a; \
         p_expectArray_(v, a, 2, #QType__); \
         return QType__(a[0], a[1]); \
     }
 
-#define SONOT__EXPECT_COMPOUND_ARRAY4(QType__, Type__) \
+#define QPROPS__EXPECT_COMPOUND_ARRAY4(QType__, Type__) \
     template <> \
-    QType__ JsonHelper::expect(const QJsonValue& v) \
+    QType__ JsonInterfaceHelper::expect(const QJsonValue& v) \
     { \
         std::vector<Type__> a; \
         p_expectArray_(v, a, 4, #QType__); \
         return QType__(a[0], a[1], a[2], a[3]); \
     }
 
-SONOT__EXPECT_COMPOUND_ARRAY2(QPoint, int)
-SONOT__EXPECT_COMPOUND_ARRAY2(QSize,  int)
-SONOT__EXPECT_COMPOUND_ARRAY4(QLine,  int)
-SONOT__EXPECT_COMPOUND_ARRAY4(QRect,  int)
-SONOT__EXPECT_COMPOUND_ARRAY4(QColor, int)
-SONOT__EXPECT_COMPOUND_ARRAY2(QPointF, double)
-SONOT__EXPECT_COMPOUND_ARRAY2(QSizeF,  double)
-SONOT__EXPECT_COMPOUND_ARRAY4(QLineF,  double)
-SONOT__EXPECT_COMPOUND_ARRAY4(QRectF,  double)
+QPROPS__EXPECT_COMPOUND_ARRAY2(QPoint, int)
+QPROPS__EXPECT_COMPOUND_ARRAY2(QSize,  int)
+QPROPS__EXPECT_COMPOUND_ARRAY4(QLine,  int)
+QPROPS__EXPECT_COMPOUND_ARRAY4(QRect,  int)
+QPROPS__EXPECT_COMPOUND_ARRAY4(QColor, int)
+QPROPS__EXPECT_COMPOUND_ARRAY2(QPointF, double)
+QPROPS__EXPECT_COMPOUND_ARRAY2(QSizeF,  double)
+QPROPS__EXPECT_COMPOUND_ARRAY4(QLineF,  double)
+QPROPS__EXPECT_COMPOUND_ARRAY4(QRectF,  double)
 
 
 template <>
-QFont JsonHelper::expect(const QJsonValue& v)
+QFont JsonInterfaceHelper::expect(const QJsonValue& v)
 {
     if (!v.isString())
-        SONOT_JSON_ERROR("Expected font description, got " << typeName(v));
+        QPROPS_JSON_ERROR("Expected font description, got " << typeName(v));
 
     QFont f;
     if (!f.fromString(v.toString()))
-        SONOT_JSON_ERROR("Can not parse QFont description '"
+        QPROPS_JSON_ERROR("Can not parse QFont description '"
                          << v.toString() << "'");
     return f;
 }
 
 template <>
-QTime JsonHelper::expect(const QJsonValue& v)
+QTime JsonInterfaceHelper::expect(const QJsonValue& v)
 {
     if (!v.isString())
-        SONOT_JSON_ERROR("Expected time string, got " << typeName(v));
+        QPROPS_JSON_ERROR("Expected time string, got " << typeName(v));
 
     QTime t = QTime::fromString(v.toString(), "h:m:s.z");
     if (!t.isValid())
-        SONOT_JSON_ERROR("Can not parse time string '"
+        QPROPS_JSON_ERROR("Can not parse time string '"
                          << v.toString() << "'");
     return t;
 }
 
 template <>
-QDateTime JsonHelper::expect(const QJsonValue& v)
+QDateTime JsonInterfaceHelper::expect(const QJsonValue& v)
 {
     if (!v.isString())
-        SONOT_JSON_ERROR("Expected date-time string, got " << typeName(v));
+        QPROPS_JSON_ERROR("Expected date-time string, got " << typeName(v));
 
     QDateTime t = QDateTime::fromString(v.toString(), "yyyy-M-d h:m:s.z");
     if (!t.isValid())
-        SONOT_JSON_ERROR("Can not parse date-time string '"
+        QPROPS_JSON_ERROR("Can not parse date-time string '"
                          << v.toString() << "'");
     return t;
 }
 
 
 
-QVariant JsonHelper::expectQVariant(
+QVariant JsonInterfaceHelper::expectQVariant(
         const QJsonValue& v, QVariant::Type expected)
 {
     QVariant ret;
@@ -515,14 +467,14 @@ QVariant JsonHelper::expectQVariant(
         // use built-in QJsonValue->QVariant
         ret = v.toVariant();
         if (!ret.isValid())
-            SONOT_JSON_ERROR("Expected QVariant compatible json value, "
+            QPROPS_JSON_ERROR("Expected QVariant compatible json value, "
                              "got '" << typeName(v) << "'");
         // explicit type conversion
         if (expected != QVariant::Invalid)
         {
             if (expected != ret.type() && !ret.convert(expected))
             {
-                SONOT_IO_ERROR("Can't convert value type '" << ret.typeName()
+                QPROPS_IO_ERROR("Can't convert value type '" << ret.typeName()
                                << "' in json to '"
                                << QVariant::typeToName(expected) << "'");
             }
@@ -536,7 +488,7 @@ QVariant JsonHelper::expectQVariant(
         QVariant::Type type =
                 QVariant::nameToType(typeName.toStdString().c_str());
         if (type == QVariant::Invalid)
-            SONOT_JSON_ERROR("Illegal QVariant type '" << typeName << "' in "
+            QPROPS_JSON_ERROR("Illegal QVariant type '" << typeName << "' in "
                              "json object");
         switch (type)
         {
@@ -556,13 +508,13 @@ QVariant JsonHelper::expectQVariant(
                 // check for Qt's QVariant conversion
                 ret = expectChildValue(o, "v").toVariant();
                 if (ret.isNull())
-                    SONOT_JSON_ERROR("Unsupported QVariant type '" << typeName
+                    QPROPS_JSON_ERROR("Unsupported QVariant type '" << typeName
                                  << "' in json object");
                 //qDebug() << "EXPECT" << typeName << "GOT" << ret.typeName();
 
                 // convert to explicit type (e.g. double -> int)
                 if (ret.type() != type && !ret.convert(type))
-                    SONOT_JSON_ERROR("Could not convert QVariant type '"
+                    QPROPS_JSON_ERROR("Could not convert QVariant type '"
                                      << ret.typeName() << "' to '"
                                      << typeName << "'");
             break;
@@ -574,7 +526,7 @@ QVariant JsonHelper::expectQVariant(
     {
         if (expected != ret.type() && !ret.convert(expected))
         {
-            SONOT_IO_ERROR("Can't convert value type '" << ret.typeName()
+            QPROPS_IO_ERROR("Can't convert value type '" << ret.typeName()
                            << "' in json to '"
                            << QVariant::typeToName(expected) << "'");
         }
@@ -585,23 +537,23 @@ QVariant JsonHelper::expectQVariant(
 
 // wrapper for expect()
 template <typename T>
-T JsonHelper::expectChild(
+T JsonInterfaceHelper::expectChild(
         const QJsonObject& parent, const QString& key)
 {
     if (!parent.contains(key))
-        SONOT_JSON_ERROR("Expected '" << key << "' value ("
+        QPROPS_JSON_ERROR("Expected '" << key << "' value ("
                           << typeid(T).name() << "), not found");
     return expect<T>( parent.value(key) );
 }
 
 
 
-QVariant JsonHelper::expectChildQVariant(
+QVariant JsonInterfaceHelper::expectChildQVariant(
         const QJsonObject& parent, const QString& key,
         QVariant::Type expectedType)
 {
     if (!parent.contains(key))
-        SONOT_JSON_ERROR("Expected '" << key << "' qvariant, not found");
+        QPROPS_JSON_ERROR("Expected '" << key << "' qvariant, not found");
     return expectQVariant(parent.value(key), expectedType);
 }
 
@@ -609,7 +561,7 @@ QVariant JsonHelper::expectChildQVariant(
 // -- wrapper of expect() for arrays --
 
 template <typename T>
-void JsonHelper::fromArray(std::vector<T>& dst, const QJsonArray& src)
+void JsonInterfaceHelper::fromArray(std::vector<T>& dst, const QJsonArray& src)
 {
     dst.resize(src.size());
     for (size_t i=0; i<dst.size(); ++i)
@@ -617,7 +569,7 @@ void JsonHelper::fromArray(std::vector<T>& dst, const QJsonArray& src)
 }
 
 template <typename T>
-void JsonHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
+void JsonInterfaceHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
 {
     fromArray(dst, expectArray(src));
 }
@@ -628,7 +580,7 @@ void JsonHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
 
 // All compound types supported by QVariant
 // that are excplicitly handled in code above
-#define SONOT__FOR_EACH_SUPPORTED_QT_TYPE(F__) \
+#define QPROPS__FOR_EACH_SUPPORTED_QT_TYPE(F__) \
     F__(QRect) \
     F__(QRectF) \
     F__(QSize) \
@@ -643,40 +595,40 @@ void JsonHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
 
 
 
-// -- inst. JsonHelper::wrap() --
+// -- inst. JsonInterfaceHelper::wrap() --
 
-#define SONOT__INSTANTIATE(T__) \
-    template QJsonValue JsonHelper::wrap<T__>(const T__&);
+#define QPROPS__INSTANTIATE(T__) \
+    template QJsonValue JsonInterfaceHelper::wrap<T__>(const T__&);
 
-    SONOT__FOR_EACH_SUPPORTED_QT_TYPE( SONOT__INSTANTIATE )
+    QPROPS__FOR_EACH_SUPPORTED_QT_TYPE( QPROPS__INSTANTIATE )
 
-#undef SONOT__INSTANTIATE
-
-
-// -- inst. JsonHelper::expectChild(), toArray, fromArray() --
-
-#define SONOT__INSTANTIATE(T__) \
-    template T__ JsonHelper::expectChild<T__>(const QJsonObject& parent, const QString& key); \
-    template QJsonArray JsonHelper::toArray<T__>( const std::vector<T__>&); \
-    template void JsonHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonArray& src); \
-    template void JsonHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonValue& src);
-
-    SONOT__INSTANTIATE(float)
-    SONOT__INSTANTIATE(double)
-    SONOT__INSTANTIATE(int8_t)
-    SONOT__INSTANTIATE(uint8_t)
-    SONOT__INSTANTIATE(int16_t)
-    SONOT__INSTANTIATE(uint16_t)
-    SONOT__INSTANTIATE(int32_t)
-    SONOT__INSTANTIATE(uint32_t)
-    SONOT__INSTANTIATE(int64_t)
-    SONOT__INSTANTIATE(uint64_t)
-    SONOT__INSTANTIATE(QString)
-
-    SONOT__FOR_EACH_SUPPORTED_QT_TYPE( SONOT__INSTANTIATE )
-
-#undef SONOT__INSTANTIATE
+#undef QPROPS__INSTANTIATE
 
 
+// -- inst. JsonInterfaceHelper::expectChild(), toArray, fromArray() --
 
-} // namespace Sonot
+#define QPROPS__INSTANTIATE(T__) \
+    template T__ JsonInterfaceHelper::expectChild<T__>(const QJsonObject& parent, const QString& key); \
+    template QJsonArray JsonInterfaceHelper::toArray<T__>( const std::vector<T__>&); \
+    template void JsonInterfaceHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonArray& src); \
+    template void JsonInterfaceHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonValue& src);
+
+    QPROPS__INSTANTIATE(float)
+    QPROPS__INSTANTIATE(double)
+    QPROPS__INSTANTIATE(int8_t)
+    QPROPS__INSTANTIATE(uint8_t)
+    QPROPS__INSTANTIATE(int16_t)
+    QPROPS__INSTANTIATE(uint16_t)
+    QPROPS__INSTANTIATE(int32_t)
+    QPROPS__INSTANTIATE(uint32_t)
+    QPROPS__INSTANTIATE(int64_t)
+    QPROPS__INSTANTIATE(uint64_t)
+    QPROPS__INSTANTIATE(QString)
+
+    QPROPS__FOR_EACH_SUPPORTED_QT_TYPE( QPROPS__INSTANTIATE )
+
+#undef QPROPS__INSTANTIATE
+
+
+
+} // namespace QProps

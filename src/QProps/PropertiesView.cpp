@@ -18,14 +18,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#ifdef QT_WIDGETS_LIB
+
 #include <QLayout>
 #include <QMap>
 
 #include "PropertiesView.h"
 #include "PropertyWidget.h"
-#include "io/Properties.h"
+#include "Properties.h"
 
-namespace Sonot {
+namespace QProps {
 
 struct PropertiesView::Private
 {
@@ -175,4 +177,6 @@ void PropertiesView::Private::updateWidgetVis()
 }
 
 
-} // namespace Sonot
+} // namespace QProps
+
+#endif

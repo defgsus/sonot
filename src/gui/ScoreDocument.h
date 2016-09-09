@@ -23,8 +23,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QtCore>
 
-#include "io/JsonInterface.h"
-#include "io/Properties.h"
+#include "QProps/JsonInterface.h"
+#include "QProps/Properties.h"
 #include "PageLayout.h"
 #include "PageAnnotation.h"
 #include "ScoreLayout.h"
@@ -37,7 +37,7 @@ namespace Sonot {
 class Score;
 
 /** Wrapper around Score and layout classes */
-class ScoreDocument : public JsonInterface
+class ScoreDocument : public QProps::JsonInterface
 {
     Q_DECLARE_TR_FUNCTIONS(ScoreDocument);
 
@@ -72,7 +72,7 @@ public:
     const PageAnnotation& pageAnnotation(int pageIdx) const
         { return pageAnnotation(keyForIndex(pageIdx)); }
 
-    const Properties& props() const;
+    const QProps::Properties& props() const;
 
     // ---- helper ----
 
@@ -101,10 +101,10 @@ public:
     void setPageLayout(int pageIdx, const PageLayout& p);
 
     void setPageSpacing(const QPointF& f) { props().set("page-spacing", f); }
-    void setProperties(const Properties& p);
+    void setProperties(const QProps::Properties& p);
 
 private:
-    Properties& props();
+    QProps::Properties& props();
     struct Private;
     Private* p_;
 };

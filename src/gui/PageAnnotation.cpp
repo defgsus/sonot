@@ -23,6 +23,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QJsonValue>
 
 #include "PageAnnotation.h"
+#include "QProps/JsonInterfaceHelper.h"
+#include "QProps/error.h"
 
 namespace Sonot {
 
@@ -44,7 +46,7 @@ QJsonObject PageAnnotation::toJson() const
 
 void PageAnnotation::fromJson(const QJsonObject& o)
 {
-    JsonHelper json("PageAnnotation");
+    QProps::JsonInterfaceHelper json("PageAnnotation");
     QJsonArray a = json.expectArray(json.expectChildValue(o, "text-items"));
 
     std::vector<TextItem> items;

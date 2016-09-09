@@ -7,10 +7,8 @@ HEADERS += \
     src/gui/PageSize.h \
     src/gui/ScoreLayout.h \
     src/gui/ScoreDocument.h \
-    $$PWD/PropertiesView.h \
-    $$PWD/PropertyWidget.h \
-    $$PWD/AllPropertiesView.h \
-    $$PWD/PerPage.h
+    src/gui/AllPropertiesView.h \
+    src/gui/PerPage.h
 
 SOURCES += \
     src/gui/MainWindow.cpp \
@@ -21,7 +19,5 @@ SOURCES += \
     src/gui/PageSize.cpp \
     src/gui/ScoreLayout.cpp \
     src/gui/ScoreDocument.cpp \
-    $$PWD/PropertiesView.cpp \
-    $$PWD/PropertyWidget.cpp \
-    $$PWD/AllPropertiesView.cpp \
-    $$PWD/PerPage.cpp
+    src/gui/AllPropertiesView.cpp \
+    src/gui/PerPage.cpp

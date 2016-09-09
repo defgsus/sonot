@@ -18,44 +18,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_PROPERTYWIDGET_H
-#define SONOTSRC_PROPERTYWIDGET_H
+#ifndef QPROPS_GLOBAL_H
+#define QPROPS_GLOBAL_H
 
-#include <QWidget>
+#include <QtCore/qglobal.h>
 
-namespace Sonot {
+#if defined(QPROPS_LIBRARY)
+#  define QPROPS_SHARED_EXPORT Q_DECL_EXPORT
+#else
+#  define QPROPS_SHARED_EXPORT Q_DECL_IMPORT
+#endif
 
-class Properties;
-
-/** Dynamic widget for a Properties::Property.
-    Most common types supported. */
-class PropertyWidget : public QWidget
-{
-    Q_OBJECT
-public:
-
-    /** Constructor for a Properties::Property with given @p id */
-    explicit PropertyWidget(
-            const QString& id, const Properties* p, QWidget *parent = 0);
-
-    /** Returns the currently set value */
-    const QVariant& value() const;
-
-signals:
-
-    /** Emitted when the user changed the value (and only then). */
-    void valueChanged();
-
-private slots:
-
-    void onValueChanged_();
-
-private:
-
-    struct Private;
-    Private * p_;
-};
-
-} // namespace Sonot
-
-#endif // SONOTSRC_PROPERTYWIDGET_H
+#endif // QPROPS_GLOBAL_H

@@ -24,12 +24,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #if 0
 #   include <QDebug>
-#   define SONOT_DEBUG_PROP(arg__) qDebug() << arg__;
+#   define QPROPS_DEBUG_PROP(arg__) qDebug() << arg__;
 #else
-#   define SONOT_DEBUG_PROP(unused__) { }
+#   define QPROPS_DEBUG_PROP(unused__) { }
 #endif
 
-namespace Sonot {
+namespace QProps {
 
 Properties::NamedValues Properties::namedValuesQtAlignment()
 {
@@ -103,7 +103,7 @@ bool Properties::Property::operator == (const Property& o) const
         ret = (std::abs(v1 - v2) < 0.00000001);
     }
     else ret = p_val_ == o.p_val_;
-    if (!ret) qDebug() << "COMPARE " << ret << p_val_ << o.p_val_;
+    //if (!ret) qDebug() << "COMPARE " << ret << p_val_ << o.p_val_;
     return ret;
 }
 
@@ -295,60 +295,60 @@ QVariant Properties::get(const QString &id, const QVariant& def) const
 
 QVariant Properties::get(const QString &id) const
 {
-#define SONOT__GETTER(mem__, ret__) \
+#define QPROPS__GETTER(mem__, ret__) \
     auto i = mem__.find(id); \
     if (i == mem__.end()) \
-        SONOT_DEBUG_PROP("Properties::get[" #mem__ "](\"" \
+        QPROPS_DEBUG_PROP("Properties::get[" #mem__ "](\"" \
                          << id << "\") unknown"); \
     if (i == mem__.end()) \
         return ret__;
 
-    SONOT__GETTER(p_map_, QVariant());
+    QPROPS__GETTER(p_map_, QVariant());
     return i.value().value();
 }
 
 QVariant Properties::getDefault(const QString &id) const
 {
-    SONOT__GETTER(p_map_, QVariant());
+    QPROPS__GETTER(p_map_, QVariant());
     return i.value().defaultValue();
 }
 
 QVariant Properties::getMin(const QString &id) const
 {
-    SONOT__GETTER(p_map_, QVariant());
+    QPROPS__GETTER(p_map_, QVariant());
     return i.value().minimum();
 }
 
 QVariant Properties::getMax(const QString &id) const
 {
-    SONOT__GETTER(p_map_, QVariant());
+    QPROPS__GETTER(p_map_, QVariant());
     return i.value().maximum();
 }
 
 QVariant Properties::getStep(const QString &id) const
 {
-    SONOT__GETTER(p_map_, QVariant());
+    QPROPS__GETTER(p_map_, QVariant());
     return i.value().step();
 }
 
 QString Properties::getName(const QString &id) const
 {
-    SONOT__GETTER(p_map_, QString());
+    QPROPS__GETTER(p_map_, QString());
     return i.value().name();
 }
 
 
 QString Properties::getTip(const QString &id) const
 {
-    SONOT__GETTER(p_map_, QString());
+    QPROPS__GETTER(p_map_, QString());
     return i.value().tip();
 }
 
 int Properties::getSubType(const QString &id) const
 {
-    SONOT__GETTER(p_map_, -1);
+    QPROPS__GETTER(p_map_, -1);
     return i.value().subType();
-    #undef SONOT__GETTER
+    #undef QPROPS__GETTER
 }
 
 
@@ -358,10 +358,10 @@ int Properties::getSubType(const QString &id) const
 
 void Properties::set(const QString &id, const QVariant & v)
 {
-    SONOT_DEBUG_PROP("Properties::set '" << id << "': " << v << " type "
+    QPROPS_DEBUG_PROP("Properties::set '" << id << "': " << v << " type "
                   << v.typeName() << " (" << v.type() << ")");
 
-#define SONOT__GETPROP \
+#define QPROPS__GETPROP \
     auto i = p_map_.find(id); \
     if (i == p_map_.end()) \
     { \
@@ -371,94 +371,94 @@ void Properties::set(const QString &id, const QVariant & v)
         i.value().p_idx_ = p_map_.size()-1; \
     } \
 
-    SONOT__GETPROP
+    QPROPS__GETPROP
     i.value().p_val_ = v;
 }
 
 
 void Properties::setDefault(const QString &id, const QVariant & v)
 {
-    SONOT_DEBUG_PROP("Properties::setDefault '" << id << "': " << v << " type "
+    QPROPS_DEBUG_PROP("Properties::setDefault '" << id << "': " << v << " type "
                   << v.typeName() << " (" << v.type() << ")");
-    SONOT__GETPROP
+    QPROPS__GETPROP
     i.value().p_def_ = v;
 }
 
 void Properties::setMin(const QString &id, const QVariant & v)
 {
-    SONOT_DEBUG_PROP("Properties::setMin '" << id << "': " << v << " type "
+    QPROPS_DEBUG_PROP("Properties::setMin '" << id << "': " << v << " type "
                   << v.typeName() << " (" << v.type() << ")");
-    SONOT__GETPROP
+    QPROPS__GETPROP
     i.value().p_min_ = v;
 }
 
 void Properties::setMax(const QString &id, const QVariant & v)
 {
-    SONOT_DEBUG_PROP("Properties::setMax '" << id << "': " << v << " type "
+    QPROPS_DEBUG_PROP("Properties::setMax '" << id << "': " << v << " type "
                   << v.typeName() << " (" << v.type() << ")");
-    SONOT__GETPROP
+    QPROPS__GETPROP
     i.value().p_max_ = v;
 }
 
 void Properties::setRange(const QString &id, const QVariant & mi, const QVariant & ma)
 {
-    SONOT_DEBUG_PROP("Properties::setRange '" << id << "': " << mi << "-" << ma << " type "
+    QPROPS_DEBUG_PROP("Properties::setRange '" << id << "': " << mi << "-" << ma << " type "
                   << mi.typeName() << " (" << mi.type() << ")");
-    SONOT__GETPROP
+    QPROPS__GETPROP
     i.value().p_min_ = mi;
     i.value().p_max_ = ma;
 }
 
 void Properties::setStep(const QString &id, const QVariant & v)
 {
-    SONOT_DEBUG_PROP("Properties::setStep '" << id << "': " << v << " type "
+    QPROPS_DEBUG_PROP("Properties::setStep '" << id << "': " << v << " type "
                   << v.typeName() << " (" << v.type() << ")");
-    SONOT__GETPROP
+    QPROPS__GETPROP
     i.value().p_step_ = v;
 }
 
 
 void Properties::setName(const QString &id, const QString& v)
 {
-    SONOT_DEBUG_PROP("Properties::setName '" << id << "': " << v << ")");
-    SONOT__GETPROP
+    QPROPS_DEBUG_PROP("Properties::setName '" << id << "': " << v << ")");
+    QPROPS__GETPROP
     i.value().p_name_ = v;
 }
 
 void Properties::setTip(const QString &id, const QString& v)
 {
-    SONOT_DEBUG_PROP("Properties::setTip '" << id << "': " << v << ")");
-    SONOT__GETPROP
+    QPROPS_DEBUG_PROP("Properties::setTip '" << id << "': " << v << ")");
+    QPROPS__GETPROP
     i.value().p_tip_ = v;
 }
 
 
 void Properties::setSubType(const QString &id, int v)
 {
-    SONOT_DEBUG_PROP("Properties::setSubType '" << id << "': " << v << ")");
-    SONOT__GETPROP
+    QPROPS_DEBUG_PROP("Properties::setSubType '" << id << "': " << v << ")");
+    QPROPS__GETPROP
     i.value().p_subType_ = v;
 }
 
 void Properties::setNamedValues(const QString &id, const NamedValues &names)
 {
-    SONOT_DEBUG_PROP("Properties::setNamedValues '" << id << "'");
-    SONOT__GETPROP
+    QPROPS_DEBUG_PROP("Properties::setNamedValues '" << id << "'");
+    QPROPS__GETPROP
     i.value().p_nv_ = names;
 }
 
 void Properties::clearFlags(const QString &id)
 {
-    SONOT_DEBUG_PROP("Properties::clearFlags(" << id << ")");
+    QPROPS_DEBUG_PROP("Properties::clearFlags(" << id << ")");
 
     auto p = getProperty(id);
     if (!p.isValid() || !p.hasNamedValues() || !p.namedValues().isFlags())
     {
-        SONOT_DEBUG_PROP("Properties::clearFlags(" << id << ") for "
+        QPROPS_DEBUG_PROP("Properties::clearFlags(" << id << ") for "
                          "non-flag value");
         return;
     }
-    SONOT__GETPROP
+    QPROPS__GETPROP
     i.value().p_val_ = QVariant(qlonglong(0));
 }
 
@@ -474,17 +474,17 @@ void Properties::setFlags(
 void Properties::setFlags(
         const QString &id, const QList<QString> &flagIds)
 {
-    SONOT_DEBUG_PROP("Properties::setFlags(" << id << ", "
+    QPROPS_DEBUG_PROP("Properties::setFlags(" << id << ", "
                      << flagIds << ")");
 
     auto p = getProperty(id);
     if (!p.isValid() || !p.hasNamedValues() || !p.namedValues().isFlags())
     {
-        SONOT_DEBUG_PROP("Properties::setFlags(" << id << ") for "
+        QPROPS_DEBUG_PROP("Properties::setFlags(" << id << ") for "
                          "non-flag value");
         return;
     }
-    SONOT__GETPROP
+    QPROPS__GETPROP
 
     qlonglong flags = i.value().value().toLongLong();
     for (const QString& fid : flagIds)
@@ -505,7 +505,7 @@ void Properties::setFlags(
     {
         k += (flags & i) != 0 ? "x" : ".";
     }
-    qDebug() << flags << k << Qt::Alignment((int)flags);
+    qDebug() << flags << k;
 #endif
     i.value().p_val_ = QVariant(flags);
 }
@@ -514,7 +514,7 @@ void Properties::setFlags(
 
 void Properties::setVisible(const QString &id, bool vis)
 {
-    SONOT_DEBUG_PROP("Properties::setVisible '" << id << "' " << vis);
+    QPROPS_DEBUG_PROP("Properties::setVisible '" << id << "' " << vis);
     auto i = p_map_.find(id);
     if (i != p_map_.end())
         i.value().p_vis_ = vis;
@@ -523,7 +523,7 @@ void Properties::setVisible(const QString &id, bool vis)
 void Properties::setWidgetCallback(
         const QString &id, std::function<void (QWidget *)> f)
 {
-    SONOT_DEBUG_PROP("Properties::setWidgetCallback '" << id << "'");
+    QPROPS_DEBUG_PROP("Properties::setWidgetCallback '" << id << "'");
     auto i = p_map_.find(id);
     if (i != p_map_.end())
         i.value().p_cb_widget_ = f;
@@ -532,7 +532,7 @@ void Properties::setWidgetCallback(
 
 bool Properties::change(const QString &id, const QVariant & v)
 {
-    SONOT_DEBUG_PROP("property '" << id << "': " << v
+    QPROPS_DEBUG_PROP("property '" << id << "': " << v
                      << " type "<< v.typeName() << " (" << v.type() << ")");
     auto i = p_map_.find(id);
     if (i == p_map_.end())
@@ -641,44 +641,5 @@ void Properties::callWidgetCallback(const QString & id, QWidget * w) const
     }
 }
 
-#if 0
-QRectF Properties::align(const QRectF &rect, const QRectF &parent,
-                         int alignment, qreal margin, bool outside)
-{
-    QRectF r(rect);
 
-    // h&v center (ignore outside flag and margin)
-    if ((alignment & A_CENTER) == A_CENTER)
-    {
-        r.moveLeft( parent.left() + (parent.width() - rect.width()) / 2.);
-        r.moveTop( parent.top() + (parent.height() - rect.height()) / 2.);
-        return r;
-    }
-
-    if (outside)
-        margin = -margin;
-
-    r.moveTopLeft(parent.topLeft() + QPointF(
-                      margin - (outside ? rect.width() : 0),
-                      margin - (outside ? rect.height() : 0)));
-
-    // hcenter or right (it's already left)
-    if ((alignment & A_HCENTER) == A_HCENTER)
-        r.moveLeft( parent.left() + (parent.width() - rect.width()) / 2.);
-    else if (alignment & A_RIGHT)
-        r.moveRight( parent.right() - margin
-                     + (outside ? rect.width() : 0));
-
-    // vcenter or bottom (it's already top)
-    if ((alignment & A_VCENTER) == A_VCENTER)
-        r.moveTop( parent.top() + (parent.height() - rect.height()) / 2.);
-    else if (alignment & A_BOTTOM)
-        r.moveBottom( parent.bottom() - margin
-                      + (outside ? rect.height() : 0));
-
-    return r;
-}
-#endif
-
-
-} // namespace Sonot
+} // namespace QProps

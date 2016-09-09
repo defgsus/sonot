@@ -18,7 +18,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-
+#ifdef QT_WIDGETS_LIB
 
 #include <functional>
 
@@ -35,10 +35,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QStandardItemModel>
 
 #include "PropertyWidget.h"
-#include "io/Properties.h"
-#include "io/error.h"
+#include "Properties.h"
+#include "error.h"
 
-namespace Sonot {
+namespace QProps {
 
 
 struct PropertyWidget::Private
@@ -118,95 +118,96 @@ void PropertyWidget::onValueChanged_()
     }
 }
 
+
 namespace {
 
-struct ConvertQSize
-{
-    static int toValue(const QVariant& v, int idx)
+    struct ConvertQSize
     {
-        QSize s = v.toSize();
-        return idx == 0 ? s.width() : s.height();
-    }
+        static int toValue(const QVariant& v, int idx)
+        {
+            QSize s = v.toSize();
+            return idx == 0 ? s.width() : s.height();
+        }
 
-    static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
-    {
-        return QSize(sb[0]->value(), sb[1]->value());
-    }
-};
+        static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
+        {
+            return QSize(sb[0]->value(), sb[1]->value());
+        }
+    };
 
-struct ConvertQSizeF
-{
-    static double toValue(const QVariant& v, int idx)
+    struct ConvertQSizeF
     {
-        QSizeF s = v.toSizeF();
-        return idx == 0 ? s.width() : s.height();
-    }
+        static double toValue(const QVariant& v, int idx)
+        {
+            QSizeF s = v.toSizeF();
+            return idx == 0 ? s.width() : s.height();
+        }
 
-    static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
-    {
-        return QSizeF(sb[0]->value(), sb[1]->value());
-    }
-};
+        static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
+        {
+            return QSizeF(sb[0]->value(), sb[1]->value());
+        }
+    };
 
-struct ConvertQPoint
-{
-    static int toValue(const QVariant& v, int idx)
+    struct ConvertQPoint
     {
-        QPoint s = v.toPoint();
-        return idx == 0 ? s.x() : s.y();
-    }
+        static int toValue(const QVariant& v, int idx)
+        {
+            QPoint s = v.toPoint();
+            return idx == 0 ? s.x() : s.y();
+        }
 
-    static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
-    {
-        return QPoint(sb[0]->value(), sb[1]->value());
-    }
-};
+        static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
+        {
+            return QPoint(sb[0]->value(), sb[1]->value());
+        }
+    };
 
-struct ConvertQPointF
-{
-    static double toValue(const QVariant& v, int idx)
+    struct ConvertQPointF
     {
-        QPointF s = v.toPointF();
-        return idx == 0 ? s.x() : s.y();
-    }
+        static double toValue(const QVariant& v, int idx)
+        {
+            QPointF s = v.toPointF();
+            return idx == 0 ? s.x() : s.y();
+        }
 
-    static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
-    {
-        return QPointF(sb[0]->value(), sb[1]->value());
-    }
-};
+        static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
+        {
+            return QPointF(sb[0]->value(), sb[1]->value());
+        }
+    };
 
-struct ConvertQRectF
-{
-    static double toValue(const QVariant& v, int idx)
+    struct ConvertQRectF
     {
-        QRectF r = v.toRectF();
-        return idx == 0 ? r.x() : idx == 1
-                          ? r.y() : idx == 2 ? r.width() : r.height();
-    }
+        static double toValue(const QVariant& v, int idx)
+        {
+            QRectF r = v.toRectF();
+            return idx == 0 ? r.x() : idx == 1
+                              ? r.y() : idx == 2 ? r.width() : r.height();
+        }
 
-    static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
-    {
-        return QRectF(sb[0]->value(), sb[1]->value(),
-                      sb[2]->value(), sb[3]->value());
-    }
-};
+        static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
+        {
+            return QRectF(sb[0]->value(), sb[1]->value(),
+                          sb[2]->value(), sb[3]->value());
+        }
+    };
 
-struct ConvertQColor
-{
-    static double toValue(const QVariant& v, int idx)
+    struct ConvertQColor
     {
-        QColor c = v.value<QColor>();
-        return idx == 0 ? c.red() : idx == 1
-                          ? c.green() : idx == 2 ? c.blue() : c.alpha();
-    }
+        static double toValue(const QVariant& v, int idx)
+        {
+            QColor c = v.value<QColor>();
+            return idx == 0 ? c.red() : idx == 1
+                              ? c.green() : idx == 2 ? c.blue() : c.alpha();
+        }
 
-    static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
-    {
-        return QColor(sb[0]->value(), sb[1]->value(),
-                      sb[2]->value(), sb[3]->value());
-    }
-};
+        static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
+        {
+            return QColor(sb[0]->value(), sb[1]->value(),
+                          sb[2]->value(), sb[3]->value());
+        }
+    };
 
 } // namespace
 
@@ -292,12 +293,12 @@ void PropertyWidget::Private::createWidgets()
 
     // ----- create appropriate sub-widgets -----
 
-#define MO__SUBLAYOUT(Layout__) \
+#define QPROPS__SUBLAYOUT(Layout__) \
     edit = new QWidget(widget); \
     auto layout = new Layout__(edit); \
     layout->setMargin(0);
 
-#define MO__FRAMED_SUBLAYOUT(Layout__) \
+#define QPROPS__FRAMED_SUBLAYOUT(Layout__) \
     edit = new QFrame(widget); \
     static_cast<QFrame*>(edit)->setFrameStyle(QFrame::Panel | QFrame::Raised); \
     auto layout = new Layout__(edit); \
@@ -374,7 +375,7 @@ void PropertyWidget::Private::createWidgets()
                 /** @todo */
             };
 #else
-            MO__FRAMED_SUBLAYOUT(QVBoxLayout);
+            QPROPS__FRAMED_SUBLAYOUT(QVBoxLayout);
             QList<QCheckBox*> boxes;
             for (const Properties::NamedValues::Value & i : nvi)
             {
@@ -498,7 +499,7 @@ void PropertyWidget::Private::createWidgets()
                     // string display with edit button (->TextEditDialog)
                     if ((subtype & Properties::ST_TEXT) == Properties::ST_TEXT)
                     {
-                        MO__SUBLAYOUT(QHBoxLayout);
+                        QPROPS__SUBLAYOUT(QHBoxLayout);
                         auto e = new QLineEdit(widget);
                         e->setReadOnly(true);
                         e->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -534,7 +535,7 @@ void PropertyWidget::Private::createWidgets()
                     else
                     if ((subtype & Properties::ST_FILENAME) == Properties::ST_FILENAME)
                     {
-                        MO__SUBLAYOUT(QHBoxLayout);
+                        QPROPS__SUBLAYOUT(QHBoxLayout);
                         auto e = new QLineEdit(widget);
                         e->setReadOnly(true);
                         e->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -574,7 +575,7 @@ void PropertyWidget::Private::createWidgets()
 
             case QMetaType::QSize:
             {
-                MO__SUBLAYOUT(QHBoxLayout);
+                QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<QSpinBox, ConvertQSize>(
                             2, SIGNAL(valueChanged(int)));
                 for (auto s : sb)
@@ -584,7 +585,7 @@ void PropertyWidget::Private::createWidgets()
 
             case QMetaType::QSizeF:
             {
-                MO__SUBLAYOUT(QHBoxLayout);
+                QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<QDoubleSpinBox, ConvertQSizeF>(
                             2, SIGNAL(valueChanged(double)));
                 for (auto s : sb)
@@ -594,7 +595,7 @@ void PropertyWidget::Private::createWidgets()
 
             case QMetaType::QPointF:
             {
-                MO__SUBLAYOUT(QHBoxLayout);
+                QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<QDoubleSpinBox, ConvertQPointF>(
                             2, SIGNAL(valueChanged(double)));
                 for (auto s : sb)
@@ -604,7 +605,7 @@ void PropertyWidget::Private::createWidgets()
 
             case QMetaType::QPoint:
             {
-                MO__SUBLAYOUT(QHBoxLayout);
+                QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<QSpinBox, ConvertQPoint>(
                             2, SIGNAL(valueChanged(int)));
                 for (auto s : sb)
@@ -614,7 +615,7 @@ void PropertyWidget::Private::createWidgets()
 
             case QMetaType::QRectF:
             {
-                MO__SUBLAYOUT(QGridLayout);
+                QPROPS__SUBLAYOUT(QGridLayout);
                 auto sb = createSpinboxes<QDoubleSpinBox, ConvertQRectF>(
                             4, SIGNAL(valueChanged(double)));
                 sb[0]->setStatusTip(tr("X Position"));
@@ -638,7 +639,7 @@ void PropertyWidget::Private::createWidgets()
                 connect(e, SIGNAL(textChanged(QString)),
                         widget, SLOT(onValueChanged_()));
 #else
-                MO__SUBLAYOUT(QHBoxLayout);
+                QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<QSpinBox, ConvertQColor>(
                             4, SIGNAL(valueChanged(int)));
                 sb[0]->setStatusTip(tr("Red"));
@@ -676,10 +677,10 @@ void PropertyWidget::Private::createWidgets()
 
     // ---- create QVector types ----
 
-#define MO__VECTOR(T__, SpinBox__, sigType__, negRange__) \
+#define QPROPS__VECTOR(T__, SpinBox__, sigType__, negRange__) \
     if (!isHandled && !strcmp(v.typeName(), #T__)) \
     { \
-        MO__SUBLAYOUT(QHBoxLayout); \
+        QPROPS__SUBLAYOUT(QHBoxLayout); \
         auto vec = v.value<T__>(); \
         QVector<SpinBox__*> sb; \
         for (int i=0; i<vec.size(); ++i) \
@@ -730,12 +731,12 @@ void PropertyWidget::Private::createWidgets()
         isHandled = true; \
     }
 
-    MO__VECTOR(QVector<float>, QDoubleSpinBox, double, -9999999)
-    MO__VECTOR(QVector<double>, QDoubleSpinBox, double, -9999999)
-    MO__VECTOR(QVector<int>, QSpinBox, int, -9999999)
-    MO__VECTOR(QVector<uint>, QSpinBox, int, 0)
+    QPROPS__VECTOR(QVector<float>, QDoubleSpinBox, double, -9999999)
+    QPROPS__VECTOR(QVector<double>, QDoubleSpinBox, double, -9999999)
+    QPROPS__VECTOR(QVector<int>, QSpinBox, int, -9999999)
+    QPROPS__VECTOR(QVector<uint>, QSpinBox, int, 0)
 
-#undef MO__VECTOR
+#undef QPROPS__VECTOR
 
 
 
@@ -743,8 +744,12 @@ void PropertyWidget::Private::createWidgets()
 
     if (edit)
     {
-        SONOT_ASSERT(f_update_widget, "No widget update defined for type '" << v.typeName() << "'");
-        SONOT_ASSERT(f_update_value, "No value update defined for type '" << v.typeName() << "'");
+        QPROPS_ASSERT(f_update_widget,
+                      "No widget update defined for type '"
+                      << v.typeName() << "'");
+        QPROPS_ASSERT(f_update_value,
+                      "No value update defined for type '"
+                      << v.typeName() << "'");
         if (props)
             props->callWidgetCallback(id, edit);
         updateWidget();
@@ -753,12 +758,14 @@ void PropertyWidget::Private::createWidgets()
 
     if (!isHandled)
     {
-        SONOT_PROG_ERROR("PropertyWidget: unhandled type '"
-                         << v.typeName() << "'");
+        QPROPS_PROG_ERROR("PropertyWidget: unhandled type '"
+                          << v.typeName() << "'");
     }
 
-#undef MO__SUBLAYOUT
+#undef QPROPS__SUBLAYOUT
 }
 
 
-} // namespace Sonot
+} // namespace QProps
+
+#endif

@@ -18,8 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_PROPERTIES_H
-#define SONOTSRC_PROPERTIES_H
+#ifndef QPROPS_SRC_PROPERTIES_H
+#define QPROPS_SRC_PROPERTIES_H
 
 #include <functional>
 
@@ -32,8 +32,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 class QWidget;
 
-namespace Sonot {
-
+namespace QProps {
 
 
 /** Generic property container based on QVariant
@@ -222,7 +221,7 @@ public:
 
     // ------------- static helper --------------
 
-    /** Returns the string representation of all static QVariant types */
+    /** Returns the string representation of all QVariant types */
     static QString qvariant_to_string(const QVariant&);
 
     // ---------------- getter ------------------
@@ -436,14 +435,16 @@ private:
     bool p_explicitJsonTypes_;
 };
 
-} // namespace Sonot
+} // namespace QProps
 
 
 //Q_DECLARE_METATYPE(MO::Properties::NamedValues)
 
 
+
 // --------- templ impl. ------------------
-namespace Sonot {
+
+namespace QProps {
 
 template <class T>
 void Properties::set(
@@ -500,6 +501,6 @@ void Properties::set(
     setNamedValues(id, names);
 }
 
-} // namespace Sonot
+} // namespace QProps
 
-#endif // SONOTSRC_PROPERTIES_H
+#endif // QPROPS_SRC_PROPERTIES_H

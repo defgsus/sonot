@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QComboBox>
 
 #include "AllPropertiesView.h"
-#include "PropertiesView.h"
+#include "QProps/PropertiesView.h"
 #include "ScoreDocument.h"
 #include "PageLayout.h"
 #include "ScoreLayout.h"
@@ -45,7 +45,7 @@ struct AllPropertiesView::Private
     ScoreDocument* scoreDoc;
 
     QComboBox* combo;
-    PropertiesView* props;
+    QProps::PropertiesView* props;
 
 
 };
@@ -69,7 +69,7 @@ void AllPropertiesView::Private::createWidgets()
         combo = new QComboBox(p);
         lv->addWidget(combo);
 
-        props = new PropertiesView(p);
+        props = new QProps::PropertiesView(p);
         lv->addWidget(props);
 }
 

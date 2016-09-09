@@ -22,13 +22,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QJsonValue>
 
 #include "PageLayout.h"
+#include "QProps/JsonInterfaceHelper.h"
 
 namespace Sonot {
 
 
 PageLayout::PageLayout()
     : p_pageSize_   (PageSize::F_ISO_A4)
-    , p_margins_    (Properties("margins"))
+    , p_margins_    ("margins")
 {
     // content
     p_margins_.set(
@@ -82,7 +83,7 @@ QJsonObject PageLayout::toJson() const
 
 void PageLayout::fromJson(const QJsonObject& o)
 {
-    JsonHelper json("PageLayout");
+    QProps::JsonInterfaceHelper json("PageLayout");
     PageLayout tmp;
     tmp.p_pageSize_.fromJson(json.expectChildObject(o, "page-size"));
     tmp.p_margins_.fromJson(json.expectChildObject(o, "margins"));

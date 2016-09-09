@@ -26,15 +26,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QRectF>
 #include <QColor>
 
-#include "io/JsonInterface.h"
-#include "io/Properties.h"
+#include "QProps/JsonInterface.h"
+#include "QProps/Properties.h"
 
 class QFont;
 
 namespace Sonot {
 
 /** @brief Class for storing/displaying a text on the score sheet */
-class TextItem : public JsonInterface
+class TextItem : public QProps::JsonInterface
 {
     Q_DECLARE_TR_FUNCTIONS(TextItem)
 public:
@@ -46,7 +46,7 @@ public:
         F_BOLD = 2,
         F_UNDERLINE = 4
     };
-    static Properties::NamedValues fontFlagNamedValues();
+    static QProps::Properties::NamedValues fontFlagNamedValues();
 
     TextItem();
 
@@ -82,11 +82,11 @@ public:
     bool operator == (const TextItem& o) const;
     bool operator != (const TextItem& o) const { return !(*this == o); }
 
-    const Properties& props() const { return p_props_; }
+    const QProps::Properties& props() const { return p_props_; }
 
     // -- setter --
 
-    void setProperties(const Properties& p) { p_props_ = p; }
+    void setProperties(const QProps::Properties& p) { p_props_ = p; }
 
     void setBoundingBox(const QRectF& rect) { p_props_.set("box", rect); }
     void setBoxAlignment(Qt::Alignment a) { p_props_.set("align-box", int(a)); }
@@ -109,7 +109,7 @@ public:
 
 private:
 
-    Properties p_props_;
+    QProps::Properties p_props_;
 };
 
 } // namespace Sonot

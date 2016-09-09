@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QFont>
 
 #include "TextItem.h"
+#include "QProps/JsonInterfaceHelper.h"
 
 namespace Sonot {
 
@@ -46,15 +47,15 @@ TextItem::TextItem()
                  QRectF(0,0,10,10));
     p_props_.set("align-box", tr("box alignment"),
                  tr("Alignment of the containing box"),
-                 Properties::namedValuesQtAlignment(),
+                 QProps::Properties::namedValuesQtAlignment(),
                  int(Qt::AlignAbsolute));
     p_props_.set("align-text", tr("text alignment"),
                  tr("Alignment of the text within containing box"),
-                 Properties::namedValuesQtAlignment(),
+                 QProps::Properties::namedValuesQtAlignment(),
                  int(Qt::AlignCenter));
     p_props_.set("text-flags", tr("text options"),
                  tr("Options regarding the flow of text"),
-                 Properties::namedValuesQtTextFlag(),
+                 QProps::Properties::namedValuesQtTextFlag(),
                  int(Qt::TextDontClip));
     p_props_.set("font-flags", tr("font options"),
                  tr("Options on the used font"),
@@ -62,9 +63,9 @@ TextItem::TextItem()
                  int(0));
 }
 
-Properties::NamedValues TextItem::fontFlagNamedValues()
+QProps::Properties::NamedValues TextItem::fontFlagNamedValues()
 {
-    Properties::NamedValues f;
+    QProps::Properties::NamedValues f;
     f.setIsFlags(true);
     f.set("italic", tr("italic"), int(F_ITALIC));
     f.set("bold", tr("bold"), int(F_BOLD));
@@ -88,7 +89,7 @@ QJsonObject TextItem::toJson() const
 
 void TextItem::fromJson(const QJsonObject& o)
 {
-    JsonHelper json("TextItem");
+    QProps::JsonInterfaceHelper json("TextItem");
 
     TextItem t;
     t.p_props_.fromJson( json.expectChildObject(o, "props") );

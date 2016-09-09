@@ -24,12 +24,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <vector>
 
 #include "Note.h"
-#include "io/JsonInterface.h"
+#include "QProps/JsonInterface.h"
 
 namespace Sonot {
 
 /** A bar/messure of notes. */
-class Bar : public JsonInterface
+class Bar : public QProps::JsonInterface
 {
 public:
     Bar(size_t length = 0, size_t numRows = 0);

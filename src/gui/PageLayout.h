@@ -25,15 +25,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QRectF>
 
 #include "PageSize.h"
-#include "io/JsonInterface.h"
-#include "io/Properties.h"
+#include "QProps/JsonInterface.h"
+#include "QProps/Properties.h"
 
 namespace Sonot {
 
 /** Layout settings per odd/even page pair.
     Mainly controls size and margins
     */
-class PageLayout : public JsonInterface
+class PageLayout : public QProps::JsonInterface
 {
     Q_DECLARE_TR_FUNCTIONS(PageLayout)
 
@@ -60,18 +60,18 @@ public:
     /** The rect for the score = contectRect() - scoreMargins */
     QRectF scoreRect() const;
 
-    const Properties& margins() const { return p_margins_; }
+    const QProps::Properties& margins() const { return p_margins_; }
 
     // ---- setter ----
 
     void setPageSize(const PageSize& p) { p_pageSize_ = p; }
 
-    void setMargins(const Properties& margins) { p_margins_ = margins; }
+    void setMargins(const QProps::Properties& margins) { p_margins_ = margins; }
 
 private:
 
     PageSize p_pageSize_;
-    Properties p_margins_;
+    QProps::Properties p_margins_;
 };
 
 } // namespace Sonot

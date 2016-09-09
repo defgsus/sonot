@@ -24,7 +24,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QJsonArray>
 
 #include "NoteStream.h"
-#include "io/error.h"
+#include "QProps/JsonInterfaceHelper.h"
+#include "QProps/error.h"
 
 namespace Sonot {
 
@@ -56,31 +57,31 @@ size_t NoteStream::numRows() const
 
 const Bar& NoteStream::bar(size_t idx) const
 {
-    SONOT_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
     return p_data_[idx];
 }
 
 Bar& NoteStream::bar(size_t idx)
 {
-    SONOT_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
     return p_data_[idx];
 }
 
 
 void NoteStream::removeBar(size_t idx)
 {
-    SONOT_ASSERT_LT(idx, numBars(), "in NoteStream::removeBar()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::removeBar()");
     p_data_.erase(p_data_.begin() + idx);
 }
 
 void NoteStream::removeBars(size_t idx, int count)
 {
-    SONOT_ASSERT_LT(idx, numBars(), "in NoteStream::removeBars()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::removeBars()");
     if (count == 0)
         return;
     if (count < 0)
         count = numBars() - idx;
-    SONOT_ASSERT_LTE(idx + count, numBars(),
+    QPROPS_ASSERT_LTE(idx + count, numBars(),
                      "in NoteStream::removeBars(" << idx << ", " << count << ")");
 
     p_data_.erase(p_data_.begin() + idx, p_data_.begin() + idx + count);
@@ -136,7 +137,7 @@ QString NoteStream::toString() const
 
 QJsonObject NoteStream::toJson() const
 {
-    JsonHelper json("NoteStream");
+    QProps::JsonInterfaceHelper json("NoteStream");
 
     QJsonArray jbars;
     for (const Bar& bar : p_data_)
@@ -151,7 +152,7 @@ QJsonObject NoteStream::toJson() const
 
 void NoteStream::fromJson(const QJsonObject& o)
 {
-    JsonHelper json("NoteStream");
+    QProps::JsonInterfaceHelper json("NoteStream");
 
     QJsonArray jbars = json.expectArray(json.expectChildValue(o, "bars"));
 

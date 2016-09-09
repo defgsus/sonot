@@ -23,15 +23,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QtCore>
 
-#include "io/JsonInterface.h"
-#include "io/Properties.h"
+#include "QProps/JsonInterface.h"
+#include "QProps/Properties.h"
 
 class QFont;
 
 namespace Sonot {
 
 
-class ScoreLayout : public JsonInterface
+class ScoreLayout : public QProps::JsonInterface
 {
     Q_DECLARE_TR_FUNCTIONS(ScoreLayout)
 public:
@@ -44,7 +44,7 @@ public:
 
     // ---- getter ----
 
-    const Properties& props() const { return p_props_; }
+    const QProps::Properties& props() const { return p_props_; }
 
     double noteSpacing() const { return p_props_.get("note-spacing").toDouble(); }
     double rowSpacing() const { return p_props_.get("row-spacing").toDouble(); }
@@ -65,7 +65,7 @@ public:
 
     // --- setter ---
 
-    Properties& props() { return p_props_; }
+    QProps::Properties& props() { return p_props_; }
 
     void setNoteSpacing(double v) { p_props_.set("note-spacing", v); }
     void setRowSpacing(double v) {  p_props_.set("row-spacing", v); }
@@ -75,7 +75,7 @@ public:
     void setNoteSize(double v) {    p_props_.set("note-size", v); }
 
 private:
-    Properties p_props_;
+    QProps::Properties p_props_;
 };
 
 } // namespace Sonot

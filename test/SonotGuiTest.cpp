@@ -23,13 +23,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QString>
 #include <QtTest>
 
-#include "io/Properties.h"
 #include "core/NoteStream.h"
 #include "core/Score.h"
 #include "gui/ScoreDocument.h"
 #include "gui/PageAnnotation.h"
 #include "gui/PageLayout.h"
 #include "gui/ScoreLayout.h"
+#include "QProps/Properties.h"
 
 using namespace Sonot;
 
@@ -44,9 +44,9 @@ using namespace Sonot;
 namespace QTest {
 
     template <>
-    char* toString(const Properties& p)
+    char* toString(const QProps::Properties& p)
     {
-        return toString(p.toString());
+        return toString(p.toCompactString());
     }
 
     template <>
@@ -72,7 +72,6 @@ public:
 
 private slots:
 
-    void testJsonProperties();
     void testJsonScoreLayout();
     void testJsonPageLayout();
     void testJsonTextItem();
@@ -88,10 +87,10 @@ namespace {
     }
 
     template <typename T, typename U>
-    T randomFlags(const Properties::NamedValues& nv)
+    T randomFlags(const QProps::Properties::NamedValues& nv)
     {
         qlonglong flags = 0;
-        for (const Properties::NamedValues::Value& v : nv)
+        for (const QProps::Properties::NamedValues::Value& v : nv)
             if (rnd(0,1) < .5)
             {
                 //qDebug() << "RANDOM FLAG" << v.v.toLongLong() << v.name;
@@ -118,7 +117,7 @@ ScoreLayout SonotGuiTest::createRandomScoreLayout()
 PageLayout SonotGuiTest::createRandomPageLayout()
 {
     PageLayout l;
-    Properties p = l.margins();
+    QProps::Properties p = l.margins();
     p.set("left", rnd(1,40));
     p.set("right", rnd(1,40));
     p.set("top", rnd(1,40));
@@ -136,16 +135,16 @@ TextItem SonotGuiTest::createRandomTextItem()
     TextItem t;
     t.setBoundingBox(QRectF(rnd(0,100),rnd(0,100),rnd(10,100),rnd(10,100)));
     t.setBoxAlignment(randomFlags<Qt::Alignment, Qt::AlignmentFlag>(
-                          Properties::namedValuesQtAlignment()));
+                          QProps::Properties::namedValuesQtAlignment()));
     t.setColor(QColor(rnd(0,255),rnd(0,255),rnd(0,255)));
     t.setFontFlags(randomFlags<TextItem::FontFlag, TextItem::FontFlag>(
                        TextItem::fontFlagNamedValues()));
     t.setFontSize(rnd(1,20));
     t.setText("A random string");
     t.setTextAlignment(randomFlags<Qt::Alignment, Qt::AlignmentFlag>(
-                           Properties::namedValuesQtAlignment()));
+                           QProps::Properties::namedValuesQtAlignment()));
     t.setTextFlags(randomFlags<Qt::TextFlag, Qt::TextFlag>(
-                   Properties::namedValuesQtTextFlag()));
+                   QProps::Properties::namedValuesQtTextFlag()));
     return t;
 }
 
@@ -160,27 +159,6 @@ ScoreDocument SonotGuiTest::createRandomScoreDocument()
     return s;
 }
 
-
-void SonotGuiTest::testJsonProperties()
-{
-    Properties p("type-test");
-    p.set("double", tr("name"), tr("tool-tip"),
-                20., 1.);
-    p.set("int",    23);
-    p.set("float",  42.f);
-    p.set("uint",   666u);
-    p.set("long",   7777LL);
-    p.set("string", QString("holladihoh"));
-
-    PRINT( p.toString().toStdString() );
-    PRINT( p.toJsonString().toStdString() );
-    Properties p2("copy");
-    p2.fromJson(p.toJson());
-
-    PRINT( p2.toString().toStdString() );
-
-    QCOMPARE(p, p2);
-}
 
 
 

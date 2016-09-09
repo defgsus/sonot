@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "ScoreLayout.h"
 #include "PageLayout.h"
 #include "TextItem.h"
-#include "PropertiesView.h"
+#include "QProps/PropertiesView.h"
 
 namespace Sonot {
 
@@ -42,7 +42,7 @@ struct MainWindow::Private
     MainWindow* p;
 
     ScoreView* scoreView;
-    PropertiesView* propsView;
+    QProps::PropertiesView* propsView;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -72,7 +72,7 @@ void MainWindow::Private::createWidgets()
         scoreView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         lh->addWidget(scoreView);
 
-        propsView = new PropertiesView(p);
+        propsView = new QProps::PropertiesView(p);
         lh->addWidget(propsView);
 
         propsView->setProperties(
@@ -82,7 +82,7 @@ void MainWindow::Private::createWidgets()
             scoreView->scoreDocument().pageAnnotation(0).textItems()[0].props()
             //TextItem().props()
             );
-        connect(propsView, &PropertiesView::propertyChanged, [=]()
+        connect(propsView, &QProps::PropertiesView::propertyChanged, [=]()
         {
             PageAnnotation anno = scoreView->scoreDocument().pageAnnotation(0);
             anno.textItems()[0].setProperties(propsView->properties());

@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "PageLayout.h"
 #include "ScoreLayout.h"
 #include "PerPage.h"
+#include "QProps/JsonInterfaceHelper.h"
 
 namespace Sonot {
 
@@ -55,7 +56,7 @@ struct ScoreDocument::Private
 
     // -- config --
 
-    Properties props;
+    QProps::Properties props;
 };
 
 ScoreDocument::ScoreDocument()
@@ -78,9 +79,9 @@ ScoreDocument::~ScoreDocument()
     delete p_;
 }
 
-const Properties& ScoreDocument::props() const { return p_->props; }
-Properties& ScoreDocument::props() { return p_->props; }
-void ScoreDocument::setProperties(const Properties &p) { p_->props = p; }
+const QProps::Properties& ScoreDocument::props() const { return p_->props; }
+QProps::Properties& ScoreDocument::props() { return p_->props; }
+void ScoreDocument::setProperties(const QProps::Properties &p) { p_->props = p; }
 
 ScoreDocument& ScoreDocument::operator = (const ScoreDocument& o)
 {
@@ -105,7 +106,7 @@ bool ScoreDocument::operator == (const ScoreDocument& o) const
 
 QJsonObject ScoreDocument::toJson() const
 {
-    JsonHelper json("ScoreDocument");
+    QProps::JsonInterfaceHelper json("ScoreDocument");
     QJsonObject o;
     o.insert("score", p_->score.toJson());
     o.insert("score-layout", p_->scoreLayout.toJson());
@@ -117,7 +118,7 @@ QJsonObject ScoreDocument::toJson() const
 
 void ScoreDocument::fromJson(const QJsonObject& o)
 {
-    JsonHelper json("ScoreDocument");
+    QProps::JsonInterfaceHelper json("ScoreDocument");
     ScoreDocument tmp;
     tmp.p_->score.fromJson( json.expectChildObject(o, "score") );
     tmp.p_->scoreLayout.fromJson( json.expectChildObject(o, "score-layout") );

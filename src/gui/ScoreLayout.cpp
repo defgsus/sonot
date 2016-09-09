@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QFont>
 
 #include "ScoreLayout.h"
+#include "QProps/JsonInterfaceHelper.h"
 
 namespace Sonot {
 
@@ -65,7 +66,7 @@ QJsonObject ScoreLayout::toJson() const
 
 void ScoreLayout::fromJson(const QJsonObject& o)
 {
-    JsonHelper json("ScoreLayout");
+    QProps::JsonInterfaceHelper json("ScoreLayout");
     ScoreLayout l;
     l.p_props_.fromJson(json.expectChildObject(o, "props"));
 

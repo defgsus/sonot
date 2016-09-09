@@ -4,18 +4,19 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT       += core gui widgets
 
 TARGET = sonot
 TEMPLATE = app
 CONFIG += c++11
 
+
+
 INCLUDEPATH += src
 
-include(src/core/core.pri)
-include(src/gui/gui.pri)
+include(src/core.pri)
+include(src/gui.pri)
+include(src/QProps.pri)
 
 SOURCES += \
     src/main.cpp

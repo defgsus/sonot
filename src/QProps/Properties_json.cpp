@@ -18,24 +18,23 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#include "Properties.h"
-
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QJsonValue>
 
 #include <QColor>
 
+#include "Properties.h"
+#include "JsonInterfaceHelper.h"
 #include "error.h"
 
-namespace Sonot {
-
+namespace QProps {
 
 
 
 QJsonObject Properties::toJson() const
 {
-    JsonHelper json("Properties:" + p_id_);
+    JsonInterfaceHelper json("Properties:" + p_id_);
 
     QJsonObject main;
     main.insert("id", p_id_);
@@ -67,7 +66,7 @@ QJsonObject Properties::toJson() const
             else
             // write each flag id
             {
-                json.beginContext(QString("save name value flags for %1:%2")
+                json.beginContext(QString("save named value flags for %1:%2")
                                   .arg(p_id_).arg(p.id()));
                 QJsonArray jflags;
                 auto flag = p.value().toLongLong();
@@ -77,6 +76,7 @@ QJsonObject Properties::toJson() const
                         jflags.append(v.id);
                 }
                 o.insert("flags", jflags);
+
                 json.endContext();
             }
         }
@@ -90,7 +90,7 @@ QJsonObject Properties::toJson() const
 
 void Properties::fromJson(const QJsonObject& main)
 {
-    JsonHelper json("Properties:" + p_id_);
+    JsonInterfaceHelper json("Properties:" + p_id_);
     Properties tmp(*this);
 
     QJsonArray array = json.expectChildArray(main, "values");
@@ -111,6 +111,7 @@ void Properties::fromJson(const QJsonObject& main)
                     ? p.value().type() : QVariant::Invalid;
             QVariant v = json.expectChildQVariant(o, "v", type);
             tmp.set(id, v);
+
             json.endContext();
         }
         else
@@ -124,9 +125,10 @@ void Properties::fromJson(const QJsonObject& main)
 
                 QString vid = json.expectChild<QString>(o, "nv");
                 if (!p.namedValues().has(vid))
-                    SONOT_IO_ERROR("Unknown value-id '" << id << "' in json "
+                    QPROPS_IO_ERROR("Unknown value-id '" << id << "' in json "
                                    "for property '" << id << "'");
                 tmp.set(id, p.namedValues().get(vid).v);
+
                 json.endContext();
             }
             else
@@ -140,6 +142,7 @@ void Properties::fromJson(const QJsonObject& main)
                 json.fromArray(ids, jarray);
                 tmp.clearFlags(id);
                 tmp.setFlags(id, ids);
+
                 json.endContext();
             }
         }
@@ -151,4 +154,6 @@ void Properties::fromJson(const QJsonObject& main)
 
 
 
-} // namespace Sonot
+} // namespace QProps
+
+

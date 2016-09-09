@@ -26,12 +26,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QString>
 
 #include "Bar.h"
-#include "io/JsonInterface.h"
+#include "QProps/JsonInterface.h"
 
 namespace Sonot {
 
 /** Collection of Bars */
-class NoteStream : public JsonInterface
+class NoteStream : public QProps::JsonInterface
 {
 public:
     NoteStream();

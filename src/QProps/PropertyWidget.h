@@ -18,42 +18,39 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_PROPERTIESVIEW_H
-#define SONOTSRC_PROPERTIESVIEW_H
+#ifdef QT_WIDGETS_LIB
 
-#include <QScrollArea>
+#ifndef QPROPS_SRC_PROPERTYWIDGET_H
+#define QPROPS_SRC_PROPERTYWIDGET_H
 
-namespace Sonot {
+#include <QWidget>
+
+namespace QProps {
 
 class Properties;
 
-/** Dynamic gui display/editor for Properties */
-class PropertiesView : public QScrollArea
+/** Dynamic widget for a Properties::Property.
+    Most common types supported. */
+class PropertyWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit PropertiesView(QWidget *parent = 0);
-    ~PropertiesView();
 
-    /** Returns read access to the current properties */
-    const Properties& properties() const;
+    /** Constructor for a Properties::Property with given @p id */
+    explicit PropertyWidget(const QString& id, const Properties* p,
+                            QWidget *parent = 0);
+
+    /** Returns the currently set value */
+    const QVariant& value() const;
 
 signals:
 
-    /** Emitted when the user has changed a property value */
-    void propertyChanged(const QString& id);
+    /** Emitted when the user changed the value (and only then). */
+    void valueChanged();
 
-public slots:
+private slots:
 
-    /** Destroys all property widgets */
-    void clear();
-
-    /** Assigns a new set of Properties to edit */
-    void setProperties(const Properties& );
-
-    /** Assigns multiple sets of Properties to edit.
-        A widget is created for each unique id in all Properties. */
-    void setProperties(const QList<Properties>& );
+    void onValueChanged_();
 
 private:
 
@@ -61,6 +58,8 @@ private:
     Private * p_;
 };
 
-} // namespace Sonot
+} // namespace QProps
 
-#endif // SONOTSRC_PROPERTIESVIEW_H
+#endif // QPROPS_SRC_PROPERTYWIDGET_H
+
+#endif

@@ -26,7 +26,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "Score.h"
 #include "NoteStream.h"
-#include "io/error.h"
+#include "QProps/JsonInterfaceHelper.h"
+#include "QProps/error.h"
 
 namespace Sonot {
 
@@ -45,7 +46,7 @@ struct Score::Private
     Score* p;
 
     QList<NoteStream> streams;
-    Properties props;
+    QProps::Properties props;
 };
 
 Score::Score()
@@ -78,8 +79,8 @@ bool Score::operator == (const Score& rhs) const
         && p_->props == rhs.p_->props;
 }
 
-const Properties& Score::props() const { return p_->props;}
-Properties& Score::props() { return p_->props;}
+const QProps::Properties& Score::props() const { return p_->props;}
+QProps::Properties& Score::props() { return p_->props;}
 
 QJsonObject Score::toJson() const
 {
@@ -99,9 +100,9 @@ QJsonObject Score::toJson() const
 void Score::fromJson(const QJsonObject& o)
 {
     QList<NoteStream> streams;
-    Properties props(p_->props);
+    QProps::Properties props(p_->props);
 
-    JsonHelper json("Score");
+    QProps::JsonInterfaceHelper json("Score");
 
     if (o.contains("streams"))
     {
@@ -131,7 +132,7 @@ size_t Score::numNoteStreams() const
 
 const NoteStream& Score::noteStream(size_t idx) const
 {
-    SONOT_ASSERT_LT(idx, size_t(p_->streams.size()), "in Score::noteStream()");
+    QPROPS_ASSERT_LT(idx, size_t(p_->streams.size()), "in Score::noteStream()");
     return p_->streams.at(idx);
 }
 
@@ -159,7 +160,7 @@ void Score::clearScore()
 
 void Score::setNoteStream(size_t idx, const NoteStream& s)
 {
-    SONOT_ASSERT_LT(idx, numNoteStreams(), "in Score::setNoteStream()");
+    QPROPS_ASSERT_LT(idx, numNoteStreams(), "in Score::setNoteStream()");
     p_->streams[idx] = s;
 }
 
@@ -178,7 +179,7 @@ void Score::insertNoteStream(size_t idx, const NoteStream& s)
 
 void Score::removeNoteStream(size_t idx)
 {
-    SONOT_ASSERT_LT(idx, size_t(p_->streams.size()),
+    QPROPS_ASSERT_LT(idx, size_t(p_->streams.size()),
                     "in Score::removeNoteStream()");
     p_->streams.removeAt(idx);
 }
@@ -223,19 +224,19 @@ bool Score::Index::isValid() const
 
 const NoteStream& Score::Index::getNoteStream() const
 {
-    SONOT_ASSERT(isValid(), "in Score::Index::getNoteStream()");
+    QPROPS_ASSERT(isValid(), "in Score::Index::getNoteStream()");
     return score()->noteStream(stream());
 }
 
 const Bar& Score::Index::getBar() const
 {
-    SONOT_ASSERT(isValid(), "in Score::Index::getBar()");
+    QPROPS_ASSERT(isValid(), "in Score::Index::getBar()");
     return score()->noteStream(stream()).bar(bar());
 }
 
 const Note& Score::Index::getNote() const
 {
-    SONOT_ASSERT(isValid(), "in Score::Index::getNote()");
+    QPROPS_ASSERT(isValid(), "in Score::Index::getNote()");
     return score()->noteStream(stream()).bar(bar()).note(column(), row());
 }
 
