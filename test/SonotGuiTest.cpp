@@ -86,7 +86,9 @@ namespace {
         return mi + (double(rand()) / RAND_MAX) * (ma - mi);
     }
 
-    template <typename T, typename U>
+    /** Returns a variable with randomly set flags
+        taken from QProps::Properties::NamedValues */
+    template <typename T>
     T randomFlags(const QProps::Properties::NamedValues& nv)
     {
         qlonglong flags = 0;
@@ -134,16 +136,16 @@ TextItem SonotGuiTest::createRandomTextItem()
 {
     TextItem t;
     t.setBoundingBox(QRectF(rnd(0,100),rnd(0,100),rnd(10,100),rnd(10,100)));
-    t.setBoxAlignment(randomFlags<Qt::Alignment, Qt::AlignmentFlag>(
+    t.setBoxAlignment(randomFlags<Qt::Alignment>(
                           QProps::Properties::namedValuesQtAlignment()));
     t.setColor(QColor(rnd(0,255),rnd(0,255),rnd(0,255)));
-    t.setFontFlags(randomFlags<TextItem::FontFlag, TextItem::FontFlag>(
+    t.setFontFlags(randomFlags<TextItem::FontFlag>(
                        TextItem::fontFlagNamedValues()));
     t.setFontSize(rnd(1,20));
-    t.setText("A random string");
-    t.setTextAlignment(randomFlags<Qt::Alignment, Qt::AlignmentFlag>(
+    t.setText("A non-random string");
+    t.setTextAlignment(randomFlags<Qt::Alignment>(
                            QProps::Properties::namedValuesQtAlignment()));
-    t.setTextFlags(randomFlags<Qt::TextFlag, Qt::TextFlag>(
+    t.setTextFlags(randomFlags<Qt::TextFlag>(
                    QProps::Properties::namedValuesQtTextFlag()));
     return t;
 }

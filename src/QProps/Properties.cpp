@@ -95,16 +95,7 @@ Properties::NamedValues Properties::namedValuesQtTextFlag()
 
 bool Properties::Property::operator == (const Property& o) const
 {
-    bool ret;
-    if (p_val_.canConvert(QMetaType::Double))
-    {
-        double v1 = p_val_.toDouble(),
-               v2 = o.p_val_.toDouble();
-        ret = (std::abs(v1 - v2) < 0.00000001);
-    }
-    else ret = p_val_ == o.p_val_;
-    //if (!ret) qDebug() << "COMPARE " << ret << p_val_ << o.p_val_;
-    return ret;
+    return Properties::qvariant_compare(p_val_, o.p_val_);
 }
 
 QList<Properties::NamedValues::Value>

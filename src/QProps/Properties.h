@@ -122,8 +122,8 @@ public:
             Comparison only compares the actual Property value, not
             the name, description, min/max or anything else.
             Floating point numbers use a fuzzy comparison. */
-        bool operator != (const Property& o) const { return !(*this == o); }
         bool operator == (const Property& o) const;
+        bool operator != (const Property& o) const { return !(*this == o); }
         /* @} */
 
         bool isValid() const { return !p_val_.isNull(); }
@@ -223,6 +223,11 @@ public:
 
     /** Returns the string representation of all QVariant types */
     static QString qvariant_to_string(const QVariant&);
+
+    /** Returns true if the two QVariants match.
+        Qt does not support comparison for all QVariant types by default,
+        e.g. QVector... */
+    static bool qvariant_compare(const QVariant&, const QVariant&);
 
     // ---------------- getter ------------------
 

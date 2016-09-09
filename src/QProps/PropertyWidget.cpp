@@ -54,8 +54,9 @@ struct PropertyWidget::Private
     /** Updates the widget to the current value */
     void updateWidget();
 
-    template <class SB, class Convert>
-    QList<SB*> createSpinboxes(int num, const char* signalName);
+    template <class Convert>
+    QList<typename Convert::SpinBox*>
+        createSpinboxes(int num, const char* signalName);
 
     PropertyWidget * widget;
     const Properties * props;
@@ -121,80 +122,59 @@ void PropertyWidget::onValueChanged_()
 
 namespace {
 
+    template <class T, class SB>
     struct ConvertQSize
     {
+        typedef SB SpinBox;
         static int toValue(const QVariant& v, int idx)
         {
-            QSize s = v.toSize();
+            T s = v.value<T>();
             return idx == 0 ? s.width() : s.height();
         }
 
-        static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
+        static QVariant fromSpinbox(const QList<SpinBox*>& sb)
         {
-            return QSize(sb[0]->value(), sb[1]->value());
+            return T(sb[0]->value(), sb[1]->value());
         }
     };
 
-    struct ConvertQSizeF
-    {
-        static double toValue(const QVariant& v, int idx)
-        {
-            QSizeF s = v.toSizeF();
-            return idx == 0 ? s.width() : s.height();
-        }
-
-        static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
-        {
-            return QSizeF(sb[0]->value(), sb[1]->value());
-        }
-    };
-
+    template <class T, class SB>
     struct ConvertQPoint
     {
+        typedef SB SpinBox;
         static int toValue(const QVariant& v, int idx)
         {
-            QPoint s = v.toPoint();
+            T s = v.value<T>();
             return idx == 0 ? s.x() : s.y();
         }
 
-        static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
+        static QVariant fromSpinbox(const QList<SpinBox*>& sb)
         {
-            return QPoint(sb[0]->value(), sb[1]->value());
+            return T(sb[0]->value(), sb[1]->value());
         }
     };
 
-    struct ConvertQPointF
+    template <class T, class SB>
+    struct ConvertQRect
     {
+        typedef SB SpinBox;
         static double toValue(const QVariant& v, int idx)
         {
-            QPointF s = v.toPointF();
-            return idx == 0 ? s.x() : s.y();
-        }
-
-        static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
-        {
-            return QPointF(sb[0]->value(), sb[1]->value());
-        }
-    };
-
-    struct ConvertQRectF
-    {
-        static double toValue(const QVariant& v, int idx)
-        {
-            QRectF r = v.toRectF();
+            T r = v.value<T>();
             return idx == 0 ? r.x() : idx == 1
                               ? r.y() : idx == 2 ? r.width() : r.height();
         }
 
-        static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
+        static QVariant fromSpinbox(const QList<SpinBox*>& sb)
         {
-            return QRectF(sb[0]->value(), sb[1]->value(),
-                          sb[2]->value(), sb[3]->value());
+            return T(sb[0]->value(), sb[1]->value(),
+                     sb[2]->value(), sb[3]->value());
         }
     };
 
     struct ConvertQColor
     {
+        typedef QSpinBox SpinBox;
         static double toValue(const QVariant& v, int idx)
         {
             QColor c = v.value<QColor>();
@@ -202,7 +182,7 @@ namespace {
                               ? c.green() : idx == 2 ? c.blue() : c.alpha();
         }
 
-        static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
+        static QVariant fromSpinbox(const QList<SpinBox*>& sb)
         {
             return QColor(sb[0]->value(), sb[1]->value(),
                           sb[2]->value(), sb[3]->value());
@@ -213,14 +193,15 @@ namespace {
 
 
 
-template <class SB, class Convert>
-QList<SB*> PropertyWidget::Private::createSpinboxes(
+template <class Convert>
+QList<typename Convert::SpinBox*> PropertyWidget::Private::createSpinboxes(
         int num, const char* signalName)
 {
-    QList<SB*> sb;
+    typedef typename Convert::SpinBox SpinBox;
+    QList<SpinBox*> sb;
     for (int i=0; i<num; ++i)
     {
-        sb << new SB(widget);
+        sb << new SpinBox(widget);
         sb.back()->setRange(-9999999, 9999999);
         connect(sb.back(), signalName,
                 widget, SLOT(onValueChanged_()));
@@ -576,7 +557,7 @@ void PropertyWidget::Private::createWidgets()
             case QMetaType::QSize:
             {
                 QPROPS__SUBLAYOUT(QHBoxLayout);
-                auto sb = createSpinboxes<QSpinBox, ConvertQSize>(
+                auto sb = createSpinboxes<ConvertQSize<QSize, QSpinBox>>(
                             2, SIGNAL(valueChanged(int)));
                 for (auto s : sb)
                     layout->addWidget(s);
@@ -586,7 +567,7 @@ void PropertyWidget::Private::createWidgets()
             case QMetaType::QSizeF:
             {
                 QPROPS__SUBLAYOUT(QHBoxLayout);
-                auto sb = createSpinboxes<QDoubleSpinBox, ConvertQSizeF>(
+                auto sb = createSpinboxes<ConvertQSize<QSizeF,QDoubleSpinBox>>(
                             2, SIGNAL(valueChanged(double)));
                 for (auto s : sb)
                     layout->addWidget(s);
@@ -596,7 +577,7 @@ void PropertyWidget::Private::createWidgets()
             case QMetaType::QPointF:
             {
                 QPROPS__SUBLAYOUT(QHBoxLayout);
-                auto sb = createSpinboxes<QDoubleSpinBox, ConvertQPointF>(
+                auto sb = createSpinboxes<ConvertQPoint<QPointF,QDoubleSpinBox>>(
                             2, SIGNAL(valueChanged(double)));
                 for (auto s : sb)
                     layout->addWidget(s);
@@ -606,7 +587,7 @@ void PropertyWidget::Private::createWidgets()
             case QMetaType::QPoint:
             {
                 QPROPS__SUBLAYOUT(QHBoxLayout);
-                auto sb = createSpinboxes<QSpinBox, ConvertQPoint>(
+                auto sb = createSpinboxes<ConvertQPoint<QPoint,QSpinBox>>(
                             2, SIGNAL(valueChanged(int)));
                 for (auto s : sb)
                     layout->addWidget(s);
@@ -616,7 +597,23 @@ void PropertyWidget::Private::createWidgets()
             case QMetaType::QRectF:
             {
                 QPROPS__SUBLAYOUT(QGridLayout);
-                auto sb = createSpinboxes<QDoubleSpinBox, ConvertQRectF>(
+                auto sb = createSpinboxes<ConvertQRect<QRectF,QDoubleSpinBox>>(
+                            4, SIGNAL(valueChanged(double)));
+                sb[0]->setStatusTip(tr("X Position"));
+                sb[1]->setStatusTip(tr("Y Position"));
+                sb[2]->setStatusTip(tr("Width"));
+                sb[3]->setStatusTip(tr("Height"));
+                layout->addWidget(sb[0], 0, 0);
+                layout->addWidget(sb[1], 1, 0);
+                layout->addWidget(sb[2], 0, 1);
+                layout->addWidget(sb[3], 1, 1);
+            }
+            break;
+
+            case QMetaType::QRect:
+            {
+                QPROPS__SUBLAYOUT(QGridLayout);
+                auto sb = createSpinboxes<ConvertQRect<QRect,QSpinBox>>(
                             4, SIGNAL(valueChanged(double)));
                 sb[0]->setStatusTip(tr("X Position"));
                 sb[1]->setStatusTip(tr("Y Position"));
@@ -640,7 +637,7 @@ void PropertyWidget::Private::createWidgets()
                         widget, SLOT(onValueChanged_()));
 #else
                 QPROPS__SUBLAYOUT(QHBoxLayout);
-                auto sb = createSpinboxes<QSpinBox, ConvertQColor>(
+                auto sb = createSpinboxes<ConvertQColor>(
                             4, SIGNAL(valueChanged(int)));
                 sb[0]->setStatusTip(tr("Red"));
                 sb[1]->setStatusTip(tr("Green"));

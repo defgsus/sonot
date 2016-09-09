@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QJsonArray>
 #include <QVariant>
 #include <QStringList>
+#include <QVector>
 
 #include "qprops_global.h"
 

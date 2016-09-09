@@ -27,12 +27,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 using namespace Sonot;
 
-class SonotCoreTest : public QObject
+class QPropsTest : public QObject
 {
     Q_OBJECT
 
 public:
-    SonotCoreTest() { }
+    QPropsTest() { }
 
     static Bar createRandomBar(size_t length, size_t numRows);
     static Score createScoreForIndexTest();
@@ -50,7 +50,7 @@ private slots:
     void testScoreIndexPrevNote();
 };
 
-Bar SonotCoreTest::createRandomBar(size_t length, size_t numRows)
+Bar QPropsTest::createRandomBar(size_t length, size_t numRows)
 {
     QStringList anno;
     anno << "bladiblub" << "annotation" << "anno 1900"
@@ -92,7 +92,7 @@ namespace QTest {
 
 } // namespace QTest
 
-void SonotCoreTest::testResize()
+void QPropsTest::testResize()
 {
     Bar bar(2, 1);
 
@@ -105,7 +105,7 @@ void SonotCoreTest::testResize()
     QCOMPARE(bar.numRows(), size_t(4));
 }
 
-void SonotCoreTest::testKeepDataOnResize()
+void QPropsTest::testKeepDataOnResize()
 {
     Bar bar1(2,2), bar2(5,3);
     bar1.setNote(0,0, Note(Note::A));
@@ -122,7 +122,7 @@ void SonotCoreTest::testKeepDataOnResize()
     QCOMPARE(bar1, bar2);
 }
 
-void SonotCoreTest::testJsonProperties()
+void QPropsTest::testJsonProperties()
 {
     QProps::Properties p("type-test");
     p.set("double", tr("name"), tr("tool-tip"), 20., 1.);
@@ -156,7 +156,7 @@ void SonotCoreTest::testJsonProperties()
     QCOMPARE(p, p2);
 }
 
-void SonotCoreTest::testJsonPropertiesExplicitTypes()
+void QPropsTest::testJsonPropertiesExplicitTypes()
 {
     QProps::Properties p("type-test");
     p.set("int",    23);
@@ -179,7 +179,7 @@ void SonotCoreTest::testJsonPropertiesExplicitTypes()
 }
 
 
-void SonotCoreTest::testJsonBar()
+void QPropsTest::testJsonBar()
 {
     Bar bar2, bar1 = createRandomBar(8,4);
 
@@ -187,7 +187,7 @@ void SonotCoreTest::testJsonBar()
     QCOMPARE(bar1, bar2);
 }
 
-void SonotCoreTest::testJsonStream()
+void QPropsTest::testJsonStream()
 {
     NoteStream stream1, stream2;
     for (int i=0; i<5; ++i)
@@ -197,7 +197,7 @@ void SonotCoreTest::testJsonStream()
     QCOMPARE(stream1, stream2);
 }
 
-void SonotCoreTest::testJsonScore()
+void QPropsTest::testJsonScore()
 {
     Score score1, score2;
     for (int i=0; i<5; ++i)
@@ -217,7 +217,7 @@ void SonotCoreTest::testJsonScore()
     //qDebug() << score2.toJsonString();
 }
 
-Score SonotCoreTest::createScoreForIndexTest()
+Score QPropsTest::createScoreForIndexTest()
 {
     Score score;
     {
@@ -241,7 +241,7 @@ Score SonotCoreTest::createScoreForIndexTest()
     // xxxx     xxxxx           xxxxxxxx
 }
 
-void SonotCoreTest::testScoreIndexPrevNote()
+void QPropsTest::testScoreIndexPrevNote()
 {
     Score score = createScoreForIndexTest();
 
@@ -264,7 +264,7 @@ void SonotCoreTest::testScoreIndexPrevNote()
     QCOMPARE(idx, score.index(0, 2, 2, 0));
 }
 
-void SonotCoreTest::testScoreIndexNextNote()
+void QPropsTest::testScoreIndexNextNote()
 {
     Score score = createScoreForIndexTest();
 
