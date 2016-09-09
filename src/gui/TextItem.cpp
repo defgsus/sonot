@@ -33,6 +33,8 @@ TextItem::TextItem()
     p_props_.set("text", tr("text"),
                  tr("The text to print"),
                  QString(""));
+    p_props_.set("font", tr("font"),
+                 tr("Font family"), QFont());
     p_props_.set("font-size", tr("font size"),
                  tr("The size of the font in mm"),
                  8.);
@@ -132,9 +134,8 @@ QRectF TextItem::alignedBoundingBox(const QRectF& p) const
 
 QFont TextItem::font() const
 {
-    QFont f;
+    QFont f = p_props_.get("font").value<QFont>();
 
-    //f.setFamily("Verdana");
     f.setPointSizeF(fontSize());
 
     auto flags = fontFlags();

@@ -103,7 +103,7 @@ bool Properties::Property::operator == (const Property& o) const
         ret = (std::abs(v1 - v2) < 0.00000001);
     }
     else ret = p_val_ == o.p_val_;
-    //qDebug() << "COMPARE " << ret << p_val_ << o.p_val_;
+    if (!ret) qDebug() << "COMPARE " << ret << p_val_ << o.p_val_;
     return ret;
 }
 
@@ -229,8 +229,9 @@ bool Properties::Property::hasNamedValues() const
 
 const int Properties::subTypeMask = 0xfff;
 
-Properties::Properties(const QString& id)
-    : p_id_     (id)
+Properties::Properties(const QString& id, bool explicitJsonType)
+    : p_id_                 (id)
+    , p_explicitJsonTypes_  (explicitJsonType)
 {
 }
 
@@ -238,6 +239,8 @@ void Properties::swap(Properties &other)
 {
     p_map_.swap(other.p_map_);
     std::swap(p_cb_vis_, other.p_cb_vis_);
+    std::swap(p_id_, other.p_id_);
+    std::swap(p_explicitJsonTypes_, other.p_explicitJsonTypes_);
 }
 
 bool Properties::operator != (const Properties& o) const

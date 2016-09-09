@@ -115,11 +115,17 @@ public:
     QJsonValue wrap(const T&);
 
     /** Wraps a QVariant into a json value.
-        For extended (compound) types,
+        For most extended (compound) types,
         an appropriate json object will be returned.
+        @param explicitTypeInfo If true, the exact type of the QVariant
+        is stored in any case and the returned json value
+        is always an object. If type info is not stored for a
+        non-compound QVariant the type might be lost on deserializing
+        a json stream, e.g. int/uint/int64 convert to double,
+        or QColor converts to QString.
         @see expectQVariant() for converting back.
         @todo Not many types supported yet. */
-    QJsonValue wrap(const QVariant& v);
+    QJsonValue wrap(const QVariant& v, bool explicitTypeInfo = true);
 
     /** Converts the vector of type T to a json array.
         Unwrap with fromArray() */

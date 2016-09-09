@@ -41,6 +41,7 @@ private slots:
     void testResize();
     void testKeepDataOnResize();
     void testJsonProperties();
+    void testJsonPropertiesExplicitTypes();
     void testJsonBar();
     void testJsonStream();
     void testJsonScore();
@@ -74,6 +75,12 @@ namespace QTest {
     char* toString(const Score::Index& idx)
     {
         return toString(idx.toString());
+    }
+
+    template <>
+    char* toString(const QVariant::Type& t)
+    {
+        return toString(QVariant::typeToName(t));
     }
 
     template <>
@@ -117,24 +124,55 @@ void SonotCoreTest::testKeepDataOnResize()
 void SonotCoreTest::testJsonProperties()
 {
     Properties p("type-test");
-    p.set("double", tr("name"), tr("tool-tip"),
-                20., 1.);
+    p.set("double", tr("name"), tr("tool-tip"), 20., 1.);
     p.set("int",    23);
     p.set("float",  42.f);
     p.set("uint",   666u);
     p.set("long",   7777LL);
     p.set("string", QString("holladihoh"));
-    p.set("rect",   QRectF(23, 42, 666, 7777));
-    p.set("size",   QSizeF(23, 42));
-    p.set("point",  QPointF(42, 23));
-    p.set("color",  QColor(10,20,30));
+    p.set("rect",   QRect(23, 42, 666, 7777));
+    p.set("rectf",  QRectF(23, 42, 666, 7777));
+    p.set("size",   QSize(23, 42));
+    p.set("sizef",  QSizeF(23, 42));
+    p.set("point",  QPoint(42, 23));
+    p.set("pointf", QPointF(42, 23));
+    p.set("color",  QColor(10,20,30,40));
+    p.set("line",   QLine(10,20,30,40));
+    p.set("linef",  QLineF(10,20,30,40));
+    p.set("date",   QDate::currentDate());
+    p.set("time",   QTime::currentTime());
+    p.set("datetime",QDateTime::currentDateTime());
 
     Properties p2("copy");
     p2.fromJson(p.toJson());
 
-    qDebug() << p2.toCompactString();
+    //qDebug() << "ORG" << p.toString();
+    //qDebug() << "CPY" << p2.toString();
+
+    for (const Properties::Property& prop : p)
+        QCOMPARE(p.get(prop.id()), p2.get(prop.id()));
 
     QCOMPARE(p, p2);
+}
+
+void SonotCoreTest::testJsonPropertiesExplicitTypes()
+{
+    Properties p("type-test");
+    p.set("int",    23);
+    p.set("long",   7777LL);
+
+    Properties p2("copy");
+    p2.fromJson(p.toJson());
+    // see if exact type is kept
+    QCOMPARE(p2.get("int").type(),  QVariant::Int);
+    QCOMPARE(p2.get("long").type(), QVariant::LongLong);
+
+    p.setExplicitJsonTypes(false);
+    Properties p3("copy");
+    p3.fromJson(p.toJson());
+    // see if exact type is discarded
+    QCOMPARE(p3.get("int").type(),  QVariant::Double);
+    QCOMPARE(p3.get("long").type(), QVariant::Double);
 }
 
 

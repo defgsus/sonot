@@ -54,6 +54,9 @@ struct PropertyWidget::Private
     /** Updates the widget to the current value */
     void updateWidget();
 
+    template <class SB, class Convert>
+    QList<SB*> createSpinboxes(int num, const char* signalName);
+
     PropertyWidget * widget;
     const Properties * props;
     QString id, tip;
@@ -115,6 +118,146 @@ void PropertyWidget::onValueChanged_()
     }
 }
 
+namespace {
+
+struct ConvertQSize
+{
+    static int toValue(const QVariant& v, int idx)
+    {
+        QSize s = v.toSize();
+        return idx == 0 ? s.width() : s.height();
+    }
+
+    static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
+    {
+        return QSize(sb[0]->value(), sb[1]->value());
+    }
+};
+
+struct ConvertQSizeF
+{
+    static double toValue(const QVariant& v, int idx)
+    {
+        QSizeF s = v.toSizeF();
+        return idx == 0 ? s.width() : s.height();
+    }
+
+    static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
+    {
+        return QSizeF(sb[0]->value(), sb[1]->value());
+    }
+};
+
+struct ConvertQPoint
+{
+    static int toValue(const QVariant& v, int idx)
+    {
+        QPoint s = v.toPoint();
+        return idx == 0 ? s.x() : s.y();
+    }
+
+    static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
+    {
+        return QPoint(sb[0]->value(), sb[1]->value());
+    }
+};
+
+struct ConvertQPointF
+{
+    static double toValue(const QVariant& v, int idx)
+    {
+        QPointF s = v.toPointF();
+        return idx == 0 ? s.x() : s.y();
+    }
+
+    static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
+    {
+        return QPointF(sb[0]->value(), sb[1]->value());
+    }
+};
+
+struct ConvertQRectF
+{
+    static double toValue(const QVariant& v, int idx)
+    {
+        QRectF r = v.toRectF();
+        return idx == 0 ? r.x() : idx == 1
+                          ? r.y() : idx == 2 ? r.width() : r.height();
+    }
+
+    static QVariant fromSpinbox(const QList<QDoubleSpinBox*>& sb)
+    {
+        return QRectF(sb[0]->value(), sb[1]->value(),
+                      sb[2]->value(), sb[3]->value());
+    }
+};
+
+struct ConvertQColor
+{
+    static double toValue(const QVariant& v, int idx)
+    {
+        QColor c = v.value<QColor>();
+        return idx == 0 ? c.red() : idx == 1
+                          ? c.green() : idx == 2 ? c.blue() : c.alpha();
+    }
+
+    static QVariant fromSpinbox(const QList<QSpinBox*>& sb)
+    {
+        return QColor(sb[0]->value(), sb[1]->value(),
+                      sb[2]->value(), sb[3]->value());
+    }
+};
+
+} // namespace
+
+
+
+template <class SB, class Convert>
+QList<SB*> PropertyWidget::Private::createSpinboxes(
+        int num, const char* signalName)
+{
+    QList<SB*> sb;
+    for (int i=0; i<num; ++i)
+    {
+        sb << new SB(widget);
+        sb.back()->setRange(-9999999, 9999999);
+        connect(sb.back(), signalName,
+                widget, SLOT(onValueChanged_()));
+    }
+    if (props)
+    {
+        if (props->hasMin(id))
+        {
+            for (int i=0; i<num; ++i)
+                sb[i]->setMinimum(Convert::toValue(props->getMin(id), i));
+        }
+        if (props->hasMax(id))
+        {
+            for (int i=0; i<num; ++i)
+                sb[i]->setMaximum(Convert::toValue(props->getMax(id), i));
+        }
+        if (props->hasStep(id))
+        {
+            for (int i=0; i<num; ++i)
+                sb[i]->setSingleStep(Convert::toValue(props->getStep(id), i));
+        }
+    }
+    f_update_widget = [=]()
+    {
+        for (int i=0; i<num; ++i)
+            sb[i]->setValue(Convert::toValue(v, i));
+    };
+    f_update_value = [=]()
+    {
+        v = Convert::fromSpinbox(sb);
+    };
+    return sb;
+}
+
+
+
+
+
 void PropertyWidget::Private::createWidgets()
 {
     if (!layout)
@@ -153,6 +296,7 @@ void PropertyWidget::Private::createWidgets()
     edit = new QWidget(widget); \
     auto layout = new Layout__(edit); \
     layout->setMargin(0);
+
 
     bool isHandled = false;
 
@@ -305,7 +449,8 @@ void PropertyWidget::Private::createWidgets()
                     f_update_value = [=](){ v = sb->value(); };
                 else
                     f_update_value = [=](){ v = (unsigned)sb->value(); };
-                connect(sb, SIGNAL(valueChanged(int)), widget, SLOT(onValueChanged_()));
+                connect(sb, SIGNAL(valueChanged(int)),
+                        widget, SLOT(onValueChanged_()));
             }
             break;
 
@@ -331,7 +476,8 @@ void PropertyWidget::Private::createWidgets()
                     f_update_value = [=](){ v = double(sb->value()); };
                 else
                     f_update_value = [=](){ v = float(sb->value()); };
-                connect(sb, SIGNAL(valueChanged(double)), widget, SLOT(onValueChanged_()));
+                connect(sb, SIGNAL(valueChanged(double)),
+                        widget, SLOT(onValueChanged_()));
             }
             break;
 
@@ -423,212 +569,59 @@ void PropertyWidget::Private::createWidgets()
             case QMetaType::QSize:
             {
                 MO__SUBLAYOUT(QHBoxLayout);
-                auto sb1 = new QSpinBox(widget),
-                     sb2 = new QSpinBox(widget);
-                sb1->setRange(0, 9999999);
-                sb2->setRange(0, 9999999);
-                if (props)
-                {
-                    if (props->hasMin(id))
-                    {
-                        sb1->setMinimum(props->getMin(id).toSize().width());
-                        sb2->setMinimum(props->getMin(id).toSize().height());
-                    }
-                    if (props->hasMax(id))
-                    {
-                        sb1->setMaximum(props->getMax(id).toSize().width());
-                        sb2->setMaximum(props->getMax(id).toSize().height());
-                    }
-                    if (props->hasStep(id))
-                    {
-                        sb1->setSingleStep(props->getStep(id).toSize().width());
-                        sb2->setSingleStep(props->getStep(id).toSize().height());
-                    }
-                }
-                layout->addWidget(sb1);
-                layout->addWidget(sb2);
-                f_update_widget = [=](){ auto s = v.toSize(); sb1->setValue(s.width()); sb2->setValue(s.height()); };
-                f_update_value = [=](){ v = QSize(sb1->value(), sb2->value()); };
-                connect(sb1, SIGNAL(valueChanged(int)), widget, SLOT(onValueChanged_()));
-                connect(sb2, SIGNAL(valueChanged(int)), widget, SLOT(onValueChanged_()));
+                auto sb = createSpinboxes<QSpinBox, ConvertQSize>(
+                            2, SIGNAL(valueChanged(int)));
+                for (auto s : sb)
+                    layout->addWidget(s);
             }
             break;
 
             case QMetaType::QSizeF:
             {
                 MO__SUBLAYOUT(QHBoxLayout);
-                auto sb1 = new QDoubleSpinBox(widget),
-                     sb2 = new QDoubleSpinBox(widget);
-                sb1->setRange(0, 9999999); sb1->setDecimals(4);
-                sb2->setRange(0, 9999999); sb2->setDecimals(4);
-                if (props)
-                {
-                    if (props->hasMin(id))
-                    {
-                        sb1->setMinimum(props->getMin(id).toSizeF().width());
-                        sb2->setMinimum(props->getMin(id).toSizeF().height());
-                    }
-                    if (props->hasMax(id))
-                    {
-                        sb1->setMaximum(props->getMax(id).toSizeF().width());
-                        sb2->setMaximum(props->getMax(id).toSizeF().height());
-                    }
-                    if (props->hasStep(id))
-                    {
-                        sb1->setSingleStep(props->getStep(id).toSizeF().width());
-                        sb2->setSingleStep(props->getStep(id).toSizeF().height());
-                    }
-                }
-                layout->addWidget(sb1);
-                layout->addWidget(sb2);
-                f_update_widget = [=](){ auto s = v.toSize(); sb1->setValue(s.width()); sb2->setValue(s.height()); };
-                f_update_value = [=](){ v = QSizeF(sb1->value(), sb2->value()); };
-                connect(sb1, SIGNAL(valueChanged(double)), widget, SLOT(onValueChanged_()));
-                connect(sb2, SIGNAL(valueChanged(double)), widget, SLOT(onValueChanged_()));
+                auto sb = createSpinboxes<QDoubleSpinBox, ConvertQSizeF>(
+                            2, SIGNAL(valueChanged(double)));
+                for (auto s : sb)
+                    layout->addWidget(s);
             }
             break;
 
             case QMetaType::QPointF:
             {
                 MO__SUBLAYOUT(QHBoxLayout);
-                auto sb1 = new QDoubleSpinBox(widget),
-                     sb2 = new QDoubleSpinBox(widget);
-                sb1->setRange(0, 9999999); sb1->setDecimals(4);
-                sb2->setRange(0, 9999999); sb2->setDecimals(4);
-                if (props)
-                {
-                    if (props->hasMin(id))
-                    {
-                        sb1->setMinimum(props->getMin(id).toPointF().x());
-                        sb2->setMinimum(props->getMin(id).toPointF().y());
-                    }
-                    if (props->hasMax(id))
-                    {
-                        sb1->setMaximum(props->getMax(id).toPointF().x());
-                        sb2->setMaximum(props->getMax(id).toPointF().y());
-                    }
-                    if (props->hasStep(id))
-                    {
-                        sb1->setSingleStep(props->getStep(id).toPointF().x());
-                        sb2->setSingleStep(props->getStep(id).toPointF().y());
-                    }
-                }
-                layout->addWidget(sb1);
-                layout->addWidget(sb2);
-                f_update_widget = [=]()
-                {
-                    auto s = v.toSizeF();
-                    sb1->setValue(s.width()); sb2->setValue(s.height());
-                };
-                f_update_value = [=]()
-                    { v = QPointF(sb1->value(), sb2->value()); };
-                connect(sb1, SIGNAL(valueChanged(double)),
-                        widget, SLOT(onValueChanged_()));
-                connect(sb2, SIGNAL(valueChanged(double)),
-                        widget, SLOT(onValueChanged_()));
-            }
-            break;
-
-            case QMetaType::QRectF:
-            {
-                MO__SUBLAYOUT(QGridLayout);
-                auto sb1 = new QDoubleSpinBox(widget),
-                     sb2 = new QDoubleSpinBox(widget),
-                     sb3 = new QDoubleSpinBox(widget),
-                     sb4 = new QDoubleSpinBox(widget);
-                sb1->setStatusTip(tr("X position"));
-                sb2->setStatusTip(tr("Y position"));
-                sb3->setStatusTip(tr("Width"));
-                sb4->setStatusTip(tr("Height"));
-                sb1->setRange(0, 9999999); sb1->setDecimals(4);
-                sb2->setRange(0, 9999999); sb2->setDecimals(4);
-                sb3->setRange(0, 9999999); sb3->setDecimals(4);
-                sb4->setRange(0, 9999999); sb4->setDecimals(4);
-                if (props)
-                {
-                    if (props->hasMin(id))
-                    {
-                        sb1->setMinimum(props->getMin(id).toRectF().x());
-                        sb2->setMinimum(props->getMin(id).toRectF().y());
-                        sb3->setMinimum(props->getMin(id).toRectF().width());
-                        sb4->setMinimum(props->getMin(id).toRectF().height());
-                    }
-                    if (props->hasMax(id))
-                    {
-                        sb1->setMaximum(props->getMax(id).toRectF().x());
-                        sb2->setMaximum(props->getMax(id).toRectF().y());
-                        sb3->setMaximum(props->getMax(id).toRectF().width());
-                        sb4->setMaximum(props->getMax(id).toRectF().height());
-                    }
-                    if (props->hasStep(id))
-                    {
-                        sb1->setSingleStep(props->getStep(id).toRectF().x());
-                        sb2->setSingleStep(props->getStep(id).toRectF().y());
-                        sb3->setSingleStep(props->getStep(id).toRectF().width());
-                        sb4->setSingleStep(props->getStep(id).toRectF().height());
-                    }
-                }
-                layout->addWidget(sb1, 0, 0);
-                layout->addWidget(sb2, 1, 0);
-                layout->addWidget(sb3, 0, 1);
-                layout->addWidget(sb4, 1, 1);
-                f_update_widget = [=]()
-                {
-                    auto r = v.toRectF();
-                    sb1->setValue(r.x());
-                    sb2->setValue(r.y());
-                    sb3->setValue(r.width());
-                    sb4->setValue(r.height());
-                };
-                f_update_value = [=]()
-                {
-                    v = QRectF(sb1->value(), sb2->value(),
-                               sb3->value(), sb4->value());
-                };
-                connect(sb1, SIGNAL(valueChanged(double)),
-                        widget, SLOT(onValueChanged_()));
-                connect(sb2, SIGNAL(valueChanged(double)),
-                        widget, SLOT(onValueChanged_()));
-                connect(sb3, SIGNAL(valueChanged(double)),
-                        widget, SLOT(onValueChanged_()));
-                connect(sb4, SIGNAL(valueChanged(double)),
-                        widget, SLOT(onValueChanged_()));
+                auto sb = createSpinboxes<QDoubleSpinBox, ConvertQPointF>(
+                            2, SIGNAL(valueChanged(double)));
+                for (auto s : sb)
+                    layout->addWidget(s);
             }
             break;
 
             case QMetaType::QPoint:
             {
                 MO__SUBLAYOUT(QHBoxLayout);
-                auto sb1 = new QSpinBox(widget),
-                     sb2 = new QSpinBox(widget);
-                sb1->setRange(-9999999, 9999999);
-                sb2->setRange(-9999999, 9999999);
-                if (props)
-                {
-                    if (props->hasMin(id))
-                    {
-                        sb1->setMinimum(props->getMin(id).toPoint().x());
-                        sb2->setMinimum(props->getMin(id).toPoint().y());
-                    }
-                    if (props->hasMax(id))
-                    {
-                        sb1->setMaximum(props->getMax(id).toPoint().x());
-                        sb2->setMaximum(props->getMax(id).toPoint().y());
-                    }
-                    if (props->hasStep(id))
-                    {
-                        sb1->setSingleStep(props->getStep(id).toPoint().x());
-                        sb2->setSingleStep(props->getStep(id).toPoint().y());
-                    }
-                }
-                layout->addWidget(sb1);
-                layout->addWidget(sb2);
-                f_update_widget = [=](){ auto s = v.toPoint(); sb1->setValue(s.x()); sb2->setValue(s.y()); };
-                f_update_value = [=](){ v = QPoint(sb1->value(), sb2->value()); };
-                connect(sb1, SIGNAL(valueChanged(int)), widget, SLOT(onValueChanged_()));
-                connect(sb2, SIGNAL(valueChanged(int)), widget, SLOT(onValueChanged_()));
+                auto sb = createSpinboxes<QSpinBox, ConvertQPoint>(
+                            2, SIGNAL(valueChanged(int)));
+                for (auto s : sb)
+                    layout->addWidget(s);
             }
             break;
+
+            case QMetaType::QRectF:
+            {
+                MO__SUBLAYOUT(QGridLayout);
+                auto sb = createSpinboxes<QDoubleSpinBox, ConvertQRectF>(
+                            4, SIGNAL(valueChanged(double)));
+                sb[0]->setStatusTip(tr("X Position"));
+                sb[1]->setStatusTip(tr("Y Position"));
+                sb[2]->setStatusTip(tr("Width"));
+                sb[3]->setStatusTip(tr("Height"));
+                layout->addWidget(sb[0], 0, 0);
+                layout->addWidget(sb[1], 1, 0);
+                layout->addWidget(sb[2], 0, 1);
+                layout->addWidget(sb[3], 1, 1);
+            }
+            break;
+
             case QMetaType::QColor:
             {
 #ifdef __TODO___
@@ -640,42 +633,21 @@ void PropertyWidget::Private::createWidgets()
                         widget, SLOT(onValueChanged_()));
 #else
                 MO__SUBLAYOUT(QHBoxLayout);
-                auto sb1 = new QSpinBox(widget),
-                     sb2 = new QSpinBox(widget),
-                     sb3 = new QSpinBox(widget),
-                     sb4 = new QSpinBox(widget);
-                sb1->setRange(0, 255);
-                sb2->setRange(0, 255);
-                sb3->setRange(0, 255);
-                sb4->setRange(0, 255);
-                layout->addWidget(sb1);
-                layout->addWidget(sb2);
-                layout->addWidget(sb3);
-                layout->addWidget(sb4);
-                f_update_widget = [=]()
+                auto sb = createSpinboxes<QSpinBox, ConvertQColor>(
+                            4, SIGNAL(valueChanged(int)));
+                sb[0]->setStatusTip(tr("Red"));
+                sb[1]->setStatusTip(tr("Green"));
+                sb[2]->setStatusTip(tr("Blue"));
+                sb[3]->setStatusTip(tr("Alpha"));
+                for (auto s : sb)
                 {
-                    auto c = v.value<QColor>();
-                    sb1->setValue(c.red());
-                    sb2->setValue(c.green());
-                    sb3->setValue(c.blue());
-                    sb4->setValue(c.alpha());
-                };
-                f_update_value = [=]()
-                {
-                    v = QColor(sb1->value(), sb2->value(),
-                               sb3->value(), sb4->value());
-                };
-                connect(sb1, SIGNAL(valueChanged(int)),
-                        widget, SLOT(onValueChanged_()));
-                connect(sb2, SIGNAL(valueChanged(int)),
-                        widget, SLOT(onValueChanged_()));
-                connect(sb3, SIGNAL(valueChanged(int)),
-                        widget, SLOT(onValueChanged_()));
-                connect(sb4, SIGNAL(valueChanged(int)),
-                        widget, SLOT(onValueChanged_()));
+                    s->setRange(0, 255);
+                    layout->addWidget(s);
+                }
 #endif
             }
             break;
+
             case QMetaType::QFont:
             {
                 auto e = new QFontComboBox(widget);

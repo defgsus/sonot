@@ -125,20 +125,23 @@ void PropertiesView::Private::createWidgtes()
     }
 
     // create one for each property
-    for (auto i = props.begin(); i != props.end(); ++i)
+    auto sorted = props.getSortedList();
+    for (auto i_ = sorted.begin(); i_ != sorted.end(); ++i_)
     {
-        auto widget = new PropertyWidget(i.key(), &props, p);
+        const Properties::Property& prop = *(*i_);
+
+        auto widget = new PropertyWidget(prop.id(), &props, p);
         widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 
         // keep track
-        widgets.insert(i.key(), widget);
+        widgets.insert(prop.id(), widget);
 
         // install in layout
-        qDebug() << "ADD " << i.value().name() << i.value().index();
-        layout->insertWidget(i.value().index(), widget);
+        layout->addWidget(widget);
+        //layout->insertWidget(prop.index(), widget);
 
         // connect signals
-        QString key = i.key();
+        QString key = prop.id();
         connect(widget, &PropertyWidget::valueChanged, [=]()
         {
             // copy to internal properties

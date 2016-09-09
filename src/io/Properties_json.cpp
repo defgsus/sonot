@@ -50,7 +50,7 @@ QJsonObject Properties::toJson() const
             json.beginContext(QString("save value for %1:%2")
                               .arg(p_id_).arg(p.id()));
             // write value from QVariant
-            o.insert("v", json.wrap(p.value()));
+            o.insert("v", json.wrap(p.value(), p_explicitJsonTypes_));
             json.endContext();
         }
         else
@@ -105,7 +105,7 @@ void Properties::fromJson(const QJsonObject& main)
         // read simple value
         if (!p.hasNamedValues() || o.contains("v"))
         {
-            json.beginContext(QString("read simple value for %1:%2")
+            json.beginContext(QString("read value for %1:%2")
                                 .arg(p_id_).arg(id));
             QVariant::Type type = p.isValid()
                     ? p.value().type() : QVariant::Invalid;

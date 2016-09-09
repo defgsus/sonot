@@ -118,10 +118,14 @@ public:
     {
         Property() : p_subType_(-1), p_idx_(0), p_vis_(true) { }
 
-        /** Only compares value! */
+        /** @{ */
+        /** Compares this and @p o.
+            Comparison only compares the actual Property value, not
+            the name, description, min/max or anything else.
+            Floating point numbers use a fuzzy comparison. */
         bool operator != (const Property& o) const { return !(*this == o); }
-        /** Only compares value! */
         bool operator == (const Property& o) const;
+        /* @} */
 
         bool isValid() const { return !p_val_.isNull(); }
 
@@ -177,8 +181,10 @@ public:
             p_idx_;
         bool
             p_vis_;
-        NamedValues p_nv_;
-        std::function<void(QWidget*)> p_cb_widget_;
+        NamedValues
+            p_nv_;
+        std::function<void(QWidget*)>
+            p_cb_widget_;
     };
 
     /** The default key/value map used for all Properties */
@@ -186,12 +192,28 @@ public:
 
     // -------------- ctor ----------------------
 
-    Properties(const QString& id);
+    /**
+       @brief Constructs a Properties container.
+       @param id The id of the Properties collection.
+       @param explicitJsonType Should exact type infos be stored
+              for each Property.
+              It is highly suggested to leave this value true
+              if you want to deserialize Properties and get the
+              same type as stored.
+              @see JsonHelper::wrap(QVariant, bool)
+     */
+    Properties(const QString& id, bool explicitJsonType = true);
 
     void swap(Properties& other);
 
+    /** @{ */
+    /** Compares this and @p o.
+        Comparison only compares the actual Property values, not
+        the name, description, min/max or anything else.
+        Floating point numbers use a fuzzy comparison. */
     bool operator != (const Properties& o) const;
     bool operator == (const Properties& o) const { return !((*this) != o); }
+    /** @} */
 
     // ------------------ io --------------------
 
@@ -200,10 +222,12 @@ public:
 
     // ------------- static helper --------------
 
-    /** Returns the string representation of many QVariant types */
+    /** Returns the string representation of all static QVariant types */
     static QString qvariant_to_string(const QVariant&);
 
     // ---------------- getter ------------------
+
+    bool isExplicitJsonTypes() const { return p_explicitJsonTypes_; }
 
     /** Returns the Property for the given id, or an invalid Property */
     const Property& getProperty(const QString& id) const;
@@ -255,6 +279,8 @@ public:
 
     /** Tests if @p flag is contained in the current value of @p id.
         The current value is interpreted as qlonglong OR-combination.
+        @note The value must have NamedValues which must be set
+        to be of flags type.
         @see Property::testFlag(), NamedValues::setIsFlags() */
     bool testFlag(const QString& id, const QVariant& flag) const;
 
@@ -279,6 +305,8 @@ public:
     /** Sets the Properties::id() */
     void setId(const QString& properties_id) { p_id_ = properties_id; }
 
+    void setExplicitJsonTypes(bool e) { p_explicitJsonTypes_ = e; }
+
     /** Sets the given property (and default value) */
     void set(const QString& id, const QVariant& v);
 
@@ -287,7 +315,8 @@ public:
              const T& defaultValue);
 
     /** @{ */
-    /** Initializers for integral or float types */
+    /** Initializers for integral or float/double types or
+        supported compound types of integral or float/double */
 
     template <class T>
     void set(const QString& id, const QString& name, const QString& statusTip,
@@ -339,21 +368,28 @@ public:
     bool change(const QString& id, const QVariant& v);
 
     /** @{ */
-    /** Helper to make sure, that user-extended QVariants get caught. */
+    /** Overloads to make sure, that user-extended QVariants get caught. */
     template <class T>
-    void set(const QString& id, const T& v) { set(id, QVariant::fromValue(v)); }
+    void set(const QString& id, const T& v)
+        { set(id, QVariant::fromValue(v)); }
     template <class T>
-    bool change(const QString& id, const T& v) { return change(id, QVariant::fromValue(v)); }
+    bool change(const QString& id, const T& v)
+        { return change(id, QVariant::fromValue(v)); }
     template <class T>
-    void setDefault(const QString& id, const T& v) { setDefault(id, QVariant::fromValue(v)); }
+    void setDefault(const QString& id, const T& v)
+        { setDefault(id, QVariant::fromValue(v)); }
     template <class T>
-    void setMin(const QString& id, const T& v) { setMin(id, QVariant::fromValue(v)); }
+    void setMin(const QString& id, const T& v)
+        { setMin(id, QVariant::fromValue(v)); }
     template <class T>
-    void setMax(const QString& id, const T& v) { setMax(id, QVariant::fromValue(v)); }
+    void setMax(const QString& id, const T& v)
+        { setMax(id, QVariant::fromValue(v)); }
     template <class T>
-    void setRange(const QString& id, const T& mi, const T& ma) { setRange(id, QVariant::fromValue(mi), QVariant::fromValue(ma)); }
+    void setRange(const QString& id, const T& mi, const T& ma)
+        { setRange(id, QVariant::fromValue(mi), QVariant::fromValue(ma)); }
     template <class T>
-    void setStep(const QString& id, const T& v) { setStep(id, QVariant::fromValue(v)); }
+    void setStep(const QString& id, const T& v)
+        { setStep(id, QVariant::fromValue(v)); }
     /** @} */
 
     /** Copy all values from @p other.
@@ -376,10 +412,10 @@ public:
         reflected in the gui. */
     void setUpdateVisibilityCallback(
             std::function<void(Properties&)> f) { p_cb_vis_ = f; }
+
     /** Calls the user-callback and returns true if the visibility
         of any widget has changed. */
     bool callUpdateVisibility();
-
 
     /** Sets a callback that is called for the particular widget that
         is created for this property. The callback is called once after
@@ -397,6 +433,7 @@ private:
     Map p_map_;
     std::function<void(Properties&)> p_cb_vis_;
     QString p_id_;
+    bool p_explicitJsonTypes_;
 };
 
 } // namespace Sonot
