@@ -159,13 +159,15 @@ void SonotCoreTest::testJsonPropertiesExplicitTypes()
 {
     Properties p("type-test");
     p.set("int",    23);
-    p.set("long",   7777LL);
+    p.set("long",   -7777LL);
+    p.set("ulong",  7777ULL);
 
     Properties p2("copy");
     p2.fromJson(p.toJson());
     // see if exact type is kept
     QCOMPARE(p2.get("int").type(),  QVariant::Int);
     QCOMPARE(p2.get("long").type(), QVariant::LongLong);
+    QCOMPARE(p2.get("ulong").type(), QVariant::ULongLong);
 
     p.setExplicitJsonTypes(false);
     Properties p3("copy");

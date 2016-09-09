@@ -163,7 +163,14 @@ namespace
     template <typename T>
     QJsonValue to_json(T v) { return QJsonValue(v); }
 
-    QJsonValue to_json(size_t v) { return QJsonValue((qint64)v); }
+    QJsonValue to_json(int8_t v) { return QJsonValue((double)v); }
+    QJsonValue to_json(uint8_t v) { return QJsonValue((double)v); }
+    QJsonValue to_json(int16_t v) { return QJsonValue((double)v); }
+    QJsonValue to_json(uint16_t v) { return QJsonValue((double)v); }
+    QJsonValue to_json(int32_t v) { return QJsonValue((double)v); }
+    QJsonValue to_json(uint32_t v) { return QJsonValue((double)v); }
+    QJsonValue to_json(int64_t v) { return QJsonValue((double)v); }
+    QJsonValue to_json(uint64_t v) { return QJsonValue((double)v); }
 
     QJsonValue to_json(const QRectF& r)
     {
@@ -385,14 +392,14 @@ float JsonHelper::expect(const QJsonValue& v)
 }
 
 template <>
-int JsonHelper::expect(const QJsonValue& v)
+int64_t JsonHelper::expect(const QJsonValue& v)
 {
     if (!v.isDouble() && !v.isString())
         SONOT_JSON_ERROR("Expected int value, got " << typeName(v));
     if (v.isString())
     {
         bool ok;
-        int k = v.toString().toInt(&ok);
+        int k = v.toString().toLongLong(&ok);
         if (!ok)
             SONOT_JSON_ERROR("Expected int value, got non-int string '"
                         << v.toString() << "'");
@@ -402,10 +409,19 @@ int JsonHelper::expect(const QJsonValue& v)
 }
 
 template <>
-size_t JsonHelper::expect(const QJsonValue& v)
-{
-    return expect<int>(v);
-}
+int8_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+uint8_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+int16_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+uint16_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+int32_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+uint32_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+uint64_t JsonHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 
 
 template <>
@@ -611,14 +627,20 @@ void JsonHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
 // --- template instantiation ---
 
 // All compound types supported by QVariant
+// that are excplicitly handled in code above
 #define SONOT__FOR_EACH_SUPPORTED_QT_TYPE(F__) \
     F__(QRect) \
-    F__(QSize) \
-    F__(QPoint) \
     F__(QRectF) \
+    F__(QSize) \
     F__(QSizeF) \
+    F__(QPoint) \
     F__(QPointF) \
-    F__(QColor)
+    F__(QLine) \
+    F__(QLineF) \
+    F__(QColor) \
+    F__(QTime) \
+    F__(QDateTime)
+
 
 
 // -- inst. JsonHelper::wrap() --
@@ -639,10 +661,16 @@ void JsonHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
     template void JsonHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonArray& src); \
     template void JsonHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonValue& src);
 
-    SONOT__INSTANTIATE(int)
     SONOT__INSTANTIATE(float)
     SONOT__INSTANTIATE(double)
-    SONOT__INSTANTIATE(size_t)
+    SONOT__INSTANTIATE(int8_t)
+    SONOT__INSTANTIATE(uint8_t)
+    SONOT__INSTANTIATE(int16_t)
+    SONOT__INSTANTIATE(uint16_t)
+    SONOT__INSTANTIATE(int32_t)
+    SONOT__INSTANTIATE(uint32_t)
+    SONOT__INSTANTIATE(int64_t)
+    SONOT__INSTANTIATE(uint64_t)
     SONOT__INSTANTIATE(QString)
 
     SONOT__FOR_EACH_SUPPORTED_QT_TYPE( SONOT__INSTANTIATE )
@@ -650,15 +678,5 @@ void JsonHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
 #undef SONOT__INSTANTIATE
 
 
-/*
-#define SONOT__INSTANTIATE(T__) \
-    template void JsonHelper::p_expectArray_<T__>( \
-            const QJsonValue& src, std::vector<T__>& dst, \
-            size_t size, const QString& forType);
-
-    SONOT__INSTANTIATE(double);
-
-#undef SONOT__INSTANTIATE
-*/
 
 } // namespace Sonot
