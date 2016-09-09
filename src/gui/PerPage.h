@@ -18,57 +18,49 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_PAGEANNOTATIONTEMPLATE_H
-#define SONOTSRC_PAGEANNOTATIONTEMPLATE_H
+#ifndef SONOTSRC_PERPAGE_H
+#define SONOTSRC_PERPAGE_H
 
 #include <QString>
 #include <QMap>
 
-#include "PageAnnotation.h"
 #include "io/JsonInterface.h"
 
 namespace Sonot {
 
-/** Container of PageAnnotation per page */
-class PageAnnotationTemplate : public JsonInterface
+template <class T>
+class PerPage : public JsonInterface
 {
 public:
-    PageAnnotationTemplate();
 
     // --- io ---
 
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject&) override;
 
-    // --- getter ---
+    // ----- getter -----
 
-    /** Returns the page annotation for id, or empty annotation */
-    PageAnnotation getPage(const QString& id) const;
+    bool operator == (const PerPage& o) const { return p_data_ == o.p_data_; }
+    bool operator != (const PerPage& o) const { return !(*this == o); }
 
-    /** Returns the annotation for given page index. */
-    PageAnnotation getPage(int pageIndex) const;
+    bool contains(const QString& key) const { return p_data_.contains(key); }
 
-    bool operator == (const PageAnnotationTemplate& o) const;
-    bool operator != (const PageAnnotationTemplate& o) const
-                                            { return !(*this == o); }
+    const T& get(const QString& key) const;
+    const T& operator[](const QString& key) const { return get(key); }
 
-    // --- setter ---
+    // ----- setter -----
 
-    /** Stores a page annotation for id */
-    void setPage(const QString& id, const PageAnnotation&);
+    void clear() { p_data_.clear(); }
 
-    const QMap<QString, PageAnnotation>& pages() const { return p_pages_; }
-          QMap<QString, PageAnnotation>& pages()       { return p_pages_; }
-
-    void clear() { p_pages_.clear(); }
-
-    void init(const QString& templateId);
+    void insert(const QString& key, const T& data) { p_data_.insert(key, data); }
+    void remove(const QString& key) { p_data_.remove(key); }
 
 private:
-
-    QMap<QString, PageAnnotation> p_pages_;
+    QMap<QString, T> p_data_;
+    T p_empty_;
 };
 
 } // namespace Sonot
 
-#endif // SONOTSRC_PAGEANNOTATIONTEMPLATE_H
+#endif // SONOTSRC_PERPAGE_H
+

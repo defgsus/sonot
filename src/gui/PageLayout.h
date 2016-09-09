@@ -39,7 +39,8 @@ class PageLayout : public JsonInterface
 
 public:
     PageLayout();
-    void init();
+
+    void init(bool oddOrEven);
 
     // --- io ---
 
@@ -55,32 +56,22 @@ public:
     /** The whole page (starting at <0,0>) */
     QRectF pageRect() const { return p_pageSize_.rect(); }
     /** The rect for the content (annotations) = pageRect - margins */
-    QRectF contentRect(int pageIndex) const;
+    QRectF contentRect() const;
     /** The rect for the score = contectRect() - scoreMargins */
-    QRectF scoreRect(int pageIndex) const;
+    QRectF scoreRect() const;
 
-    /** Is pageIndex in contentRect() zero-based or one-based? */
-    bool isZeroBased() const { return p_zeroBased_; }
-
-    const Properties& marginsOdd() const { return p_margins_[0]; }
-    const Properties& marginsEven() const { return p_margins_[1]; }
-    const Properties& scoreMarginsOdd() const { return p_margins_[2]; }
-    const Properties& scoreMarginsEven() const { return p_margins_[3]; }
+    const Properties& margins() const { return p_margins_; }
 
     // ---- setter ----
 
     void setPageSize(const PageSize& p) { p_pageSize_ = p; }
 
-    Properties& marginsOdd() { return p_margins_[0]; }
-    Properties& marginsEven() { return p_margins_[1]; }
-    Properties& scoreMarginsOdd() { return p_margins_[2]; }
-    Properties& scoreMarginsEven() { return p_margins_[3]; }
+    void setMargins(const Properties& margins) { p_margins_ = margins; }
 
 private:
 
     PageSize p_pageSize_;
-    Properties p_margins_[4];
-    bool p_zeroBased_;
+    Properties p_margins_;
 };
 
 } // namespace Sonot

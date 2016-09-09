@@ -25,81 +25,58 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
-namespace {
-    const int ODD = 0;
-    const int EVEN = 1;
-}
-
 
 PageLayout::PageLayout()
     : p_pageSize_   (PageSize::F_ISO_A4)
-    , p_margins_    ({ Properties("margins-odd"),
-                       Properties("margins-even"),
-                       Properties("score-margins-odd"),
-                       Properties("score-margins-even")})
-    , p_zeroBased_  (true)
+    , p_margins_    (Properties("margins"))
 {
     // content
-    p_margins_[ODD].set(
+    p_margins_.set(
                 "left", tr("left margin"),
                 tr("distance to left page border"),
                 20., 1.);
-    p_margins_[ODD].set(
+    p_margins_.set(
                 "right", tr("right margin"),
                 tr("distance to right page border"),
                 30., 1.);
-    p_margins_[ODD].set(
+    p_margins_.set(
                 "top", tr("top margin"),
                 tr("distance to top page border"),
                 20., 1.);
-    p_margins_[ODD].set(
+    p_margins_.set(
                 "bottom", tr("bottom margin"),
                 tr("distance to bottom page border"),
                 30., 1.);
-    p_margins_[EVEN] = p_margins_[ODD];
-    p_margins_[EVEN].setId("margins-even");
-    p_margins_[EVEN].set("left", 30.);
-    p_margins_[EVEN].set("right", 20.);
-
     // score
-    p_margins_[2+ODD].set(
-                "left", tr("left score margin"),
+    p_margins_.set(
+                "score-left", tr("left score margin"),
                 tr("distance of score to left content border"),
                 5., 1.);
-    p_margins_[2+ODD].set(
-                "right", tr("right score margin"),
+    p_margins_.set(
+                "score-right", tr("right score margin"),
                 tr("distance of score to right content border"),
                 5., 1.);
-    p_margins_[2+ODD].set(
-                "top", tr("top score margin"),
+    p_margins_.set(
+                "score-top", tr("top score margin"),
                 tr("distance of score to top content border"),
                 20., 1.);
-    p_margins_[2+ODD].set(
-                "bottom", tr("bottom score margin"),
+    p_margins_.set(
+                "score-bottom", tr("bottom score margin"),
                 tr("distance of score to bottom content border"),
                 10., 1.);
-    p_margins_[2+EVEN] = p_margins_[2+ODD];
-    p_margins_[2+EVEN].setId("score-margins-even");
 }
 
 bool PageLayout::operator == (const PageLayout& o) const
 {
     return p_pageSize_ == o.p_pageSize_
-        && p_zeroBased_ == o.p_zeroBased_
-        && p_margins_[0] == o.p_margins_[0]
-        && p_margins_[1] == o.p_margins_[1]
-        && p_margins_[2] == o.p_margins_[2]
-        && p_margins_[3] == o.p_margins_[3];
+        && p_margins_ == o.p_margins_;
 }
 
 QJsonObject PageLayout::toJson() const
 {
     QJsonObject o;
     o.insert("page-size", p_pageSize_.toJson());
-    o.insert("margins-odd", p_margins_[ODD].toJson());
-    o.insert("margins-even", p_margins_[EVEN].toJson());
-    o.insert("score-margins-odd", p_margins_[2+ODD].toJson());
-    o.insert("score-margins-even", p_margins_[2+EVEN].toJson());
+    o.insert("margins", p_margins_.toJson());
     return o;
 }
 
@@ -108,43 +85,34 @@ void PageLayout::fromJson(const QJsonObject& o)
     JsonHelper json("PageLayout");
     PageLayout tmp;
     tmp.p_pageSize_.fromJson(json.expectChildObject(o, "page-size"));
-    tmp.p_margins_[ODD].fromJson(json.expectChildObject(o, "margins-odd"));
-    tmp.p_margins_[EVEN].fromJson(json.expectChildObject(o, "margins-even"));
-    tmp.p_margins_[2+ODD].fromJson(json.expectChildObject(o, "score-margins-odd"));
-    tmp.p_margins_[2+EVEN].fromJson(json.expectChildObject(o, "score-margins-even"));
+    tmp.p_margins_.fromJson(json.expectChildObject(o, "margins"));
 
     *this = tmp;
 }
 
-void PageLayout::init()
+void PageLayout::init(bool odd)
 {
-    p_pageSize_.setFormat(PageSize::F_ISO_A4);
+    if (odd)
+    {
+        p_margins_.set("left",   odd ? 20. : 30.);
+        p_margins_.set("right",  odd ? 30. : 20.);
+        p_margins_.set("top",    20.);
+        p_margins_.set("bottom", 30.);
 
-#if 0
-    p_marginLeft_[ODD] = 20.;   p_marginLeft_[EVEN] = 30.;
-    p_marginRight_[ODD] = 30.;  p_marginRight_[EVEN] = 20.;
-    p_marginTop_[ODD] =         p_marginTop_[EVEN] = 20.;
-    p_marginBottom_[ODD] =      p_marginBottom_[EVEN] = 30.;
-
-    p_scoreMarginLeft_[ODD] = 5.;    p_scoreMarginLeft_[EVEN] = 5.;
-    p_scoreMarginRight_[ODD] = 5.;   p_scoreMarginRight_[EVEN] = 5.;
-    p_scoreMarginTop_[ODD] =         p_scoreMarginTop_[EVEN] = 20.;
-    p_scoreMarginBottom_[ODD] =      p_scoreMarginBottom_[EVEN] = 10.;
-#endif
+        p_margins_.set("score-left",   5.);
+        p_margins_.set("score-right",  5.);
+        p_margins_.set("score-top",    5.);
+        p_margins_.set("score-bottom", 5.);
+    }
 }
 
-QRectF PageLayout::contentRect(int pageNum) const
+QRectF PageLayout::contentRect() const
 {
-    if (p_zeroBased_)
-        ++pageNum;
-
-    int idx = (pageNum & 1) == 0 ? EVEN : ODD;
-
     const double
-            marginLeft = p_margins_[idx].get("left").toDouble(),
-            marginRight = p_margins_[idx].get("right").toDouble(),
-            marginTop = p_margins_[idx].get("top").toDouble(),
-            marginBottom = p_margins_[idx].get("bottom").toDouble();
+            marginLeft = p_margins_.get("left").toDouble(),
+            marginRight = p_margins_.get("right").toDouble(),
+            marginTop = p_margins_.get("top").toDouble(),
+            marginBottom = p_margins_.get("bottom").toDouble();
 
     auto r = pageRect();
     return QRectF(
@@ -155,22 +123,15 @@ QRectF PageLayout::contentRect(int pageNum) const
 }
 
 
-QRectF PageLayout::scoreRect(int pageNum) const
+QRectF PageLayout::scoreRect() const
 {
-    auto r = contentRect(pageNum);
-
-    if (p_zeroBased_)
-        ++pageNum;
-
-    int idx = (pageNum & 1) == 0 ? EVEN : ODD;
-    idx += 2;
-
     const double
-            marginLeft = p_margins_[idx].get("left").toDouble(),
-            marginRight = p_margins_[idx].get("right").toDouble(),
-            marginTop = p_margins_[idx].get("top").toDouble(),
-            marginBottom = p_margins_[idx].get("bottom").toDouble();
+            marginLeft = p_margins_.get("score-left").toDouble(),
+            marginRight = p_margins_.get("score-right").toDouble(),
+            marginTop = p_margins_.get("score-top").toDouble(),
+            marginBottom = p_margins_.get("score-bottom").toDouble();
 
+    auto r = contentRect();
     return QRectF(
             r.left()   + marginLeft,
             r.top()    + marginTop,

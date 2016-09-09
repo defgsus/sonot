@@ -105,9 +105,9 @@ void PropertyWidget::Private::updateWidget()
 
 void PropertyWidget::onValueChanged_()
 {
-    qDebug() << "VALUE CHANGED " << p_->id;
     if (p_->ignore_widget)
         return;
+    qDebug() << "VALUE CHANGED " << p_->id;
 
     if (p_->f_update_value)
     {
@@ -297,6 +297,12 @@ void PropertyWidget::Private::createWidgets()
     auto layout = new Layout__(edit); \
     layout->setMargin(0);
 
+#define MO__FRAMED_SUBLAYOUT(Layout__) \
+    edit = new QFrame(widget); \
+    static_cast<QFrame*>(edit)->setFrameStyle(QFrame::Panel | QFrame::Raised); \
+    auto layout = new Layout__(edit); \
+    layout->setMargin(0);
+
 
     bool isHandled = false;
 
@@ -335,9 +341,9 @@ void PropertyWidget::Private::createWidgets()
         else
         // flags
         {
-#ifndef Q_OS_LINUX
             /** @todo Checkboxes in QComboBox do not appear
                 on my XUbuntu 14.04 / Qt 5.5 */
+#ifndef Q_OS_LINUX
             auto cb = new QComboBox(widget);
             edit = cb;
 
@@ -368,7 +374,7 @@ void PropertyWidget::Private::createWidgets()
                 /** @todo */
             };
 #else
-            MO__SUBLAYOUT(QVBoxLayout);
+            MO__FRAMED_SUBLAYOUT(QVBoxLayout);
             QList<QCheckBox*> boxes;
             for (const Properties::NamedValues::Value & i : nvi)
             {

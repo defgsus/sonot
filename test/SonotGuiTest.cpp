@@ -27,7 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/NoteStream.h"
 #include "core/Score.h"
 #include "gui/ScoreDocument.h"
-#include "gui/PageAnnotationTemplate.h"
+#include "gui/PageAnnotation.h"
 #include "gui/PageLayout.h"
 #include "gui/ScoreLayout.h"
 
@@ -118,22 +118,16 @@ ScoreLayout SonotGuiTest::createRandomScoreLayout()
 PageLayout SonotGuiTest::createRandomPageLayout()
 {
     PageLayout l;
-    l.marginsOdd().set("left", rnd(1,40));
-    l.marginsOdd().set("right", rnd(1,40));
-    l.marginsOdd().set("top", rnd(1,40));
-    l.marginsOdd().set("bottom", rnd(1,40));
-    l.marginsEven().set("left", rnd(1,40));
-    l.marginsEven().set("right", rnd(1,40));
-    l.marginsEven().set("top", rnd(1,40));
-    l.marginsEven().set("bottom", rnd(1,40));
-    l.scoreMarginsOdd().set("left", rnd(1,40));
-    l.scoreMarginsOdd().set("right", rnd(1,40));
-    l.scoreMarginsOdd().set("top", rnd(1,40));
-    l.scoreMarginsOdd().set("bottom", rnd(1,40));
-    l.scoreMarginsEven().set("left", rnd(1,40));
-    l.scoreMarginsEven().set("right", rnd(1,40));
-    l.scoreMarginsEven().set("top", rnd(1,40));
-    l.scoreMarginsEven().set("bottom", rnd(1,40));
+    Properties p = l.margins();
+    p.set("left", rnd(1,40));
+    p.set("right", rnd(1,40));
+    p.set("top", rnd(1,40));
+    p.set("bottom", rnd(1,40));
+    p.set("score-left", rnd(1,40));
+    p.set("score-right", rnd(1,40));
+    p.set("score-top", rnd(1,40));
+    p.set("score-bottom", rnd(1,40));
+    l.setMargins(p);
     return l;
 }
 
@@ -158,8 +152,11 @@ TextItem SonotGuiTest::createRandomTextItem()
 ScoreDocument SonotGuiTest::createRandomScoreDocument()
 {
     ScoreDocument s;
+    s.initLayout();
+    s.setPageLayout(0, createRandomPageLayout());
+    s.setPageLayout(1, createRandomPageLayout());
+    s.setPageLayout(2, createRandomPageLayout());
     s.setPageSpacing(QPointF(rnd(1,10), rnd(1,10)));
-
     return s;
 }
 
@@ -216,7 +213,7 @@ void SonotGuiTest::testJsonTextItem()
 void SonotGuiTest::testJsonScoreDocument()
 {
     ScoreDocument s2, s = createRandomScoreDocument();
-    //PRINT(s.toJsonString().toStdString());
+    PRINT(s.toJsonString().toStdString());
     s2.fromJsonString(s.toJsonString());
     //s2 = s;
 

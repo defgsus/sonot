@@ -32,7 +32,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "ScoreDocument.h"
 #include "ScoreLayout.h"
 #include "TextItem.h"
-#include "PageAnnotationTemplate.h"
 #include "PageLayout.h"
 #include "core/Score.h"
 
@@ -313,8 +312,8 @@ void ScoreView::Private::paintPage(
     {
         p->setPen(Qt::DotLine);
         p->setBrush(Qt::NoBrush);
-        p->drawRect(pageLayout.contentRect(pageIndex));
-        p->drawRect(pageLayout.scoreRect(pageIndex));
+        p->drawRect(pageLayout.contentRect());
+        p->drawRect(pageLayout.scoreRect());
     }
 
     paintPageAnnotation(p, updateRect, pageIndex);
@@ -330,7 +329,7 @@ void ScoreView::Private::paintPageAnnotation(
 
     auto pageLayout = document.pageLayout(pageIndex);
     auto pageRect = pageLayout.pageRect();
-    auto contentRect = pageLayout.contentRect(pageIndex);
+    auto contentRect = pageLayout.contentRect();
     auto pageNum = document.pageNumberForIndex(pageIndex);
 
     for (const TextItem& item : anno.textItems())
@@ -370,7 +369,7 @@ void ScoreView::Private::paintScore(
 {
     auto pageLayout = document.pageLayout(pageIndex);
     auto scoreLayout = document.scoreLayout(pageIndex);
-    auto srect = pageLayout.scoreRect(pageIndex);
+    auto srect = pageLayout.scoreRect();
 
     double y = 0.;
     while (y < srect.height())

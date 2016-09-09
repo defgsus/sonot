@@ -23,9 +23,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "ScoreDocument.h"
 #include "core/Score.h"
-#include "PageAnnotationTemplate.h"
 #include "PageLayout.h"
 #include "ScoreLayout.h"
+#include "PerPage.h"
 
 namespace Sonot {
 
@@ -35,8 +35,6 @@ struct ScoreDocument::Private
         : p             (p)
         , props         ("score-document")
     {
-        pageAnnotationTemplate.init("default");
-
         props.set("page-spacing", tr("page spacing"),
                   tr("Spacing between displayed pages"),
                   QPointF(2, 10));
@@ -46,12 +44,14 @@ struct ScoreDocument::Private
     {
     }
 
+    void initLayout();
+
     ScoreDocument* p;
 
     Score score;
-    ScoreLayout scoreLayout;
-    PageAnnotationTemplate pageAnnotationTemplate;
-    PageLayout pageLayout;
+    PerPage<ScoreLayout> scoreLayout;
+    PerPage<PageAnnotation> pageAnnotation;
+    PerPage<PageLayout> pageLayout;
 
     // -- config --
 
@@ -61,6 +61,7 @@ struct ScoreDocument::Private
 ScoreDocument::ScoreDocument()
     : p_        (new Private(this))
 {
+    initLayout();
     p_->score.setTitle("Space Invaders");
     p_->score.setCopyright("(c) 1963, Ingsoc");
     p_->score.setAuthor("Dorian Gray");
@@ -85,7 +86,7 @@ ScoreDocument& ScoreDocument::operator = (const ScoreDocument& o)
 {
     p_->score = o.p_->score;
     p_->scoreLayout = o.p_->scoreLayout;
-    p_->pageAnnotationTemplate = o.p_->pageAnnotationTemplate;
+    p_->pageAnnotation = o.p_->pageAnnotation;
     p_->pageLayout = o.p_->pageLayout;
     p_->props = o.p_->props;
     return *this;
@@ -95,7 +96,7 @@ bool ScoreDocument::operator == (const ScoreDocument& o) const
 {
     return p_->score == o.p_->score
         && p_->scoreLayout == o.p_->scoreLayout
-        && p_->pageAnnotationTemplate == o.p_->pageAnnotationTemplate
+        && p_->pageAnnotation == o.p_->pageAnnotation
         && p_->pageLayout == o.p_->pageLayout
         && p_->props == o.p_->props
             ;
@@ -109,7 +110,7 @@ QJsonObject ScoreDocument::toJson() const
     o.insert("score", p_->score.toJson());
     o.insert("score-layout", p_->scoreLayout.toJson());
     o.insert("page-layout", p_->pageLayout.toJson());
-    o.insert("annotation", p_->pageAnnotationTemplate.toJson());
+    o.insert("annotation", p_->pageAnnotation.toJson());
     o.insert("props", p_->props.toJson());
     return o;
 }
@@ -121,7 +122,7 @@ void ScoreDocument::fromJson(const QJsonObject& o)
     tmp.p_->score.fromJson( json.expectChildObject(o, "score") );
     tmp.p_->scoreLayout.fromJson( json.expectChildObject(o, "score-layout") );
     tmp.p_->pageLayout.fromJson( json.expectChildObject(o, "page-layout") );
-    tmp.p_->pageAnnotationTemplate.fromJson(
+    tmp.p_->pageAnnotation.fromJson(
                 json.expectChildObject(o, "annotation") );
     tmp.p_->props = p_->props;
     tmp.p_->props.fromJson( json.expectChildObject(o, "props") );
@@ -137,27 +138,34 @@ const Score& ScoreDocument::score() const
 
 QRectF ScoreDocument::pageRect() const
 {
-    return p_->pageLayout.pageRect();
+    return p_->pageLayout["title"].pageRect();
 }
 
-const PageLayout& ScoreDocument::pageLayout(int /*pageIdx*/) const
+const PageLayout& ScoreDocument::pageLayout(const QString& id) const
 {
-    return p_->pageLayout;
+    return p_->pageLayout[id];
 }
 
-const ScoreLayout& ScoreDocument::scoreLayout(int /*pageIdx*/) const
+const ScoreLayout& ScoreDocument::scoreLayout(const QString& id) const
 {
-    return p_->scoreLayout;
+    return p_->scoreLayout[id];
 }
 
-PageAnnotation ScoreDocument::pageAnnotation(int pageIdx) const
+const PageAnnotation& ScoreDocument::pageAnnotation(const QString& id) const
 {
-    return p_->pageAnnotationTemplate.getPage(pageIdx);
+    return p_->pageAnnotation[id];
 }
 
 int ScoreDocument::pageNumberForIndex(int pageIndex) const
 {
     return pageIndex + 1;
+}
+
+QString ScoreDocument::keyForIndex(int pageIdx) const
+{
+    return pageIdx == 0 ? "title"
+                        : (pageIdx & 1) == 1 ? "left"
+                                             : "right";
 }
 
 QPointF ScoreDocument::pagePosition(int pageIndex) const
@@ -186,13 +194,88 @@ int ScoreDocument::pageIndexForDocumentPosition(const QPointF& p0) const
 }
 
 
+
+void ScoreDocument::initLayout() { p_->initLayout(); }
+
+void ScoreDocument::Private::initLayout()
+{
+    // PageLayout
+    {
+        pageLayout.clear();
+
+        PageLayout l;
+        l.init(false);
+        pageLayout.insert("title", l);
+        pageLayout.insert("left", l);
+        l.init(true);
+        pageLayout.insert("right", l);
+    }
+
+    // PageAnnotation
+    {
+        pageAnnotation.clear();
+
+        for (int k = 0; k < 3; ++k)
+        {
+            const bool titlePage = k == 0;
+            const bool leftPage = k == 1;
+            const QString pageId = titlePage ? "title"
+                                             : leftPage ? "left" : "right";
+            PageAnnotation page;
+            TextItem ti;
+
+            if (titlePage)
+            {
+                ti = TextItem();
+                ti.setBoundingBox(QRectF(0,0,100,10));
+                ti.setBoxAlignment(Qt::AlignHCenter | Qt::AlignTop);
+                ti.setTextAlignment(Qt::AlignHCenter | Qt::AlignTop);
+                ti.setText("#title");
+                ti.setFontFlags(TextItem::F_ITALIC);
+                page.textItems().push_back(ti);
+            }
+
+            if (!titlePage)
+            {
+                ti = TextItem();
+                ti.setBoundingBox(QRectF(0,0,100,10));
+                ti.setBoxAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+                ti.setText("#copyright");
+                ti.setFontFlags(TextItem::F_ITALIC);
+                ti.setFontSize(4.);
+                page.textItems().push_back(ti);
+            }
+
+            if (!titlePage)
+            {
+                ti = TextItem();
+                ti.setBoundingBox(QRectF(0,0,20,10));
+                ti.setBoxAlignment(Qt::AlignBottom |
+                                   (leftPage ? Qt::AlignLeft : Qt::AlignRight));
+                ti.setTextAlignment(Qt::AlignBottom |
+                                    (leftPage ? Qt::AlignLeft : Qt::AlignRight));
+                ti.setText("#page");
+                ti.setFontSize(5.);
+                page.textItems().push_back(ti);
+            }
+
+            pageAnnotation.insert(pageId, page);
+        }
+    }
+
+
+}
+
 void ScoreDocument::setPageAnnotation(int pageIndex, const PageAnnotation &p)
 {
-    const QString pageId = pageIndex == 0 ? "title"
-                                          : (pageIndex & 1) == 1 ? "left"
-                                                                 : "right";
+    const QString id = keyForIndex(pageIndex);
+    p_->pageAnnotation.insert(id, p);
+}
 
-    p_->pageAnnotationTemplate.setPage(pageId, p);
+void ScoreDocument::setPageLayout(int pageIndex, const PageLayout &p)
+{
+    const QString id = keyForIndex(pageIndex);
+    p_->pageLayout.insert(id, p);
 }
 
 

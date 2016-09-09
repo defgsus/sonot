@@ -25,6 +25,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "io/JsonInterface.h"
 #include "io/Properties.h"
+#include "PageLayout.h"
+#include "PageAnnotation.h"
+#include "ScoreLayout.h"
 
 class QPointF;
 class QRectF;
@@ -32,11 +35,6 @@ class QRectF;
 namespace Sonot {
 
 class Score;
-class ScoreLayout;
-class PageLayout;
-class PageSize;
-class PageAnnotation;
-class PageAnnotationTemplate;
 
 /** Wrapper around Score and layout classes */
 class ScoreDocument : public JsonInterface
@@ -63,9 +61,16 @@ public:
     const Score& score() const;
 
     QRectF pageRect() const;
-    const PageLayout& pageLayout(int pageIdx) const;
-    const ScoreLayout& scoreLayout(int pageIdx) const;
-    PageAnnotation pageAnnotation(int pageIdx) const;
+    const PageLayout& pageLayout(const QString& id) const;
+    const ScoreLayout& scoreLayout(const QString& id) const;
+    const PageAnnotation& pageAnnotation(const QString& id) const;
+
+    const PageLayout& pageLayout(int pageIdx) const
+        { return pageLayout(keyForIndex(pageIdx)); }
+    const ScoreLayout& scoreLayout(int pageIdx) const
+        { return scoreLayout(keyForIndex(pageIdx)); }
+    const PageAnnotation& pageAnnotation(int pageIdx) const
+        { return pageAnnotation(keyForIndex(pageIdx)); }
 
     const Properties& props() const;
 
@@ -84,11 +89,16 @@ public:
     /** Returns the page number for the page index */
     int pageNumberForIndex(int pageIndex) const;
 
+    QString keyForIndex(int pageIdx) const;
+
     // ----- settter ------
+
+    void initLayout();
 
     void setScore(const Score&);
 
     void setPageAnnotation(int pageIdx, const PageAnnotation& p);
+    void setPageLayout(int pageIdx, const PageLayout& p);
 
     void setPageSpacing(const QPointF& f) { props().set("page-spacing", f); }
     void setProperties(const Properties& p);
