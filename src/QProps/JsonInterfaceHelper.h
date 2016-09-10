@@ -150,6 +150,8 @@ private:
     template <typename T>
     void p_expectArray_(const QJsonValue& src, std::vector<T>& dst,
                         size_t size, const QString& forType);
+    QVariant p_convert_(const QVariant& v, QVariant::Type newType);
+
     QString p_classname_;
     QStringList p_context_;
 };

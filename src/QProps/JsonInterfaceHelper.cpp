@@ -161,6 +161,7 @@ namespace
     QJsonValue to_json(uint32_t v) { return QJsonValue((double)v); }
     QJsonValue to_json(int64_t v) { return QJsonValue((double)v); }
     QJsonValue to_json(uint64_t v) { return QJsonValue((double)v); }
+    QJsonValue to_json(qulonglong v) { return QJsonValue((double)v); }
 
     QJsonValue to_json(const QRectF& r)
     {
@@ -298,9 +299,12 @@ QJsonValue JsonInterfaceHelper::wrap(const QVariant& v, bool explicitType)
         o.insert("v", to_json(v.value<Array__<Type__>>())); \
     } else
 
+    // QVector of compound type
 #define QPROPS__ARRAY_WRITE(Type__) QPROPS__ARRAY_WRITE_IMPL(QVector, Type__)
     QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__ARRAY_WRITE )
 #undef QPROPS__ARRAY_WRITE
+
+    // QVector of primitive type
 #define QPROPS__ARRAY_WRITE(Typename__, Enum__, Type__) \
     QPROPS__ARRAY_WRITE_IMPL(QVector, Type__)
     QPROPS__FOR_EACH_PRIMITIVE_TYPE( QPROPS__ARRAY_WRITE )
@@ -416,6 +420,14 @@ template <>
 uint32_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
 uint64_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+bool JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+char JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+qulonglong JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+template <>
+qlonglong JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 
 
 template <>
@@ -535,7 +547,7 @@ QVariant JsonInterfaceHelper::expectQVariant(
             QPROPS_JSON_ERROR("Illegal QVariant type '" << typeName << "' in "
                              "json object");
 
-#define QPROPS__EXPECT_VEC(Vector__, Type__) \
+#define QPROPS__EXPECT_VEC_IMPL(Vector__, Type__) \
         if (typeName == #Vector__ "<" #Type__ ">") \
         { \
             QJsonArray ar = expectChildArray(o, "v"); \
@@ -545,8 +557,19 @@ QVariant JsonInterfaceHelper::expectQVariant(
             ret = QVariant::fromValue(vec); \
         } else
 
-        QPROPS__EXPECT_VEC(QVector, double)
-        QPROPS__EXPECT_VEC(QVector, QSizeF)
+        // QVector of compound type
+#define QPROPS__EXPECT_VEC(Type__) QPROPS__EXPECT_VEC_IMPL(QVector, Type__)
+    QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__EXPECT_VEC )
+#undef QPROPS__EXPECT_VEC
+
+        // QVector of primitive type
+#define QPROPS__EXPECT_VEC(Typename__, Enum__, Type__) \
+    QPROPS__EXPECT_VEC_IMPL(QVector, Type__)
+    QPROPS__FOR_EACH_PRIMITIVE_TYPE( QPROPS__EXPECT_VEC )
+#undef QPROPS__EXPECT_VEC
+
+
+#undef QPROPS__EXPECT_VEC_IMPL
 
         switch (QMetaType::Type(type))
         {
@@ -566,26 +589,52 @@ QVariant JsonInterfaceHelper::expectQVariant(
                 //qDebug() << "EXPECT" << typeName << "GOT" << ret.typeName();
 
                 // convert to explicit type (e.g. double -> int)
-                if (ret.type() != type && !ret.convert(type))
-                    QPROPS_JSON_ERROR("Could not convert QVariant type '"
-                                     << ret.typeName() << "' to '"
-                                     << typeName << "'");
+                if (ret.type() != type)
+                    ret = p_convert_(ret, type);
             break;
         }
     }
 
     // explicit type conversion
-    if (expected != QVariant::Invalid)
+    if (expected != QVariant::Invalid
+     && expected != ret.type())
     {
-        if (expected != ret.type() && !ret.convert(expected))
-        {
-            QPROPS_IO_ERROR("Can't convert value type '" << ret.typeName()
-                           << "' in json to '"
-                           << QVariant::typeToName(expected) << "'");
-        }
+        ret = p_convert_(ret, expected);
     }
 
     return ret;
+}
+
+QVariant JsonInterfaceHelper::p_convert_(
+        const QVariant &v, QVariant::Type newType)
+{
+    /** @note need to handle String -> char specially
+        There are some inconsistencies between
+        QVariant::Type and QMetaType::Type */
+    if (v.type() == QVariant::String)
+    {
+        QString s = v.toString();
+        switch (QMetaType::Type(newType))
+        {
+            case QMetaType::Char:
+                return QVariant::fromValue( s[0].toLatin1() );
+            case QMetaType::SChar:
+                return QVariant::fromValue( (signed char)s[0].toLatin1() );
+            case QMetaType::UChar:
+                return QVariant::fromValue( (unsigned char)s[0].toLatin1() );
+            case QMetaType::QChar:
+                return QVariant::fromValue( QChar(s[0]) );
+            default: break;
+        }
+    }
+
+    QVariant conv = v;
+    if (!conv.convert(newType))
+        QPROPS_JSON_ERROR("Could not convert QVariant type '"
+                     << v.typeName() << "'(" << (int)v.type()
+                     << ") to '" << QVariant::typeToName(newType) << "'("
+                     << (int)newType << ") [" << v << "]");
+    return conv;
 }
 
 // wrapper for expect()

@@ -37,8 +37,8 @@ namespace QProps {
 
 /** Generic property container based on QVariant
 
-    The properties are indexed by an id string and
-    support name, tooltip, default value, min, max, stepsize
+    <p>The properties are indexed by an id string and
+    support name, tooltip, default value, min, max, stepsize.</p>
 */
 class Properties : public JsonInterface
 {
