@@ -685,10 +685,11 @@ QVariant JsonInterfaceHelper::p_convert_(
 
     QVariant conv = v;
     if (!conv.convert(newType))
-        QPROPS_JSON_ERROR("Could not convert QVariant type '"
+        QPROPS_JSON_ERROR("Could not convert QVariant " << v
+                     << " of type '"
                      << v.typeName() << "'(" << (int)v.type()
-                     << ") to '" << QVariant::typeToName(newType) << "'("
-                     << (int)newType << ") [" << v << "]");
+                     << ") to '" << QMetaType::typeName(newType) << "'("
+                     << (int)newType << ")");
     return conv;
 }
 

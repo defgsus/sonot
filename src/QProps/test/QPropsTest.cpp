@@ -23,6 +23,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QFont>
 
 #include "Properties.h"
+#include "Example1.h"
+#include "error.h"
 
 class QPropsTest : public QObject
 {
@@ -41,6 +43,7 @@ private slots:
     void testQVariantCompare();
     void testJsonProperties();
     void testJsonPropertiesExplicitTypes();
+    void testExample1();
 };
 
 
@@ -160,12 +163,12 @@ void QPropsTest::testJsonProperties()
     addPrimitiveVectorTypes(p);
     addCompoundVectorTypes(p);
 
-    qDebug() << "ORG" << p.toJsonString();
     QProps::Properties p2("copy");
     p2.fromJson(p.toJson());
 
     //qDebug() << "ORG" << p.toString();
     //qDebug() << "CPY" << p2.toString();
+    //qDebug() << "ORG" << p.toJsonString();
     //qDebug() << "CPY" << p2.toJsonString();
 
     // Property::operator==
@@ -206,6 +209,56 @@ void QPropsTest::testJsonPropertiesExplicitTypes()
     QCOMPARE(p3.get("long").type(), QVariant::Double);
 }
 
+void QPropsTest::testExample1()
+{
+    // create example class
+    Example1 stuff("My stuff");
+
+    // copy it's Properties
+    QProps::Properties p = stuff.properties();
+
+    // change them
+    p.set("pos", QPoint(23, 42));
+    p.set("color", QColor(Qt::white));
+
+    // apply new Properties
+    stuff.setProperties(p);
+
+    // check
+    QCOMPARE(stuff.name(), QString("My stuff"));
+    QCOMPARE(stuff.position(), QPoint(23, 42));
+    QCOMPARE(stuff.color(), QColor(Qt::white));
+
+    // construct second instance
+    Example1 stuff2;
+
+    // serialize -> deserialize
+    stuff2.fromJson( stuff.toJson() );
+
+    // check
+    QCOMPARE(stuff2.name(), stuff.name());
+    QCOMPARE(stuff2.position(), stuff.position());
+    QCOMPARE(stuff2.color(), stuff.color());
+
+    // -- now intentionally break the Properties --
+    p = stuff2.properties();
+    // change type of color property
+    p.set("color", QVector<uint8_t>() << 255 << 255 << 255);
+    stuff2.setProperties(p);
+
+    bool failed = false;
+    try
+    {
+        // serialize -> deserialize
+        stuff2.fromJson( stuff.toJson() );
+    }
+    catch (const QProps::Exception& e)
+    {
+        qDebug() << e.what();
+        failed = true;
+    }
+    QVERIFY(failed);
+}
 
 
 

@@ -13,6 +13,6 @@ SOURCES += \
     JsonInterfaceHelper.cpp \
     Properties.cpp \
     Properties_json.cpp \
+    Properties_qvariant.cpp \
     PropertyWidget.cpp \
-    PropertiesView.cpp \
-    $$PWD/Properties_qvariant.cpp
+    PropertiesView.cpp

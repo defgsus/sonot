@@ -12,8 +12,12 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
+DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 include(QProps.pri)
 
-SOURCES += test/QPropsTest.cpp
-DEFINES += SRCDIR=\\\"$$PWD/\\\"
+HEADERS += \
+    test/Example1.h
+
+SOURCES += \
+    test/QPropsTest.cpp
