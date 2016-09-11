@@ -38,13 +38,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "JsonInterfaceHelper.h"
 #include "error.h"
 
+/** Calls QPROPS_IO_ERROR() and adds the
+    QProps::JsonInterfaceHelper::className() and current
+    QProps::JsonInterfaceHelper::contextStack() */
 #define QPROPS_JSON_ERROR(arg__) \
-    { const QString ctx__ = context(); \
+    { const QString ctx__ = contextTrace(); \
       if (ctx__.isEmpty()) \
-        QPROPS_IO_ERROR("[JSON: " << p_classname_ << "] " << arg__) \
+        QPROPS_IO_ERROR("[JSON: " << className() << "]" << arg__) \
       else \
-        QPROPS_IO_ERROR("[JSON: " << p_classname_ << " | " \
-            << ctx__ << "] " << arg__); }
+        QPROPS_IO_ERROR("[JSON: " << className() << "]" << arg__ \
+                        << "\nin " << ctx__); }
 
 namespace QProps {
 
@@ -63,6 +66,20 @@ const char* JsonInterfaceHelper::typeName(const QJsonValue& v)
     }
     return "*undefined*";
 }
+
+
+QString JsonInterfaceHelper::contextTrace() const
+{
+    QString s;
+    for (int i=p_context_.size(); i > 0; --i)
+    {
+        if (i != p_context_.size())
+            s += "\n";
+        s += p_context_[i-1];
+    }
+    return s;
+}
+
 
 
 // #################### JSON object conversion ######################
@@ -108,7 +125,7 @@ QJsonObject JsonInterfaceHelper::expectChildObject(
 
 // ###################### supported types ############################
 
-/// @note this is copied from qmetatype.h
+/// @note this is adopted from qmetatype.h
 #define QPROPS__FOR_EACH_PRIMITIVE_TYPE(F__) \
     F__(Bool, 1, bool) \
     F__(Int, 2, int) \
@@ -128,6 +145,8 @@ QJsonObject JsonInterfaceHelper::expectChildObject(
 // All compound types supported by QVariant
 // that are excplicitly handled in code
 #define QPROPS__FOR_EACH_COMPOUND_TYPE(F__) \
+    F__(QChar) \
+    F__(QString) \
     F__(QColor) \
     F__(QRect) \
     F__(QRectF) \
@@ -139,6 +158,7 @@ QJsonObject JsonInterfaceHelper::expectChildObject(
     F__(QLineF) \
     F__(QFont) \
     F__(QTime) \
+    F__(QDate) \
     F__(QDateTime)
 
 
@@ -244,6 +264,11 @@ namespace
     QJsonValue to_json(const QDateTime& t)
     {
         return QJsonValue(t.toString("yyyy-MM-dd hh:mm:ss.zzz"));
+    }
+
+    QJsonValue to_json(const QDate& t)
+    {
+        return QJsonValue(t.toString());
     }
 
     template <typename T>
@@ -421,7 +446,12 @@ uint32_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_
 template <>
 uint64_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
-bool JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+bool JsonInterfaceHelper::expect(const QJsonValue& v)
+{
+    if (!v.isBool())
+        QPROPS_JSON_ERROR("Expected bool, got " << typeName(v));
+    return v.toBool();
+}
 template <>
 char JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
@@ -437,6 +467,18 @@ QString JsonInterfaceHelper::expect(const QJsonValue& v)
         QPROPS_JSON_ERROR("Expected string value, got " << typeName(v));
     return v.toString();
 }
+
+template <>
+QChar JsonInterfaceHelper::expect(const QJsonValue& v)
+{
+    QString s = expect<QString>(v);
+    if (s.isEmpty())
+        QPROPS_JSON_ERROR("Expected QChar, got empty string");
+    if (s.size() > 1)
+        QPROPS_JSON_ERROR("Expected QChar, got string of size" << s.size());
+    return s[0];
+}
+
 
 // -- compound types --
 // (typically stored as array)
@@ -494,6 +536,19 @@ QTime JsonInterfaceHelper::expect(const QJsonValue& v)
     QTime t = QTime::fromString(v.toString(), "h:m:s.z");
     if (!t.isValid())
         QPROPS_JSON_ERROR("Can not parse time string '"
+                         << v.toString() << "'");
+    return t;
+}
+
+template <>
+QDate JsonInterfaceHelper::expect(const QJsonValue& v)
+{
+    if (!v.isString())
+        QPROPS_JSON_ERROR("Expected date string, got " << typeName(v));
+
+    QDate t = QDate::fromString(v.toString());
+    if (!t.isValid())
+        QPROPS_JSON_ERROR("Can not parse date string '"
                          << v.toString() << "'");
     return t;
 }
@@ -710,7 +765,6 @@ void JsonInterfaceHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
     QPROPS__INSTANTIATE(uint32_t)
     QPROPS__INSTANTIATE(int64_t)
     QPROPS__INSTANTIATE(uint64_t)
-    QPROPS__INSTANTIATE(QString)
 
     QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__INSTANTIATE )
 

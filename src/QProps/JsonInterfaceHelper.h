@@ -56,6 +56,9 @@ public:
     QString context() const
         { return p_context_.isEmpty() ? QString() : p_context_.last(); }
 
+    /** Multiline string containing all current contexts */
+    QString contextTrace() const;
+
     void beginContext(const QString& c) { p_context_.append(c); }
     void endContext() { p_context_.pop_back(); }
 

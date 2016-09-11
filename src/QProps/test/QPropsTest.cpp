@@ -31,6 +31,11 @@ class QPropsTest : public QObject
 public:
     QPropsTest() { }
 
+    void addPrimitiveTypes(QProps::Properties& p);
+    void addCompoundTypes(QProps::Properties& p);
+    void addPrimitiveVectorTypes(QProps::Properties& p);
+    void addCompoundVectorTypes(QProps::Properties& p);
+
 private slots:
 
     void testQVariantCompare();
@@ -72,11 +77,9 @@ void QPropsTest::testQVariantCompare()
 
 }
 
-void QPropsTest::testJsonProperties()
+void QPropsTest::addPrimitiveTypes(QProps::Properties& p)
 {
-    QProps::Properties p("props-test");
-
-    p.set("bool",           tr("name"), tr("tool-tip"), true);
+    p.set("bool",           true);
     p.set("int",            int(23));
     p.set("uint",           uint(666));
     p.set("longlong",       qlonglong(7777));
@@ -91,7 +94,10 @@ void QPropsTest::testJsonProperties()
     p.set("float",          42.f);
     p.set("schar",          (signed char)(-65));
     p.set("qchar",          QChar(65));
+}
 
+void QPropsTest::addCompoundTypes(QProps::Properties& p)
+{
     p.set("string",         QString("holladihoh"));
     p.set("color",          QColor(10,20,30,40));
     p.set("rect",           QRect(23, 42, 666, 7777));
@@ -106,10 +112,53 @@ void QPropsTest::testJsonProperties()
     p.set("date",           QDate::currentDate());
     p.set("time",           QTime::currentTime());
     p.set("datetime",       QDateTime::currentDateTime());
+}
 
-    p.set("vector-double",  QVector<double>() << 1. << 2. << 3. << 4.);
-    p.set("vector-uint64",  QVector<uint64_t>() << 1 << 2 << 3 << 4);
-    p.set("vector-sizef",   QVector<QSizeF>() << QSizeF(1.,2.) << QSizeF(3.,4.));
+void QPropsTest::addPrimitiveVectorTypes(QProps::Properties& p)
+{
+    p.set("vec-bool",       QVector<bool>() << true);
+    p.set("vec-int",        QVector<int>() << int(23));
+    p.set("vec-uint",       QVector<uint>() << uint(666));
+    p.set("vec-longlong",   QVector<qlonglong>() << qlonglong(7777));
+    p.set("vec-ulonglong",  QVector<qulonglong>() << qulonglong(7777));
+    p.set("vec-double",     QVector<double>() << 42.);
+    p.set("vec-long",       QVector<long>() << long(7777));
+    p.set("vec-short",      QVector<short>() << short(-42));
+    p.set("vec-char",       QVector<char>() << char(65));
+    p.set("vec-ulong",      QVector<ulong>() << ulong(42));
+    p.set("vec-ushort",     QVector<ushort>() << ushort(23));
+    p.set("vec-uchar",      QVector<uchar>() << uchar(42));
+    p.set("vec-float",      QVector<float>() << 42.f);
+    p.set("vec-schar",      QVector<signed char>() << (signed char)(-65));
+    p.set("vec-qchar",      QVector<QChar>() << QChar(65));
+}
+
+void QPropsTest::addCompoundVectorTypes(QProps::Properties& p)
+{
+    p.set("vec-string",     QVector<QString>() << QString("holladihoh"));
+    p.set("vec-color",      QVector<QColor>() << QColor(10,20,30,40));
+    p.set("vec-rect",       QVector<QRect>() << QRect(23, 42, 666, 7777));
+    p.set("vec-rectf",      QVector<QRectF>() << QRectF(23, 42, 666, 7777));
+    p.set("vec-size",       QVector<QSize>() << QSize(23, 42));
+    p.set("vec-sizef",      QVector<QSizeF>() << QSizeF(23, 42));
+    p.set("vec-point",      QVector<QPoint>() << QPoint(42, 23));
+    p.set("vec-pointf",     QVector<QPointF>() << QPointF(42, 23));
+    p.set("vec-line",       QVector<QLine>() << QLine(10,20,30,40));
+    p.set("vec-linef",      QVector<QLineF>() << QLineF(10,20,30,40));
+    p.set("vec-font",       QVector<QFont>() << QFont("family", 30., 2, true));
+    p.set("vec-date",       QVector<QDate>() << QDate::currentDate());
+    p.set("vec-time",       QVector<QTime>() << QTime::currentTime());
+    p.set("vec-datetime",   QVector<QDateTime>() << QDateTime::currentDateTime());
+}
+
+void QPropsTest::testJsonProperties()
+{
+    QProps::Properties p("props-test");
+
+    addPrimitiveTypes(p);
+    addCompoundTypes(p);
+    addPrimitiveVectorTypes(p);
+    addCompoundVectorTypes(p);
 
     qDebug() << "ORG" << p.toJsonString();
     QProps::Properties p2("copy");
