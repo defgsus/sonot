@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifdef QT_WIDGETS_LIB
 
 #include <functional>
+#include <limits>
 
 #include <QLayout>
 #include <QLabel>
@@ -403,7 +404,8 @@ void PropertyWidget::Private::createWidgets()
     {
         isHandled = true;
 
-        switch ((int)v.type())
+        QMetaType::Type metaType = QMetaType::Type(v.type());
+        switch (metaType)
         {
             case QMetaType::Bool:
             {
@@ -416,58 +418,83 @@ void PropertyWidget::Private::createWidgets()
             }
             break;
 
-            case QMetaType::Int:
-            case QMetaType::UInt:
+#define QPROPS__SB_IMPL(SB__, sb__, Type__, Meta__, Conv__, Signal__) \
+                sb__ = new SB__(widget); \
+                sb__->setRange(std::numeric_limits<Type__>::min(), \
+                               std::numeric_limits<Type__>::max()); \
+                if (props) \
+                { \
+                    if (props->hasMin(id)) \
+                        sb__->setMinimum(props->getMin(id).Conv__()); \
+                    if (props->hasMax(id)) \
+                        sb__->setMaximum(props->getMax(id).Conv__()); \
+                    if (props->hasStep(id)) \
+                        sb__->setSingleStep(props->getStep(id).Conv__()); \
+                } \
+                f_update_widget = [=](){ sb__->setValue(v.Conv__()); }; \
+                f_update_value = [=](){ v = (Type__)sb__->value(); }; \
+                connect(sb__, Signal__, widget, SLOT(onValueChanged_()));
+
+#define QPROPS__INT_SB(sb__, Type__, Meta__, Conv__) \
+    QPROPS__SB_IMPL(QSpinBox, sb__, Type__, Meta__, Conv__, \
+                    SIGNAL(valueChanged(int)))
+
+#define QPROPS__FLOAT_SB(sb__, Type__, Meta__, Conv__) \
+    QPROPS__SB_IMPL(QDoubleSpinBox, sb__, Type__, Meta__, Conv__, \
+                    SIGNAL(valueChanged(double)))
+
+            case QMetaType::Short:
             {
-                bool hasSign = v.type() == QVariant::UInt;
-                auto sb = new QSpinBox(widget);
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, int16_t, Short, toInt);
                 edit = sb;
-                sb->setRange(hasSign ? -999999999 : 0, 999999999);
-                if (props)
-                {
-                    if (props->hasMin(id))
-                        sb->setMinimum(props->getMin(id).toInt());
-                    if (props->hasMax(id))
-                        sb->setMaximum(props->getMax(id).toInt());
-                    if (props->hasStep(id))
-                        sb->setSingleStep(props->getStep(id).toInt());
-                }
-                f_update_widget = [=](){ sb->setValue(v.toInt()); };
-                if (hasSign)
-                    f_update_value = [=](){ v = sb->value(); };
-                else
-                    f_update_value = [=](){ v = (unsigned)sb->value(); };
-                connect(sb, SIGNAL(valueChanged(int)),
-                        widget, SLOT(onValueChanged_()));
+            }
+            break;
+
+            case QMetaType::UShort:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, uint16_t, UShort, toUInt);
+                edit = sb;
+            }
+            break;
+
+            case QMetaType::Int:
+            case QMetaType::Long:
+            case QMetaType::LongLong:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, int32_t, Int, toLongLong);
+                edit = sb;
+            }
+            break;
+
+            case QMetaType::UInt:
+            case QMetaType::ULong:
+            case QMetaType::ULongLong:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, uint32_t, UInt, toULongLong);
+                edit = sb;
+            }
+            break;
+
+            case QMetaType::Float:
+            {
+                QDoubleSpinBox* sb;
+                QPROPS__FLOAT_SB(sb, float, Float, toDouble);
+                edit = sb;
             }
             break;
 
             case QMetaType::Double:
-            case QMetaType::Float:
             {
-                auto sb = new QDoubleSpinBox(widget);
+                QDoubleSpinBox* sb;
+                QPROPS__FLOAT_SB(sb, double, Float, toDouble);
                 edit = sb;
-                //sb->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
-                sb->setRange(-9999999, 9999999);
-                sb->setDecimals(7);
-                if (props)
-                {
-                    if (props->hasMin(id))
-                        sb->setMinimum(props->getMin(id).toDouble());
-                    if (props->hasMax(id))
-                        sb->setMaximum(props->getMax(id).toDouble());
-                    if (props->hasStep(id))
-                        sb->setSingleStep(props->getStep(id).toDouble());
-                }
-                f_update_widget = [=](){ sb->setValue(v.toDouble()); };
-                if (v.type() == QVariant::Double)
-                    f_update_value = [=](){ v = double(sb->value()); };
-                else
-                    f_update_value = [=](){ v = float(sb->value()); };
-                connect(sb, SIGNAL(valueChanged(double)),
-                        widget, SLOT(onValueChanged_()));
             }
             break;
+
 
             case QMetaType::QString:
             {
@@ -666,55 +693,54 @@ void PropertyWidget::Private::createWidgets()
             default:
                 isHandled = false;
             break;
-        }
-
-    } // switch(type)
-
+        } // switch(type)
+    }
 
 
     // ---- create QVector types ----
 
-#define QPROPS__VECTOR(T__, SpinBox__, sigType__, negRange__) \
-    if (!isHandled && !strcmp(v.typeName(), #T__)) \
+#define QPROPS__VECTOR(T__, SpinBox__, sigType__) \
+    if (!isHandled && !strcmp(v.typeName(), "QVector<" #T__ ">")) \
     { \
         QPROPS__SUBLAYOUT(QHBoxLayout); \
-        auto vec = v.value<T__>(); \
+        auto vec = v.value<QVector<T__>>(); \
         QVector<SpinBox__*> sb; \
         for (int i=0; i<vec.size(); ++i) \
         { \
             sb << new SpinBox__(widget); \
-            sb.back()->setRange(negRange__, 9999999); \
+            sb.back()->setRange(std::numeric_limits<T__>::min(), \
+                                std::numeric_limits<T__>::max()); \
         } \
         if (props) \
         { \
             if (props->hasMin(id)) \
             { \
-                auto val = props->getMin(id).value<T__>(); \
+                auto val = props->getMin(id).value<QVector<T__>>(); \
                 for (int i=0; i<std::min(vec.size(), val.size()); ++i) \
                     sb[i]->setMinimum(val[i]); \
             } \
             if (props->hasMax(id)) \
             { \
-                auto val = props->getMax(id).value<T__>(); \
+                auto val = props->getMax(id).value<QVector<T__>>(); \
                 for (int i=0; i<std::min(vec.size(), val.size()); ++i) \
                     sb[i]->setMaximum(val[i]); \
             } \
             if (props->hasStep(id)) \
             { \
-                auto val = props->getStep(id).value<T__>(); \
+                auto val = props->getStep(id).value<QVector<T__>>(); \
                 for (int i=0; i<std::min(vec.size(), val.size()); ++i) \
                     sb[i]->setSingleStep(val[i]); \
             } \
         } \
         f_update_widget = [=]() \
         { \
-            auto val = v.value<T__>(); \
+            auto val = v.value<QVector<T__>>(); \
             for (int i=0; i<vec.size(); ++i) \
                 sb[i]->setValue(val[i]); \
         }; \
         f_update_value = [=]() \
         { \
-            auto val = T__(); \
+            auto val = QVector<T__>(); \
             for (int i=0; i<vec.size(); ++i) \
                 val << sb[i]->value(); \
             v = QVariant::fromValue(val); \
@@ -728,10 +754,16 @@ void PropertyWidget::Private::createWidgets()
         isHandled = true; \
     }
 
-    QPROPS__VECTOR(QVector<float>, QDoubleSpinBox, double, -9999999)
-    QPROPS__VECTOR(QVector<double>, QDoubleSpinBox, double, -9999999)
-    QPROPS__VECTOR(QVector<int>, QSpinBox, int, -9999999)
-    QPROPS__VECTOR(QVector<uint>, QSpinBox, int, 0)
+    QPROPS__VECTOR(float,       QDoubleSpinBox, double)
+    QPROPS__VECTOR(double,      QDoubleSpinBox, double)
+    QPROPS__VECTOR(short,       QSpinBox, int)
+    QPROPS__VECTOR(ushort,      QSpinBox, int)
+    QPROPS__VECTOR(int,         QSpinBox, int)
+    QPROPS__VECTOR(uint,        QSpinBox, int)
+    QPROPS__VECTOR(long,        QSpinBox, int)
+    QPROPS__VECTOR(ulong,       QSpinBox, int)
+    QPROPS__VECTOR(qlonglong,   QSpinBox, int)
+    QPROPS__VECTOR(qulonglong,  QSpinBox, int)
 
 #undef QPROPS__VECTOR
 

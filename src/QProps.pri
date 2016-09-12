@@ -13,6 +13,6 @@ SOURCES += \
     src/QProps/JsonInterfaceHelper.cpp \
     src/QProps/Properties.cpp \
     src/QProps/Properties_json.cpp \
-    src/QProps/Properties_qvariant_to_string.cpp \
+    src/QProps/Properties_qvariant.cpp \
     src/QProps/PropertyWidget.cpp \
     src/QProps/PropertiesView.cpp

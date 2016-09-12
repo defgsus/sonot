@@ -41,22 +41,25 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #define QPROPS_IO_ERROR(arg__) QPROPS_ERROR_IMPL_("IO: " << arg__)
 
-#define QPROPS_PROG_ERROR(cond__, arg__) \
-    QPROPS_ERROR_IMPL_("ASSERTION (" #cond__ ") FAILED;\n" << arg__)
+#define QPROPS_PROG_ERROR(arg__) \
+    QPROPS_ERROR_IMPL_("PROGRAMMERS FAULT; " << arg__)
 
 
 #ifdef QT_DEBUG
+    #define QPROPS_ASSERT_IMPL(cond__, arg__) \
+        QPROPS_PROG_ERROR("ASSERTION (" #cond__ ") FAILED;\n" << arg__)
+
     #define QPROPS_ASSERT(cond__, arg__) \
-        { if (!(cond__)) QPROPS_PROG_ERROR(cond__, arg__); }
+        { if (!(cond__)) QPROPS_ASSERT_IMPL(cond__, arg__); }
 
     #define QPROPS_ASSERT_LT(a__, b__, arg__) \
-        { if (!((a__) < (b__))) QPROPS_PROG_ERROR(cond__, \
+        { if (!((a__) < (b__))) QPROPS_ASSERT_IMPL(cond__, \
             "'" #a__ "' (" << (long long)(a__) \
             << ") expected to be less than '" #b__ "' (" \
             << (long long)(b__) << ") " << arg__); }
 
     #define QPROPS_ASSERT_LTE(a__, b__, arg__) \
-        { if (!((a__) <= (b__))) QPROPS_PROG_ERROR(cond__, \
+        { if (!((a__) <= (b__))) QPROPS_ASSERT_IMPL(cond__, \
             "'" #a__ "' (" << (long long)(a__) \
             << ") expected to be less than or equal to '" #b__ "' (" \
             << (long long)(b__) << ") " << arg__); }

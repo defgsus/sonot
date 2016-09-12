@@ -290,6 +290,8 @@ void QPropsTest::testJsonQVariantTypeRange()
     QPROPS__TEST(ulong);
     QPROPS__TEST(qlonglong);
     QPROPS__TEST(qulonglong);
+
+#undef QPROPS__TEST
 }
 
 

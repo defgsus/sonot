@@ -28,8 +28,8 @@ Framework: Qt, License: GPL
 
     page
     |------------|
-    | |NN|N |  | | row \
-    | |N |  | N| | row / line
+    | |NN|N |  | | row/staff/voice \
+    | |N |  | N| | row/staff/voice / line
     |            |
     | |N |N | N| |
     | |NN|N |N | |
