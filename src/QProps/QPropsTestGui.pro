@@ -1,12 +1,12 @@
 #-------------------------------------------------
 #
-# Project created by QtCreator 2016-09-01T23:30:32
+# Project created by QtCreator 2016-09-12T17:07:43
 #
 #-------------------------------------------------
 
-QT       += testlib gui
+QT       += widgets testlib
 
-TARGET = QPropsTest
+TARGET = QPropsTestGui
 CONFIG   += console c++11
 CONFIG   -= app_bundle
 
@@ -16,9 +16,7 @@ DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 include(QProps.pri)
 
-HEADERS += \
-    test/Example1.h \
-    test/Example2.h
+HEADERS += 
 
 SOURCES += \
-    test/QPropsTest.cpp
+    test/QPropsTestGui.cpp

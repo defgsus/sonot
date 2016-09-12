@@ -25,6 +25,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QWidget>
 
+#include "error.h"
+
 namespace QProps {
 
 class Properties;
@@ -38,10 +40,12 @@ public:
 
     /** Constructor for a Properties::Property with given @p id */
     explicit PropertyWidget(const QString& id, const Properties* p,
-                            QWidget *parent = 0);
+                            QWidget *parent = 0) throw(Exception);
 
     /** Returns the currently set value */
     const QVariant& value() const;
+
+    QWidget* editWidget() const;
 
 signals:
 

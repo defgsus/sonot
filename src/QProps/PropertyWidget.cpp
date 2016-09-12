@@ -57,7 +57,7 @@ struct PropertyWidget::Private
 
     template <class Convert>
     QList<typename Convert::SpinBox*>
-        createSpinboxes(int num, const char* signalName);
+        createSpinboxes(QWidget* parent, int num, const char* signalName);
 
     PropertyWidget * widget;
     const Properties * props;
@@ -76,7 +76,8 @@ struct PropertyWidget::Private
 };
 
 PropertyWidget::PropertyWidget(
-        const QString& id, const Properties * prop, QWidget *parent)
+        const QString& id, const Properties * prop,
+        QWidget *parent) throw(Exception)
     : QWidget       (parent)
     , p_            (new Private(QString(), prop->get(id), this))
 {
@@ -87,11 +88,9 @@ PropertyWidget::PropertyWidget(
     p_->createWidgets();
 }
 
+const QVariant& PropertyWidget::value() const { return p_->v; }
 
-const QVariant& PropertyWidget::value() const
-{
-    return p_->v;
-}
+QWidget* PropertyWidget::editWidget() const { return p_->edit; }
 
 void PropertyWidget::Private::updateWidget()
 {
@@ -196,13 +195,14 @@ namespace {
 
 template <class Convert>
 QList<typename Convert::SpinBox*> PropertyWidget::Private::createSpinboxes(
+        QWidget* parent,
         int num, const char* signalName)
 {
     typedef typename Convert::SpinBox SpinBox;
     QList<SpinBox*> sb;
     for (int i=0; i<num; ++i)
     {
-        sb << new SpinBox(widget);
+        sb << new SpinBox(parent);
         sb.back()->setRange(-9999999, 9999999);
         connect(sb.back(), signalName,
                 widget, SLOT(onValueChanged_()));
@@ -275,13 +275,15 @@ void PropertyWidget::Private::createWidgets()
 
     // ----- create appropriate sub-widgets -----
 
+    QWidget* container = nullptr;
+
 #define QPROPS__SUBLAYOUT(Layout__) \
-    edit = new QWidget(widget); \
+    edit = container = new QWidget(widget); \
     auto layout = new Layout__(edit); \
     layout->setMargin(0);
 
 #define QPROPS__FRAMED_SUBLAYOUT(Layout__) \
-    edit = new QFrame(widget); \
+    edit = container = new QFrame(widget); \
     static_cast<QFrame*>(edit)->setFrameStyle(QFrame::Panel | QFrame::Raised); \
     auto layout = new Layout__(edit); \
     layout->setMargin(0);
@@ -361,7 +363,7 @@ void PropertyWidget::Private::createWidgets()
             QList<QCheckBox*> boxes;
             for (const Properties::NamedValues::Value & i : nvi)
             {
-                auto cb = new QCheckBox(widget);
+                auto cb = new QCheckBox(container);
                 cb->setText(i.name);
                 cb->setStatusTip(i.tip);
                 connect(cb, SIGNAL(clicked(bool)),
@@ -508,12 +510,12 @@ void PropertyWidget::Private::createWidgets()
                     if ((subtype & Properties::ST_TEXT) == Properties::ST_TEXT)
                     {
                         QPROPS__SUBLAYOUT(QHBoxLayout);
-                        auto e = new QLineEdit(widget);
+                        auto e = new QLineEdit(container);
                         e->setReadOnly(true);
                         e->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
                         layout->addWidget(e);
 
-                        auto b = new QToolButton(widget);
+                        auto b = new QToolButton(container);
                         b->setText(tr("..."));
                         layout->addWidget(b);
                         connect(b, &QToolButton::clicked, [=]()
@@ -544,12 +546,12 @@ void PropertyWidget::Private::createWidgets()
                     if ((subtype & Properties::ST_FILENAME) == Properties::ST_FILENAME)
                     {
                         QPROPS__SUBLAYOUT(QHBoxLayout);
-                        auto e = new QLineEdit(widget);
+                        auto e = new QLineEdit(container);
                         e->setReadOnly(true);
                         e->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
                         layout->addWidget(e);
 
-                        auto b = new QToolButton(widget);
+                        auto b = new QToolButton(container);
                         b->setText(tr("..."));
                         layout->addWidget(b);
                         connect(b, &QToolButton::clicked, [=]()
@@ -585,7 +587,7 @@ void PropertyWidget::Private::createWidgets()
             {
                 QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<ConvertQSize<QSize, QSpinBox>>(
-                            2, SIGNAL(valueChanged(int)));
+                            container, 2, SIGNAL(valueChanged(int)));
                 for (auto s : sb)
                     layout->addWidget(s);
             }
@@ -595,7 +597,7 @@ void PropertyWidget::Private::createWidgets()
             {
                 QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<ConvertQSize<QSizeF,QDoubleSpinBox>>(
-                            2, SIGNAL(valueChanged(double)));
+                            container, 2, SIGNAL(valueChanged(double)));
                 for (auto s : sb)
                     layout->addWidget(s);
             }
@@ -605,7 +607,7 @@ void PropertyWidget::Private::createWidgets()
             {
                 QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<ConvertQPoint<QPointF,QDoubleSpinBox>>(
-                            2, SIGNAL(valueChanged(double)));
+                            container, 2, SIGNAL(valueChanged(double)));
                 for (auto s : sb)
                     layout->addWidget(s);
             }
@@ -615,7 +617,7 @@ void PropertyWidget::Private::createWidgets()
             {
                 QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<ConvertQPoint<QPoint,QSpinBox>>(
-                            2, SIGNAL(valueChanged(int)));
+                            container, 2, SIGNAL(valueChanged(int)));
                 for (auto s : sb)
                     layout->addWidget(s);
             }
@@ -625,7 +627,7 @@ void PropertyWidget::Private::createWidgets()
             {
                 QPROPS__SUBLAYOUT(QGridLayout);
                 auto sb = createSpinboxes<ConvertQRect<QRectF,QDoubleSpinBox>>(
-                            4, SIGNAL(valueChanged(double)));
+                            container, 4, SIGNAL(valueChanged(double)));
                 sb[0]->setStatusTip(tr("X Position"));
                 sb[1]->setStatusTip(tr("Y Position"));
                 sb[2]->setStatusTip(tr("Width"));
@@ -641,7 +643,7 @@ void PropertyWidget::Private::createWidgets()
             {
                 QPROPS__SUBLAYOUT(QGridLayout);
                 auto sb = createSpinboxes<ConvertQRect<QRect,QSpinBox>>(
-                            4, SIGNAL(valueChanged(double)));
+                            container, 4, SIGNAL(valueChanged(double)));
                 sb[0]->setStatusTip(tr("X Position"));
                 sb[1]->setStatusTip(tr("Y Position"));
                 sb[2]->setStatusTip(tr("Width"));
@@ -665,7 +667,7 @@ void PropertyWidget::Private::createWidgets()
 #else
                 QPROPS__SUBLAYOUT(QHBoxLayout);
                 auto sb = createSpinboxes<ConvertQColor>(
-                            4, SIGNAL(valueChanged(int)));
+                            container, 4, SIGNAL(valueChanged(int)));
                 sb[0]->setStatusTip(tr("Red"));
                 sb[1]->setStatusTip(tr("Green"));
                 sb[2]->setStatusTip(tr("Blue"));
@@ -707,7 +709,7 @@ void PropertyWidget::Private::createWidgets()
         QVector<SpinBox__*> sb; \
         for (int i=0; i<vec.size(); ++i) \
         { \
-            sb << new SpinBox__(widget); \
+            sb << new SpinBox__(container); \
             sb.back()->setRange(std::numeric_limits<T__>::min(), \
                                 std::numeric_limits<T__>::max()); \
         } \
