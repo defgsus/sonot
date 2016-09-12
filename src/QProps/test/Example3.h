@@ -18,8 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef QPROPSTEST_SRC_EXAMPLE2_H
-#define QPROPSTEST_SRC_EXAMPLE2_H
+#ifndef QPROPSTEST_SRC_EXAMPLE3_H
+#define QPROPSTEST_SRC_EXAMPLE3_H
 
 #include <QtCore>
 #include <QPoint>
@@ -29,27 +29,21 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "JsonInterface.h"
 #include "JsonInterfaceHelper.h"
 
-class Example2 : public QProps::JsonInterface
+class Example3 : public QProps::JsonInterface
 {
-    Q_DECLARE_TR_FUNCTIONS(Example2)
+    Q_DECLARE_TR_FUNCTIONS(Example3)
 public:
 
-    Example2(const QString& name = QString())
-        : p_props("example2")
+    Example3(const QString& name = QString())
+        : p_props("example3")
     {
         // create the properties
         p_initProps();
-        // init with stuff from constructor
-        p_props.set("user-name", name);
     }
 
     // --- getter ---
 
     const QProps::Properties& properties() const { return p_props; }
-
-    QString name() const     { return p_props.get("user-name").toString(); }
-    QPoint  position() const { return p_props.get("pos").toPoint(); }
-    QColor  color() const    { return p_props.get("color").value<QColor>(); }
 
     // --- setter ---
 
@@ -72,7 +66,7 @@ public:
     void fromJson(const QJsonObject& o) override
     {
         // construct the helper class
-        QProps::JsonInterfaceHelper json("Example2");
+        QProps::JsonInterfaceHelper json("Example3");
         // tell helper what we want to do
         // (this is optional and simply creates better error descriptions)
         json.beginContext("Deserializing properties");
@@ -90,19 +84,37 @@ public:
 private:
     void p_initProps()
     {
-        p_props.set("user-name", tr("name"),
-                    tr("A user-defined name of the object"),
-                    QString());
-
-        p_props.set("pos", tr("position"),
-                    tr("The position in pixels on screen"),
-                    QPoint(0,0));
-        // set the lowest possible position to 0,0
-        p_props.setMin("pos", QPoint(0,0));
-
-        p_props.set("color", tr("color"),
-                    tr("The color of the object"),
-                    QColor(Qt::green));
+        // primitives
+        p_props.set("bool",           true);
+        p_props.set("int",            int(23));
+        p_props.set("uint",           uint(666));
+        p_props.set("longlong",       qlonglong(7777));
+        p_props.set("ulonglong",      qulonglong(7777));
+        p_props.set("double",         42.);
+        p_props.set("long",           long(7777));
+        p_props.set("short",          short(-42));
+        p_props.set("char",           char(65));
+        p_props.set("ulong",          ulong(42));
+        p_props.set("ushort",         ushort(23));
+        p_props.set("uchar",          uchar(42));
+        p_props.set("float",          42.f);
+        p_props.set("schar",          (signed char)(-65));
+        p_props.set("qchar",          QChar(65));
+        // compounds
+        p_props.set("string",         QString("holladihoh"));
+        p_props.set("color",          QColor(10,20,30,40));
+        p_props.set("rect",           QRect(23, 42, 666, 7777));
+        p_props.set("rectf",          QRectF(23, 42, 666, 7777));
+        p_props.set("size",           QSize(23, 42));
+        p_props.set("sizef",          QSizeF(23, 42));
+        p_props.set("point",          QPoint(42, 23));
+        p_props.set("pointf",         QPointF(42, 23));
+        p_props.set("line",           QLine(10,20,30,40));
+        p_props.set("linef",          QLineF(10,20,30,40));
+        p_props.set("font",           QFont("family", 30., 2, true));
+        p_props.set("date",           QDate::currentDate());
+        p_props.set("time",           QTime::currentTime());
+        p_props.set("datetime",       QDateTime::currentDateTime());
     }
 
     QProps::Properties p_props;
@@ -111,4 +123,5 @@ private:
 
 
 #endif // QPROPSTEST_SRC_EXAMPLE2_H
+
 

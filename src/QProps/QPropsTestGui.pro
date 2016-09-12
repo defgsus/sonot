@@ -16,7 +16,8 @@ DEFINES += SRCDIR=\\\"$$PWD/\\\"
 
 include(QProps.pri)
 
-HEADERS += 
+HEADERS += \ 
+    test/Example3.h
 
 SOURCES += \
     test/QPropsTestGui.cpp

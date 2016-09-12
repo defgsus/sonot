@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "Properties.h"
 #include "PropertyWidget.h"
 #include "PropertiesView.h"
+#include "Example3.h"
 
 class QPropsGuiTest : public QObject
 {
@@ -86,11 +87,13 @@ void QPropsGuiTest::testWidgetTypes()
 {
     QProps::Properties props = createGuiTypeProperties();
 
+    // see if the PropertyWidget's editor is Widget__
 #define QPROPS__TEST_SIMPLE(id__, Widget__) \
     { auto w = new QProps::PropertyWidget(id__, &props); \
       QVERIFY(dynamic_cast<Widget__*>(w->editWidget()) != 0); \
       delete w; }
 
+    // see if the PropertyWidget's container contains Widget__
 #define QPROPS__TEST_CONTAINS(id__, Widget__) \
     { auto w = new QProps::PropertyWidget(id__, &props); \
       for (auto o : w->editWidget()->children()) \
@@ -101,10 +104,10 @@ void QPropsGuiTest::testWidgetTypes()
       delete w; }
 
     QPROPS__TEST_SIMPLE("bool",     QCheckBox);
-    //QPROPS__TEST_SIMPLE("char",
-    //QPROPS__TEST_SIMPLE("schar",
-    //QPROPS__TEST_SIMPLE("uchar",
-    //QPROPS__TEST_SIMPLE("qchar",
+    QPROPS__TEST_SIMPLE("char",     QSpinBox);
+    QPROPS__TEST_SIMPLE("schar",    QSpinBox);
+    QPROPS__TEST_SIMPLE("uchar",    QSpinBox);
+    QPROPS__TEST_SIMPLE("qchar",    QSpinBox);
     QPROPS__TEST_SIMPLE("short",    QSpinBox);
     QPROPS__TEST_SIMPLE("ushort",   QSpinBox);
     QPROPS__TEST_SIMPLE("int",      QSpinBox);

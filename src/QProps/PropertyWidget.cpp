@@ -42,6 +42,77 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "Properties.h"
 #include "error.h"
 
+namespace std {
+
+template <>
+struct numeric_limits<QChar>
+{
+    typedef numeric_limits<ushort> Proxy;
+  static Q_CONSTEXPR bool is_specialized = true;
+
+  static Q_CONSTEXPR int
+  min() noexcept { return Proxy::min(); }
+
+  static Q_CONSTEXPR int
+  max() noexcept { return Proxy::max(); }
+
+#if __cplusplus >= 201103L
+  static constexpr int
+  lowest() noexcept { return Proxy::lowest(); }
+#endif
+
+  static Q_CONSTEXPR int digits = Proxy::digits;
+  static Q_CONSTEXPR int digits10 = Proxy::digits10;
+#if __cplusplus >= 201103L
+  static Q_CONSTEXPR int max_digits10 = Proxy::max_digits10;
+#endif
+  static Q_CONSTEXPR bool is_signed = Proxy::is_signed;
+  static Q_CONSTEXPR bool is_integer = Proxy::is_integer;
+  static Q_CONSTEXPR bool is_exact = Proxy::is_exact;
+  static Q_CONSTEXPR int radix = Proxy::radix;
+
+  static Q_CONSTEXPR long double
+  epsilon() noexcept { return Proxy::epsilon(); }
+
+  static Q_CONSTEXPR long double
+  round_error() noexcept { return Proxy::round_error(); }
+
+  static Q_CONSTEXPR int min_exponent = Proxy::min_exponent;
+  static Q_CONSTEXPR int min_exponent10 = Proxy::min_exponent10;
+  static Q_CONSTEXPR int max_exponent = Proxy::max_exponent;
+  static Q_CONSTEXPR int max_exponent10 = Proxy::max_digits10;
+
+  static Q_CONSTEXPR bool has_infinity = Proxy::has_infinity;
+  static Q_CONSTEXPR bool has_quiet_NaN = Proxy::has_quiet_NaN;
+  static Q_CONSTEXPR bool has_signaling_NaN = Proxy::has_signaling_NaN;
+  static Q_CONSTEXPR float_denorm_style has_denorm = Proxy::has_denorm;
+  static Q_CONSTEXPR bool has_denorm_loss = Proxy::has_denorm_loss;
+
+  static Q_CONSTEXPR long double
+  infinity() noexcept { return Proxy::infinity(); }
+
+  static Q_CONSTEXPR long double
+  quiet_NaN() noexcept { return Proxy::quiet_NaN(); }
+
+  static Q_CONSTEXPR long double
+  signaling_NaN() noexcept { return Proxy::signaling_NaN(); }
+
+  static Q_CONSTEXPR long double
+  denorm_min() noexcept { return Proxy::denorm_min(); }
+
+  static Q_CONSTEXPR bool is_iec559 = Proxy::is_iec559;
+  static Q_CONSTEXPR bool is_bounded = Proxy::is_bounded;
+  static Q_CONSTEXPR bool is_modulo = Proxy::is_modulo;
+
+  static Q_CONSTEXPR bool traps = Proxy::traps;
+  static Q_CONSTEXPR bool tinyness_before = Proxy::tinyness_before;
+  static Q_CONSTEXPR float_round_style round_style = Proxy::round_style;
+};
+
+
+} // namespace std
+
+
 namespace QProps {
 
 
@@ -111,7 +182,7 @@ void PropertyWidget::onValueChanged_()
 {
     if (p_->ignore_widget)
         return;
-    qDebug() << "VALUE CHANGED " << p_->id;
+    //qDebug() << "VALUE CHANGED " << p_->id;
 
     if (p_->f_update_value)
     {
@@ -124,6 +195,12 @@ void PropertyWidget::onValueChanged_()
 
 
 namespace {
+
+    template <typename T>
+    T to_number(T t) { return t; }
+
+    int to_number(const QChar& c) { return c.unicode(); }
+
 
     template <class T, class SB>
     struct ConvertQSize
@@ -441,6 +518,8 @@ void PropertyWidget::Private::createWidgets()
             }
             break;
 
+// create spinbox with appropriate limits
+// and optional range
 #define QPROPS__SB_IMPL(SB__, sb__, Type__, Meta__, Conv__, Signal__) \
                 sb__ = new SB__(widget); \
                 sb__->setRange(std::numeric_limits<Type__>::min(), \
@@ -465,6 +544,32 @@ void PropertyWidget::Private::createWidgets()
 #define QPROPS__FLOAT_SB(sb__, Type__, Meta__, Conv__) \
     QPROPS__SB_IMPL(QDoubleSpinBox, sb__, Type__, Meta__, Conv__, \
                     SIGNAL(valueChanged(double)))
+
+            case QMetaType::SChar:
+            case QMetaType::Char:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, int8_t, Char, toInt);
+                edit = sb;
+            }
+            break;
+
+            case QMetaType::UChar:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, uint8_t, UChar, toUInt);
+                edit = sb;
+            }
+            break;
+
+            /** @todo QChar (and char) should have a specialized edit */
+            case QMetaType::QChar:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, uint16_t, QChar, toUInt);
+                edit = sb;
+            }
+            break;
 
             case QMetaType::Short:
             {
@@ -826,26 +931,26 @@ void PropertyWidget::Private::createWidgets()
             { \
                 auto val = props->getMin(id).value<QVector<T__>>(); \
                 for (int i=0; i<std::min(vec.size(), val.size()); ++i) \
-                    sb[i]->setMinimum(val[i]); \
+                    sb[i]->setMinimum(to_number(val[i])); \
             } \
             if (props->hasMax(id)) \
             { \
                 auto val = props->getMax(id).value<QVector<T__>>(); \
                 for (int i=0; i<std::min(vec.size(), val.size()); ++i) \
-                    sb[i]->setMaximum(val[i]); \
+                    sb[i]->setMaximum(to_number(val[i])); \
             } \
             if (props->hasStep(id)) \
             { \
                 auto val = props->getStep(id).value<QVector<T__>>(); \
                 for (int i=0; i<std::min(vec.size(), val.size()); ++i) \
-                    sb[i]->setSingleStep(val[i]); \
+                    sb[i]->setSingleStep(to_number(val[i])); \
             } \
         } \
         f_update_widget = [=]() \
         { \
             auto val = v.value<QVector<T__>>(); \
             for (int i=0; i<vec.size(); ++i) \
-                sb[i]->setValue(val[i]); \
+                sb[i]->setValue(to_number(val[i])); \
         }; \
         f_update_value = [=]() \
         { \
@@ -863,6 +968,11 @@ void PropertyWidget::Private::createWidgets()
         isHandled = true; \
     }
 
+    QPROPS__VECTOR(bool,        QSpinBox, int)
+    QPROPS__VECTOR(char,        QSpinBox, int)
+    QPROPS__VECTOR(signed char, QSpinBox, int)
+    QPROPS__VECTOR(uchar,       QSpinBox, int)
+    QPROPS__VECTOR(QChar,       QSpinBox, int)
     QPROPS__VECTOR(float,       QDoubleSpinBox, double)
     QPROPS__VECTOR(double,      QDoubleSpinBox, double)
     QPROPS__VECTOR(short,       QSpinBox, int)
