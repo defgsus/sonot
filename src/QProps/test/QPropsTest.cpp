@@ -47,11 +47,18 @@ private slots:
     void testQVariantCompare();
     void testJsonProperties();
     void testJsonPropertiesExplicitTypes();
+    void testJsonQVariantTypeRange();
     void testExample1();
 };
 
 
 namespace QTest {
+
+    template <>
+    char* toString(const char& t)
+    {
+        return toString(QString::number((int)t));
+    }
 
     template <>
     char* toString(const QVariant::Type& t)
@@ -242,6 +249,49 @@ void QPropsTest::testJsonPropertiesExplicitTypes()
     QCOMPARE(p3.get("int").type(),  QVariant::Double);
     QCOMPARE(p3.get("long").type(), QVariant::Double);
 }
+
+void QPropsTest::testJsonQVariantTypeRange()
+{
+    QProps::JsonInterfaceHelper json("type-range-test");
+    QJsonValue v;
+
+#define QPROPS__PRINT(T__, v__) \
+    { QJsonObject o__; o__.insert("v", v__); \
+      QJsonDocument doc__(o__); \
+      qDebug() << #T__ << doc__.toJson(QJsonDocument::Compact); }
+
+    // store and compare the numeric_limits::min/max values
+    // for each type
+#define QPROPS__TEST_QVARIANT(T__) \
+    v = json.wrap(QVariant::fromValue( std::numeric_limits<T__>::min() )); \
+    QCOMPARE(json.expectQVariant(v).value<T__>(), \
+             std::numeric_limits<T__>::min()); \
+    v = json.wrap(QVariant::fromValue( std::numeric_limits<T__>::max() )); \
+    QCOMPARE(json.expectQVariant(v).value<T__>(), \
+             std::numeric_limits<T__>::max()); \
+
+#define QPROPS__TEST(T__) \
+    QPROPS__TEST_QVARIANT(T__) \
+    v = json.wrap( std::numeric_limits<T__>::min() ); \
+    QCOMPARE(json.expect<T__>(v), std::numeric_limits<T__>::min()); \
+    v = json.wrap( std::numeric_limits<T__>::max() ); \
+    QCOMPARE(json.expect<T__>(v), std::numeric_limits<T__>::max());
+
+    QPROPS__TEST(char);
+    QPROPS__TEST(signed char);
+    QPROPS__TEST(uchar);
+    QPROPS__TEST(short);
+    QPROPS__TEST(ushort);
+    QPROPS__TEST(int);
+    QPROPS__TEST(uint);
+    QPROPS__TEST(float);
+    QPROPS__TEST(double);
+    QPROPS__TEST(long);
+    QPROPS__TEST(ulong);
+    QPROPS__TEST(qlonglong);
+    QPROPS__TEST(qulonglong);
+}
+
 
 void QPropsTest::testExample1()
 {

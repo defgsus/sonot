@@ -92,6 +92,22 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
     QPROPS__FOR_EACH_PRIMITIVE_TYPE(F__) \
     QPROPS__FOR_EACH_COMPOUND_TYPE(F__)
 
+/*
+#define QPROPS__FOR_EACH_NUMBER_TYPE(F__) \
+    F__(double) \
+    F__(float) \
+    F__(char) \
+    F__(int8_t) \
+    F__(uint8_t) \
+    F__(int16_t) \
+    F__(uint16_t) \
+    F__(int32_t) \
+    F__(uint32_t) \
+    F__(int64_t) \
+    F__(uint64_t) \
+    F__(qlonglong) \
+    F__(qulonglong)
+*/
 
 namespace QProps {
 
@@ -233,19 +249,28 @@ QJsonObject JsonInterfaceHelper::expectChildObject(
 
 namespace
 {
+    static_assert(sizeof(int64_t) == sizeof(qlonglong), "");
+    static_assert(sizeof(uint64_t) == sizeof(qulonglong), "");
+
     /** Converter for arguments acceptable by QJsonValue constructor */
     template <typename T>
     QJsonValue to_json(T v) { return QJsonValue(v); }
 
+    // -- explicit primitives conversion --
+
+    QJsonValue to_json(char v) { return QJsonValue(QString::number((int)v)); }
     QJsonValue to_json(int8_t v) { return QJsonValue((double)v); }
     QJsonValue to_json(uint8_t v) { return QJsonValue((double)v); }
     QJsonValue to_json(int16_t v) { return QJsonValue((double)v); }
     QJsonValue to_json(uint16_t v) { return QJsonValue((double)v); }
     QJsonValue to_json(int32_t v) { return QJsonValue((double)v); }
     QJsonValue to_json(uint32_t v) { return QJsonValue((double)v); }
-    QJsonValue to_json(int64_t v) { return QJsonValue((double)v); }
-    QJsonValue to_json(uint64_t v) { return QJsonValue((double)v); }
-    QJsonValue to_json(qulonglong v) { return QJsonValue((double)v); }
+    QJsonValue to_json(int64_t v) { return QJsonValue(QString::number(v)); }
+    QJsonValue to_json(uint64_t v) { return QJsonValue(QString::number(v)); }
+    QJsonValue to_json(qlonglong v) { return QJsonValue(QString::number(v)); }
+    QJsonValue to_json(qulonglong v) { return QJsonValue(QString::number(v)); }
+
+    // -- conversion of QVariant's compound types --
 
     QJsonValue to_json(const QRectF& r)
     {
@@ -451,53 +476,6 @@ void JsonInterfaceHelper::p_expectArray_(
 }
 
 
-// expect specific types
-
-template <>
-double JsonInterfaceHelper::expect(const QJsonValue& v)
-{
-    if (!v.isDouble())
-        QPROPS_JSON_ERROR("Expected double value, got " << typeName(v));
-    return v.toDouble();
-}
-
-template <>
-float JsonInterfaceHelper::expect(const QJsonValue& v)
-{
-    return expect<double>(v);
-}
-
-template <>
-int64_t JsonInterfaceHelper::expect(const QJsonValue& v)
-{
-    if (!v.isDouble() && !v.isString())
-        QPROPS_JSON_ERROR("Expected int value, got " << typeName(v));
-    if (v.isString())
-    {
-        bool ok;
-        int k = v.toString().toLongLong(&ok);
-        if (!ok)
-            QPROPS_JSON_ERROR("Expected int value, got non-int string '"
-                        << v.toString() << "'");
-        return k;
-    }
-    return v.toInt();
-}
-
-template <>
-int8_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
-template <>
-uint8_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
-template <>
-int16_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
-template <>
-uint16_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
-template <>
-int32_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
-template <>
-uint32_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
-template <>
-uint64_t JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
 template <>
 bool JsonInterfaceHelper::expect(const QJsonValue& v)
 {
@@ -505,12 +483,47 @@ bool JsonInterfaceHelper::expect(const QJsonValue& v)
         QPROPS_JSON_ERROR("Expected bool, got " << typeName(v));
     return v.toBool();
 }
-template <>
-char JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
-template <>
-qulonglong JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
-template <>
-qlonglong JsonInterfaceHelper::expect(const QJsonValue& v) { return expect<int64_t>(v); }
+
+
+// expect number, either as json-double or convertible string
+#define QPROPS__EXPECT_NUMBER(Type__, fromStr__) \
+    template <> \
+    Type__ JsonInterfaceHelper::expect(const QJsonValue& v) \
+    { \
+        if (!v.isDouble() && !v.isString()) \
+            QPROPS_JSON_ERROR("Expected " #Type__ " value, got " \
+                              << typeName(v)); \
+        if (v.isString()) \
+        { \
+            bool ok; \
+            Type__ k = v.toString().fromStr__(&ok); \
+            if (!ok) \
+                QPROPS_JSON_ERROR("Expected " #Type__ " value, " \
+                                  "got non-" #Type__ " string '" \
+                                  << v.toString() << "'"); \
+            return k; \
+        } \
+        return v.toDouble(); \
+    }
+
+QPROPS__EXPECT_NUMBER(double, toDouble)
+QPROPS__EXPECT_NUMBER(float, toFloat)
+QPROPS__EXPECT_NUMBER(char, toInt)
+//QPROPS__EXPECT_NUMBER(uchar, toUInt)
+QPROPS__EXPECT_NUMBER(int8_t, toInt)
+QPROPS__EXPECT_NUMBER(uint8_t, toFloat)
+QPROPS__EXPECT_NUMBER(int16_t, toShort)
+QPROPS__EXPECT_NUMBER(uint16_t, toUShort)
+QPROPS__EXPECT_NUMBER(int32_t, toInt)
+QPROPS__EXPECT_NUMBER(uint32_t, toUInt)
+QPROPS__EXPECT_NUMBER(int64_t, toLongLong)
+QPROPS__EXPECT_NUMBER(uint64_t, toULongLong)
+//QPROPS__EXPECT_NUMBER(long, toLong)
+//QPROPS__EXPECT_NUMBER(ulong, toULong)
+QPROPS__EXPECT_NUMBER(qlonglong, toLongLong)
+QPROPS__EXPECT_NUMBER(qulonglong, toULongLong)
+
+#undef QPROPS__EXPECT_NUMBER
 
 
 template <>
@@ -777,7 +790,7 @@ void JsonInterfaceHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
 #define QPROPS__INSTANTIATE(CType__, QType__, Meta__) \
     template QJsonValue JsonInterfaceHelper::wrap<QType__>(const QType__&);
 
-    QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__INSTANTIATE )
+    QPROPS__FOR_EACH_TYPE( QPROPS__INSTANTIATE )
 
 #undef QPROPS__INSTANTIATE
 

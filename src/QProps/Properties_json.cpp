@@ -120,7 +120,7 @@ void Properties::fromJson(const QJsonObject& main)
             // unconvertible compound type?
             if (type == QMetaType::User
              && QString(v.typeName()) != p.value().typeName())
-                QPROPS_IO_ERROR(tr("Can not convert %1 to %2\nin %3")
+                QPROPS_IO_ERROR(tr("Can not convert %1 to %2\nin: %3")
                                 .arg(v.typeName())
                                 .arg(p.value().typeName())
                                 .arg(json.contextTrace()));
