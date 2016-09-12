@@ -91,9 +91,12 @@ public:
         or invalid VariantType if not supported */
     static const VariantType& typeFromQMeta(QMetaType::Type);
 
-    /** Returns the VariantType struct corresponding to type,
+    /** Returns the VariantType struct corresponding to the
+        QVariant::typeName() string,
         or invalid VariantType if not supported */
     static const VariantType& typeFromQVariantName(const QString& typeName);
+    static const VariantType& typeFromQVariant(const QVariant& v)
+        { return typeFromQVariantName(v.typeName()); }
 
     /** @} */
 
@@ -137,11 +140,12 @@ public:
 
     /** @ingroup json_qvariant
         Converts @p v to a QVariant.
-        Supports compound types stored with wrap(QVariant).
-        If @p type is not QVariant::Invalid, an explicit conversion
+        Supports simple and compound types stored with wrap(QVariant).
+        If @p type is not QMetaType::UnknownType, an explicit conversion
         to the QVariant type is attempted. */
-    QVariant expectQVariant(const QJsonValue& v,
-                            QVariant::Type expectedType = QVariant::Invalid);
+    QVariant expectQVariant(
+                const QJsonValue& v,
+                QMetaType::Type expectedType = QMetaType::UnknownType);
 
     /** Converts the QJsonValue to a QJsonArray.
         @throws Sonot::Exception if not an array. */
@@ -168,7 +172,7 @@ public:
         @throws Sonot::Exception if child not found or not convertible. */
     QVariant expectChildQVariant(
             const QJsonObject& parent, const QString& key,
-            QVariant::Type expectedType = QVariant::Invalid);
+            QMetaType::Type expectedType = QMetaType::UnknownType);
 
     /** Converts the json array to a vector of type T.
         Previous contents of @p dst are erased.
@@ -190,7 +194,7 @@ private:
     template <typename T>
     void p_expectArray_(const QJsonValue& src, std::vector<T>& dst,
                         size_t size, const QString& forType);
-    QVariant p_convert_(const QVariant& v, QVariant::Type newType);
+    QVariant p_convert_(const QVariant& v, QMetaType::Type newType);
     static void p_createMap_();
 
     QString p_classname_;

@@ -366,7 +366,7 @@ QJsonValue JsonInterfaceHelper::wrap(const T& r)
 
 QJsonValue JsonInterfaceHelper::wrap(const QVariant& v, bool explicitType)
 {
-    // store with QVariant conversion
+    // try QVariant -> QJsonValue conversion
     if (!explicitType)
     {
         auto jv = QJsonValue::fromVariant(v);
@@ -374,9 +374,9 @@ QJsonValue JsonInterfaceHelper::wrap(const QVariant& v, bool explicitType)
             return jv;
     }
 
-    // -- handle compound types supported by QVariant --
+    // -- handle all supported QVariant types --
 
-    const VariantType vtype = typeFromQVariantName(v.typeName());
+    const VariantType vtype = typeFromQVariant(v);
     if (!vtype.isValid())
         QPROPS_JSON_ERROR("Can't save QVariant::" << v.typeName()
                      << "(" << (int)v.type() << ") to json, "
@@ -387,6 +387,8 @@ QJsonValue JsonInterfaceHelper::wrap(const QVariant& v, bool explicitType)
 
     switch (vtype.metaType)
     {
+        // calls to_json(QType__)
+        //    or to_json(QVector<QType__>)
 #define QPROPS__ARRAY_WRITE(CType__, QType__, Meta__) \
         case QMetaType::Meta__: \
             if (vtype.isVector) \
@@ -394,7 +396,9 @@ QJsonValue JsonInterfaceHelper::wrap(const QVariant& v, bool explicitType)
             else \
                 o.insert("v", to_json(v.value<QType__>())); \
         break;
-    QPROPS__FOR_EACH_TYPE( QPROPS__ARRAY_WRITE )
+        // run for each supported type
+        QPROPS__FOR_EACH_TYPE( QPROPS__ARRAY_WRITE )
+
 #undef QPROPS__ARRAY_WRITE
 
         default:
@@ -618,9 +622,12 @@ QDateTime JsonInterfaceHelper::expect(const QJsonValue& v)
 
 
 QVariant JsonInterfaceHelper::expectQVariant(
-        const QJsonValue& v, QVariant::Type expected)
+        const QJsonValue& v, QMetaType::Type expected)
 {
     QVariant ret;
+
+    QPROPS_ASSERT( expected != QMetaType::User,
+                   "Can not convert to QMetaType::User" );
 
     // no special json object
     if (!v.isObject())
@@ -635,44 +642,31 @@ QVariant JsonInterfaceHelper::expectQVariant(
     else
     {
         QJsonObject o = v.toObject();
-        const QString typeName = expectChild<QString>(o, "t");
-        QVariant::Type type =
-                QVariant::nameToType(typeName.toStdString().c_str());
-        if (type == QVariant::Invalid)
-            QPROPS_JSON_ERROR("Illegal QVariant type '" << typeName << "' in "
-                             "json object");
+        VariantType vtype = typeFromQVariantName(
+                        expectChild<QString>(o, "t") );
+        if (!vtype.isValid())
+            QPROPS_JSON_ERROR("Unsupported QVariant type '"
+                              << typeName << "'");
 
-#define QPROPS__EXPECT_VEC_IMPL(Vector__, Type__) \
-        if (typeName == #Vector__ "<" #Type__ ">") \
-        { \
-            QJsonArray ar = expectChildArray(o, "v"); \
-            Vector__<Type__> vec; \
-            for (int i=0; i<ar.size(); ++i) \
-                vec << expect<Type__>(ar.at(i)); \
-            ret = QVariant::fromValue(vec); \
-        } else
-
-        // QVector of compound type
-#define QPROPS__EXPECT_VEC(CType__, QType__, Meta__) \
-            QPROPS__EXPECT_VEC_IMPL(QVector, QType__)
-    QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__EXPECT_VEC )
-#undef QPROPS__EXPECT_VEC
-
-        // QVector of primitive type
-#define QPROPS__EXPECT_VEC(CType__, QType__, Meta__) \
-    QPROPS__EXPECT_VEC_IMPL(QVector, QType__)
-    QPROPS__FOR_EACH_PRIMITIVE_TYPE( QPROPS__EXPECT_VEC )
-#undef QPROPS__EXPECT_VEC
-
-
-#undef QPROPS__EXPECT_VEC_IMPL
-
-        switch (QMetaType::Type(type))
+        switch (vtype.metaType)
         {
+            // calls expect<QType__>()
+            // for single and QVector values
 #define QPROPS__QVARIANT_CASE(CType__, QType__, Meta__) \
-            case QMetaType::Meta__: ret = expectChild<QType__>(o, "v"); break;
+            case QMetaType::Meta__: \
+                if (!vtype.isVector) \
+                    ret = QVariant::fromValue(expectChild<QType__>(o, "v")); \
+                else \
+                { \
+                    QJsonArray ar = expectChildArray(o, "v"); \
+                    QVector<QType__> vec; \
+                    for (int i=0; i<ar.size(); ++i) \
+                        vec << expect<QType__>(ar.at(i)); \
+                    ret = QVariant::fromValue(vec); \
+                } \
+            break;
 
-            QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__QVARIANT_CASE )
+            QPROPS__FOR_EACH_TYPE( QPROPS__QVARIANT_CASE )
 
 #undef QPROPS__QVARIANT_CASE
 
@@ -680,20 +674,19 @@ QVariant JsonInterfaceHelper::expectQVariant(
                 // check for Qt's QVariant conversion
                 ret = expectChildValue(o, "v").toVariant();
                 if (ret.isNull())
-                    QPROPS_JSON_ERROR("Unsupported QVariant type '" << typeName
-                                 << "' in json object");
-                //qDebug() << "EXPECT" << typeName << "GOT" << ret.typeName();
+                    QPROPS_JSON_ERROR("Unsupported QVariant type '"
+                                      << typeName << "'");
 
                 // convert to explicit type (e.g. double -> int)
-                if (ret.type() != type)
-                    ret = p_convert_(ret, type);
+                if (QMetaType::Type(ret.type()) != vtype.metaType)
+                    ret = p_convert_(ret, vtype.metaType);
             break;
         }
     }
 
     // explicit type conversion
-    if (expected != QVariant::Invalid
-     && expected != ret.type())
+    if (expected != QMetaType::UnknownType
+     && expected != QMetaType::Type(ret.type()))
     {
         ret = p_convert_(ret, expected);
     }
@@ -702,7 +695,7 @@ QVariant JsonInterfaceHelper::expectQVariant(
 }
 
 QVariant JsonInterfaceHelper::p_convert_(
-        const QVariant &v, QVariant::Type newType)
+        const QVariant &v, QMetaType::Type newType)
 {
     /** @note need to handle String -> char specially
         There are some inconsistencies between
@@ -710,7 +703,7 @@ QVariant JsonInterfaceHelper::p_convert_(
     if (v.type() == QVariant::String)
     {
         QString s = v.toString();
-        switch (QMetaType::Type(newType))
+        switch (newType)
         {
             case QMetaType::Char:
                 return QVariant::fromValue( s[0].toLatin1() );
@@ -749,7 +742,7 @@ T JsonInterfaceHelper::expectChild(
 
 QVariant JsonInterfaceHelper::expectChildQVariant(
         const QJsonObject& parent, const QString& key,
-        QVariant::Type expectedType)
+        QMetaType::Type expectedType)
 {
     if (!parent.contains(key))
         QPROPS_JSON_ERROR("Expected '" << key << "' qvariant, not found");

@@ -288,7 +288,7 @@ void QPropsTest::testExample1()
     }
     catch (const QProps::Exception& e)
     {
-        qDebug() << e.what();
+        qDebug() << "EXCEPTION: " << e.text();
         failed = true;
     }
     QVERIFY(failed);

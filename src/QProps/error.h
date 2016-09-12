@@ -41,22 +41,22 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #define QPROPS_IO_ERROR(arg__) QPROPS_ERROR_IMPL_("IO: " << arg__)
 
-#define QPROPS_PROG_ERROR(arg__) \
-    QPROPS_ERROR_IMPL_("PROGRAMMERS FAULT; " << arg__)
+#define QPROPS_PROG_ERROR(cond__, arg__) \
+    QPROPS_ERROR_IMPL_("ASSERTION (" #cond__ ") FAILED;\n" << arg__)
 
 
 #ifdef QT_DEBUG
     #define QPROPS_ASSERT(cond__, arg__) \
-        { if (!(cond__)) QPROPS_PROG_ERROR(arg__); }
+        { if (!(cond__)) QPROPS_PROG_ERROR(cond__, arg__); }
 
     #define QPROPS_ASSERT_LT(a__, b__, arg__) \
-        { if (!((a__) < (b__))) QPROPS_PROG_ERROR( \
+        { if (!((a__) < (b__))) QPROPS_PROG_ERROR(cond__, \
             "'" #a__ "' (" << (long long)(a__) \
             << ") expected to be less than '" #b__ "' (" \
             << (long long)(b__) << ") " << arg__); }
 
     #define QPROPS_ASSERT_LTE(a__, b__, arg__) \
-        { if (!((a__) <= (b__))) QPROPS_PROG_ERROR( \
+        { if (!((a__) <= (b__))) QPROPS_PROG_ERROR(cond__, \
             "'" #a__ "' (" << (long long)(a__) \
             << ") expected to be less than or equal to '" #b__ "' (" \
             << (long long)(b__) << ") " << arg__); }
@@ -91,14 +91,17 @@ public:
     virtual const char * what() const throw()
         { return text_.toStdString().c_str(); }
 
-    template <class T>
-    Exception& operator << (const T& value) { addToStream(value); return *this; }
+    const QString& text() const throw() { return text_; }
 
     template <class T>
-    void addToStream(const T& value)
+    Exception& operator << (const T& value) throw()
+        { addToText(value); return *this; }
+
+    template <class T>
+    void addToText(const T& value) throw()
         { QDebug deb(&text_); deb.noquote() << value; }
 
-    void addToStream(const std::string& value)
+    void addToText(const std::string& value) throw()
         { text_ += QString::fromStdString(value); }
 
 protected:

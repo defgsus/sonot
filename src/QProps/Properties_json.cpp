@@ -102,14 +102,28 @@ void Properties::fromJson(const QJsonObject& main)
         QString id = json.expectChild<QString>(o, "id");
         Property p = tmp.getProperty(id);
 
-        // read simple value
+        // read qvariant value
         if (!p.hasNamedValues() || o.contains("v"))
         {
             json.beginContext(QString("read value for %1:%2")
                                 .arg(p_id_).arg(id));
-            QVariant::Type type = p.isValid()
-                    ? p.value().type() : QVariant::Invalid;
-            QVariant v = json.expectChildQVariant(o, "v", type);
+            // determine explicit type from current
+            // Properties configuration
+            QMetaType::Type type = p.isValid()
+                    ? QMetaType::Type(p.value().type())
+                    : QMetaType::UnknownType;
+            // Do not attempt to convert to User type
+            // (information is not sufficient)
+            QVariant v = (type == QMetaType::User)
+                    ? json.expectChildQVariant(o, "v")
+                    : json.expectChildQVariant(o, "v", type);
+            // unconvertible compound type?
+            if (type == QMetaType::User
+             && QString(v.typeName()) != p.value().typeName())
+                QPROPS_IO_ERROR(tr("Can not convert %1 to %2\nin %3")
+                                .arg(v.typeName())
+                                .arg(p.value().typeName())
+                                .arg(json.contextTrace()));
             tmp.set(id, v);
 
             json.endContext();
