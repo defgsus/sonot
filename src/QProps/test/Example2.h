@@ -18,9 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef QPROPSTEST_SRC_EXAMPLE1_H
-#define QPROPSTEST_SRC_EXAMPLE1_H
-
+#ifndef QPROPSTEST_SRC_EXAMPLE2_H
+#define QPROPSTEST_SRC_EXAMPLE2_H
 
 #include <QtCore>
 #include <QPoint>
@@ -28,14 +27,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "Properties.h"
 #include "JsonInterface.h"
+#include "JsonInterfaceHelper.h"
 
-class Example1 : public QProps::JsonInterface
+class Example2 : public QProps::JsonInterface
 {
-    Q_DECLARE_TR_FUNCTIONS(Example2)
+    Q_DECLARE_TR_FUNCTIONS(Example1)
 public:
 
-    Example1(const QString& name = QString())
-        : p_props("example1")
+    Example2(const QString& name = QString())
+        : p_props("example2")
     {
         // create the properties
         p_initProps();
@@ -60,14 +60,30 @@ public:
     // interface to serialize to json
     QJsonObject toJson() const override
     {
-        return p_props.toJson();
+        QJsonObject o;
+        // create the properties as child object
+        // so we are on the save side if we want to add
+        // other stuff as well
+        o.insert("props", p_props.toJson());
+        return o;
     }
 
     // interface to deserialize from json
     void fromJson(const QJsonObject& o) override
     {
-        // this will throw any error
-        p_props.fromJson(o);
+        // construct the helper class
+        QProps::JsonInterfaceHelper json("Example1");
+        // tell helper what we want to do
+        // (this is optional and simply creates better error descriptions)
+        json.beginContext("Deserializing properties");
+            // deserialize properties
+            p_props.fromJson(
+                    // ask helper to get a child object
+                    // this will throw if "props" is not
+                    // found or is not a QJsonObject
+                    json.expectChildObject(o, "props")
+            );
+        json.endContext();
     }
 
 
@@ -94,5 +110,5 @@ private:
 
 
 
-#endif // QPROPSTEST_SRC_EXAMPLE1_H
+#endif // QPROPSTEST_SRC_EXAMPLE2_H
 

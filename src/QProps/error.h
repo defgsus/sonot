@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifdef QT_DEBUG
     #define QPROPS_ERROR_IMPL_(arg__) \
         { throw ::QProps::Exception() << arg__ \
-            << "\n" << __FILE__ << ":" << __LINE__; }
+            << "\n" << __FILE__ << ":" << (int)__LINE__; }
 #else
     #define QPROPS_ERROR_IMPL_(arg__) \
         { throw ::QProps::Exception() << arg__; }

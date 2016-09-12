@@ -42,6 +42,26 @@ class QPROPS_SHARED_EXPORT JsonInterfaceHelper
 {
 public:
 
+    // --- types ---
+
+    /** @defgroup json_qvariant Json - QVariant conversion
+        @{ */
+    /** For mapping supported QMetaType::Type to string */
+    struct VariantType
+    {
+        QMetaType::Type metaType;
+        /** C++ name */
+        QString typeName,
+        /** Name as in QVariant::typeName() */
+                variantName;
+        bool isVector;
+
+        bool isValid() const { return metaType != QMetaType::UnknownType; }
+    };
+    /** @} */
+
+    // --- ctor ---
+
     JsonInterfaceHelper(const char* className)
         : p_classname_(className) { }
     JsonInterfaceHelper(const QString& className)
@@ -65,6 +85,18 @@ public:
     /** Returns the name of the json type */
     static const char* typeName(const QJsonValue&);
 
+    /** @ingroup json_qvariant @{ */
+
+    /** Returns the VariantType struct corresponding to type,
+        or invalid VariantType if not supported */
+    static const VariantType& typeFromQMeta(QMetaType::Type);
+
+    /** Returns the VariantType struct corresponding to type,
+        or invalid VariantType if not supported */
+    static const VariantType& typeFromQVariantName(const QString& typeName);
+
+    /** @} */
+
     // -- convert to json --
 
     /** Wraps the type into a json value.
@@ -72,7 +104,8 @@ public:
     template <typename T>
     QJsonValue wrap(const T&);
 
-    /** Wraps a QVariant into a json value.
+    /** @ingroup json_qvariant
+        Wraps a QVariant into a json value.
         For most extended (compound) types,
         an appropriate json object will be returned.
         @param explicitTypeInfo If true, the exact type of the QVariant
@@ -81,8 +114,7 @@ public:
         non-compound QVariant the type might be lost on deserializing
         a json stream, e.g. int/uint/int64 convert to double,
         or QColor converts to QString.
-        @see expectQVariant() for converting back.
-        @todo Not many types supported yet. */
+        @see expectQVariant() for converting back. */
     QJsonValue wrap(const QVariant& v, bool explicitTypeInfo = true);
 
     /** Converts the vector of type T to a json array.
@@ -103,7 +135,8 @@ public:
     template <typename T>
     T expectChild(const QJsonObject& parent, const QString& key);
 
-    /** Converts @p v to a QVariant.
+    /** @ingroup json_qvariant
+        Converts @p v to a QVariant.
         Supports compound types stored with wrap(QVariant).
         If @p type is not QVariant::Invalid, an explicit conversion
         to the QVariant type is attempted. */
@@ -130,7 +163,8 @@ public:
         @throws Sonot::Exception if child not found or not convertible. */
     QJsonArray expectChildArray(const QJsonObject& parent, const QString& key);
 
-    /** Returns the QVariant stored in child.
+    /** @ingroup json_qvariant
+        Returns the QVariant stored in child.
         @throws Sonot::Exception if child not found or not convertible. */
     QVariant expectChildQVariant(
             const QJsonObject& parent, const QString& key,
@@ -149,14 +183,21 @@ public:
     template <typename T>
     void fromArray(std::vector<T>& dst, const QJsonValue& src);
 
+
+
 private:
+
     template <typename T>
     void p_expectArray_(const QJsonValue& src, std::vector<T>& dst,
                         size_t size, const QString& forType);
     QVariant p_convert_(const QVariant& v, QVariant::Type newType);
+    static void p_createMap_();
 
     QString p_classname_;
     QStringList p_context_;
+    static QMap<int, VariantType> p_imap_;
+    static QMap<QString, VariantType> p_vmap_, p_cmap_;
+    static VariantType p_invalid_;
 };
 
 

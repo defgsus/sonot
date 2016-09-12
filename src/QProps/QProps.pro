@@ -21,3 +21,6 @@ unix {
     INSTALLS += target
 }
 
+HEADERS += \
+    test/Example2.h
+

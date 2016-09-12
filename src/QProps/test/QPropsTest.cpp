@@ -18,11 +18,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include <limits>
+
 #include <QString>
 #include <QtTest>
 #include <QFont>
 
 #include "Properties.h"
+#include "JsonInterfaceHelper.h"
 #include "Example1.h"
 #include "error.h"
 
@@ -40,6 +43,7 @@ public:
 
 private slots:
 
+    void testPrimitiveTypes();
     void testQVariantCompare();
     void testJsonProperties();
     void testJsonPropertiesExplicitTypes();
@@ -64,6 +68,35 @@ namespace QTest {
 } // namespace QTest
 
 
+void QPropsTest::testPrimitiveTypes()
+{
+#define QPROPS__PRINT_SIZE(T__) \
+    qDebug() << sizeof(T__) << std::numeric_limits<T__>::min() \
+             << std::numeric_limits<T__>::max() << #T__ \
+             << QProps::JsonInterfaceHelper::typeFromQVariantName(#T__).typeName;
+#define QPROPS__PRINT_SIZEI(T__) \
+    qDebug() << sizeof(T__) << (int)std::numeric_limits<T__>::min() \
+             << (int)std::numeric_limits<T__>::max() << #T__;
+
+    QPROPS__PRINT_SIZE(bool);
+    QPROPS__PRINT_SIZEI(char);
+    QPROPS__PRINT_SIZE(signed char);
+    QPROPS__PRINT_SIZE(uchar);
+    QPROPS__PRINT_SIZE(QChar);
+    QPROPS__PRINT_SIZE(short);
+    QPROPS__PRINT_SIZE(ushort);
+    QPROPS__PRINT_SIZE(int);
+    QPROPS__PRINT_SIZE(uint);
+    QPROPS__PRINT_SIZE(float);
+    QPROPS__PRINT_SIZE(long);
+    QPROPS__PRINT_SIZE(ulong);
+    QPROPS__PRINT_SIZE(qlonglong);
+    QPROPS__PRINT_SIZE(qulonglong);
+    QPROPS__PRINT_SIZE(double);
+    QPROPS__PRINT_SIZE(QVector<double>);
+}
+
+
 void QPropsTest::testQVariantCompare()
 {
 #define QPROPS__COMPARE(val__) \
@@ -78,6 +111,7 @@ void QPropsTest::testQVariantCompare()
     QVERIFY( QPROPS__COMPARE(QVector<bool>() << false << true) );
     QVERIFY( QPROPS__COMPARE(QVector<QSizeF>() << QSizeF(1,2) << QSizeF(2,3)) );
 
+#undef QPROPS__COMPARE
 }
 
 void QPropsTest::addPrimitiveTypes(QProps::Properties& p)

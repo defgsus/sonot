@@ -49,8 +49,54 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
         QPROPS_IO_ERROR("[JSON: " << className() << "]" << arg__ \
                         << "\nin " << ctx__); }
 
+
+// ###################### supported types ############################
+
+/** Tuples of C-type, Qt-type and QMetaType::Type */
+#define QPROPS__FOR_EACH_PRIMITIVE_TYPE(F__) \
+    F__(bool        , bool,           Bool       ) \
+    F__(char        , char,           Char       ) \
+    F__(int8_t      , signed char,    SChar      ) \
+    F__(uint8_t     , uchar,          UChar      ) \
+    F__(int16_t     , short,          Short      ) \
+    F__(uint16_t    , ushort,         UShort     ) \
+    F__(int32_t     , int,            Int        ) \
+    F__(uint32_t    , uint,           UInt       ) \
+    F__(float       , float,          Float      ) \
+    F__(int64_t     , long,           Long       ) \
+    F__(uint64_t    , ulong,          ULong      ) \
+    F__(int64_t     , qlonglong,      LongLong   ) \
+    F__(uint64_t    , qulonglong,     ULongLong  ) \
+    F__(double      , double,         Double     )
+
+// All compound types supported by QVariant
+// that are excplicitly handled in code
+#define QPROPS__FOR_EACH_COMPOUND_TYPE(F__) \
+    F__(QChar       , QChar       , QChar       ) \
+    F__(QString     , QString     , QString     ) \
+    F__(QColor      , QColor      , QColor      ) \
+    F__(QRect       , QRect       , QRect       ) \
+    F__(QRectF      , QRectF      , QRectF      ) \
+    F__(QSize       , QSize       , QSize       ) \
+    F__(QSizeF      , QSizeF      , QSizeF      ) \
+    F__(QPoint      , QPoint      , QPoint      ) \
+    F__(QPointF     , QPointF     , QPointF     ) \
+    F__(QLine       , QLine       , QLine       ) \
+    F__(QLineF      , QLineF      , QLineF      ) \
+    F__(QFont       , QFont       , QFont       ) \
+    F__(QTime       , QTime       , QTime       ) \
+    F__(QDate       , QDate       , QDate       ) \
+    F__(QDateTime   , QDateTime   , QDateTime   )
+
+#define QPROPS__FOR_EACH_TYPE(F__) \
+    QPROPS__FOR_EACH_PRIMITIVE_TYPE(F__) \
+    QPROPS__FOR_EACH_COMPOUND_TYPE(F__)
+
+
 namespace QProps {
 
+
+// ########################### info #############################
 
 const char* JsonInterfaceHelper::typeName(const QJsonValue& v)
 {
@@ -66,6 +112,62 @@ const char* JsonInterfaceHelper::typeName(const QJsonValue& v)
     }
     return "*undefined*";
 }
+
+QMap<int, JsonInterfaceHelper::VariantType> JsonInterfaceHelper::p_imap_;
+QMap<QString, JsonInterfaceHelper::VariantType> JsonInterfaceHelper::p_vmap_;
+QMap<QString, JsonInterfaceHelper::VariantType> JsonInterfaceHelper::p_cmap_;
+JsonInterfaceHelper::VariantType JsonInterfaceHelper::p_invalid_;
+
+void JsonInterfaceHelper::p_createMap_()
+{
+    p_invalid_.metaType = QMetaType::UnknownType;
+    VariantType v;
+    // standard QVariant types
+#define QPROPS__CREATE(CType__, QType__, Meta__) \
+        v.metaType = QMetaType::Meta__; \
+        v.isVector = false; \
+        v.typeName = #CType__; \
+        v.variantName = #QType__; \
+        p_imap_.insert((int)v.metaType, v); \
+        p_vmap_.insert(v.variantName, v); \
+        p_cmap_.insert(v.typeName, v);
+
+    QPROPS__FOR_EACH_TYPE( QPROPS__CREATE )
+#undef QPROPS__CREATE
+
+    // QVector of standard QVariant types
+#define QPROPS__CREATE(CType__, QType__, Meta__) \
+        v.metaType = QMetaType::Meta__; \
+        v.isVector = true; \
+        v.typeName = "QVector<" #CType__ ">"; \
+        v.variantName = "QVector<" #QType__ ">"; \
+        p_vmap_.insert(v.variantName, v); \
+        p_cmap_.insert(v.typeName, v);
+
+    QPROPS__FOR_EACH_TYPE( QPROPS__CREATE )
+#undef QPROPS__CREATE
+}
+
+const JsonInterfaceHelper::VariantType&
+JsonInterfaceHelper::typeFromQMeta(QMetaType::Type t)
+{
+    if (p_imap_.isEmpty())
+        p_createMap_();
+
+    auto i = p_imap_.find((int)t);
+    return i == p_imap_.end() ? p_invalid_ : i.value();
+}
+
+const JsonInterfaceHelper::VariantType&
+JsonInterfaceHelper::typeFromQVariantName(const QString& name)
+{
+    if (p_vmap_.isEmpty())
+        p_createMap_();
+
+    auto i = p_vmap_.find(name);
+    return i == p_vmap_.end() ? p_invalid_ : i.value();
+}
+
 
 
 QString JsonInterfaceHelper::contextTrace() const
@@ -122,44 +224,6 @@ QJsonObject JsonInterfaceHelper::expectChildObject(
     return expectObject(parent.value(key));
 }
 
-
-// ###################### supported types ############################
-
-/// @note this is adopted from qmetatype.h
-#define QPROPS__FOR_EACH_PRIMITIVE_TYPE(F__) \
-    F__(Bool, 1, bool) \
-    F__(Int, 2, int) \
-    F__(UInt, 3, uint) \
-    F__(LongLong, 4, qlonglong) \
-    F__(ULongLong, 5, qulonglong) \
-    F__(Double, 6, double) \
-    F__(Long, 32, long) \
-    F__(Short, 33, short) \
-    F__(Char, 34, char) \
-    F__(ULong, 35, ulong) \
-    F__(UShort, 36, ushort) \
-    F__(UChar, 37, uchar) \
-    F__(Float, 38, float) \
-    F__(SChar, 40, signed char) \
-
-// All compound types supported by QVariant
-// that are excplicitly handled in code
-#define QPROPS__FOR_EACH_COMPOUND_TYPE(F__) \
-    F__(QChar) \
-    F__(QString) \
-    F__(QColor) \
-    F__(QRect) \
-    F__(QRectF) \
-    F__(QSize) \
-    F__(QSizeF) \
-    F__(QPoint) \
-    F__(QPointF) \
-    F__(QLine) \
-    F__(QLineF) \
-    F__(QFont) \
-    F__(QTime) \
-    F__(QDate) \
-    F__(QDateTime)
 
 
 
@@ -312,50 +376,35 @@ QJsonValue JsonInterfaceHelper::wrap(const QVariant& v, bool explicitType)
 
     // -- handle compound types supported by QVariant --
 
-    const QString typeName = QString(v.typeName());
+    const VariantType vtype = typeFromQVariantName(v.typeName());
+    if (!vtype.isValid())
+        QPROPS_JSON_ERROR("Can't save QVariant::" << v.typeName()
+                     << "(" << (int)v.type() << ") to json, "
+                     "type not implemented!");
+
     QJsonObject o;
-    o.insert("t", typeName);
+    o.insert("t", vtype.variantName);
 
-    // - store QVariant containing QVector -
-
-#define QPROPS__ARRAY_WRITE_IMPL(Array__, Type__) \
-    if (typeName == #Array__ "<" #Type__ ">") \
-    { \
-        o.insert("v", to_json(v.value<Array__<Type__>>())); \
-    } else
-
-    // QVector of compound type
-#define QPROPS__ARRAY_WRITE(Type__) QPROPS__ARRAY_WRITE_IMPL(QVector, Type__)
-    QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__ARRAY_WRITE )
-#undef QPROPS__ARRAY_WRITE
-
-    // QVector of primitive type
-#define QPROPS__ARRAY_WRITE(Typename__, Enum__, Type__) \
-    QPROPS__ARRAY_WRITE_IMPL(QVector, Type__)
-    QPROPS__FOR_EACH_PRIMITIVE_TYPE( QPROPS__ARRAY_WRITE )
-#undef QPROPS__ARRAY_WRITE
-
-#undef QPROPS__ARRAY_WRITE_IMPL
-
-    switch (QMetaType::Type(v.type()))
+    switch (vtype.metaType)
     {
-#define QPROPS__QVARIANT_CASE(Type__) \
-        case QMetaType::Type__: \
-            o.insert("v", to_json(v.value<Type__>())); \
+#define QPROPS__ARRAY_WRITE(CType__, QType__, Meta__) \
+        case QMetaType::Meta__: \
+            if (vtype.isVector) \
+                o.insert("v", to_json(v.value<QVector<QType__>>())); \
+            else \
+                o.insert("v", to_json(v.value<QType__>())); \
         break;
-
-        QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__QVARIANT_CASE )
-
-#undef QPROPS__QVARIANT_CASE
+    QPROPS__FOR_EACH_TYPE( QPROPS__ARRAY_WRITE )
+#undef QPROPS__ARRAY_WRITE
 
         default:
         {
-            // use QVariant's inbuilt conversion
+            // try QVariant's inbuilt conversion
             QJsonValue jv = QJsonValue::fromVariant(v);
             if (jv.isNull())
                 QPROPS_JSON_ERROR("Can't save QVariant::" << v.typeName()
-                             << "(" << v.type() << ") to json, "
-                             "type not implemented!");
+                             << "(" << (int)v.type() << ") to json, "
+                             "base type not implemented!");
             o.insert("v", jv);
         }
         break;
@@ -573,6 +622,7 @@ QVariant JsonInterfaceHelper::expectQVariant(
 {
     QVariant ret;
 
+    // no special json object
     if (!v.isObject())
     {
         // use built-in QJsonValue->QVariant
@@ -580,16 +630,6 @@ QVariant JsonInterfaceHelper::expectQVariant(
         if (!ret.isValid())
             QPROPS_JSON_ERROR("Expected QVariant compatible json value, "
                              "got '" << typeName(v) << "'");
-        // explicit type conversion
-        if (expected != QVariant::Invalid)
-        {
-            if (expected != ret.type() && !ret.convert(expected))
-            {
-                QPROPS_IO_ERROR("Can't convert value type '" << ret.typeName()
-                               << "' in json to '"
-                               << QVariant::typeToName(expected) << "'");
-            }
-        }
     }
     // convert special JsonObject->QVariant
     else
@@ -613,13 +653,14 @@ QVariant JsonInterfaceHelper::expectQVariant(
         } else
 
         // QVector of compound type
-#define QPROPS__EXPECT_VEC(Type__) QPROPS__EXPECT_VEC_IMPL(QVector, Type__)
+#define QPROPS__EXPECT_VEC(CType__, QType__, Meta__) \
+            QPROPS__EXPECT_VEC_IMPL(QVector, QType__)
     QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__EXPECT_VEC )
 #undef QPROPS__EXPECT_VEC
 
         // QVector of primitive type
-#define QPROPS__EXPECT_VEC(Typename__, Enum__, Type__) \
-    QPROPS__EXPECT_VEC_IMPL(QVector, Type__)
+#define QPROPS__EXPECT_VEC(CType__, QType__, Meta__) \
+    QPROPS__EXPECT_VEC_IMPL(QVector, QType__)
     QPROPS__FOR_EACH_PRIMITIVE_TYPE( QPROPS__EXPECT_VEC )
 #undef QPROPS__EXPECT_VEC
 
@@ -628,8 +669,8 @@ QVariant JsonInterfaceHelper::expectQVariant(
 
         switch (QMetaType::Type(type))
         {
-#define QPROPS__QVARIANT_CASE(Type__) \
-            case QMetaType::Type__: ret = expectChild<Type__>(o, "v"); break;
+#define QPROPS__QVARIANT_CASE(CType__, QType__, Meta__) \
+            case QMetaType::Meta__: ret = expectChild<QType__>(o, "v"); break;
 
             QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__QVARIANT_CASE )
 
@@ -740,8 +781,8 @@ void JsonInterfaceHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
 
 // -- inst. JsonInterfaceHelper::wrap() --
 
-#define QPROPS__INSTANTIATE(T__) \
-    template QJsonValue JsonInterfaceHelper::wrap<T__>(const T__&);
+#define QPROPS__INSTANTIATE(CType__, QType__, Meta__) \
+    template QJsonValue JsonInterfaceHelper::wrap<QType__>(const QType__&);
 
     QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__INSTANTIATE )
 
@@ -750,11 +791,12 @@ void JsonInterfaceHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
 
 // -- inst. JsonInterfaceHelper::expectChild(), toArray, fromArray() --
 
-#define QPROPS__INSTANTIATE(T__) \
+#define QPROPS__INSTANTIATE_IMPL(CType__, T__, Meta__) \
     template T__ JsonInterfaceHelper::expectChild<T__>(const QJsonObject& parent, const QString& key); \
     template QJsonArray JsonInterfaceHelper::toArray<T__>( const std::vector<T__>&); \
     template void JsonInterfaceHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonArray& src); \
     template void JsonInterfaceHelper::fromArray<T__>(std::vector<T__>& dst, const QJsonValue& src);
+#define QPROPS__INSTANTIATE(T__) QPROPS__INSTANTIATE_IMPL(T__, T__, T__)
 
     QPROPS__INSTANTIATE(float)
     QPROPS__INSTANTIATE(double)
@@ -767,7 +809,7 @@ void JsonInterfaceHelper::fromArray(std::vector<T>& dst, const QJsonValue& src)
     QPROPS__INSTANTIATE(int64_t)
     QPROPS__INSTANTIATE(uint64_t)
 
-    QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__INSTANTIATE )
+    QPROPS__FOR_EACH_COMPOUND_TYPE( QPROPS__INSTANTIATE_IMPL )
 
 #undef QPROPS__INSTANTIATE
 
