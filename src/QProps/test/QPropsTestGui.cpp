@@ -91,6 +91,15 @@ void QPropsGuiTest::testWidgetTypes()
       QVERIFY(dynamic_cast<Widget__*>(w->editWidget()) != 0); \
       delete w; }
 
+#define QPROPS__TEST_CONTAINS(id__, Widget__) \
+    { auto w = new QProps::PropertyWidget(id__, &props); \
+      for (auto o : w->editWidget()->children()) \
+      { if (auto w = dynamic_cast<QWidget*>(o)) { \
+            auto sw = dynamic_cast<Widget__*>(w); \
+            if (!sw) qDebug() << w->staticMetaObject.className(); \
+            QVERIFY(sw != 0); } } \
+      delete w; }
+
     QPROPS__TEST_SIMPLE("bool",     QCheckBox);
     //QPROPS__TEST_SIMPLE("char",
     //QPROPS__TEST_SIMPLE("schar",
@@ -110,18 +119,18 @@ void QPropsGuiTest::testWidgetTypes()
     QPROPS__TEST_SIMPLE("string",   QLineEdit);
     QPROPS__TEST_SIMPLE("font",     QFontComboBox);
 
-    //QPROPS__TEST_SIMPLE("color",    );
-    //QPROPS__TEST_SIMPLE("rect",
-    //QPROPS__TEST_SIMPLE("rectf",
-    //QPROPS__TEST_SIMPLE("size",
-    //QPROPS__TEST_SIMPLE("sizef",
-    //QPROPS__TEST_SIMPLE("point",
-    //QPROPS__TEST_SIMPLE("pointf",
-    //QPROPS__TEST_SIMPLE("line",
-    //QPROPS__TEST_SIMPLE("linef",
-    //QPROPS__TEST_SIMPLE("date",
-    //QPROPS__TEST_SIMPLE("time",
-    //QPROPS__TEST_SIMPLE("datetime",
+    QPROPS__TEST_CONTAINS("color",      QSpinBox);
+    QPROPS__TEST_CONTAINS("rect",       QSpinBox);
+    QPROPS__TEST_CONTAINS("rectf",      QDoubleSpinBox);
+    QPROPS__TEST_CONTAINS("size",       QSpinBox);
+    QPROPS__TEST_CONTAINS("sizef",      QDoubleSpinBox);
+    QPROPS__TEST_CONTAINS("point",      QSpinBox);
+    QPROPS__TEST_CONTAINS("pointf",     QDoubleSpinBox);
+    QPROPS__TEST_CONTAINS("line",       QSpinBox);
+    QPROPS__TEST_CONTAINS("linef",      QDoubleSpinBox);
+    QPROPS__TEST_SIMPLE("date",     QDateEdit);
+    QPROPS__TEST_SIMPLE("time",     QTimeEdit);
+    QPROPS__TEST_SIMPLE("datetime", QDateTimeEdit);
 }
 
 

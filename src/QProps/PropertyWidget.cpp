@@ -32,6 +32,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QFontComboBox>
 #include <QDoubleSpinBox>
 #include <QSpinBox>
+#include <QDateEdit>
+#include <QDateTimeEdit>
+#include <QTimeEdit>
 #include <QVector>
 #include <QStandardItemModel>
 
@@ -163,6 +166,24 @@ namespace {
             T r = v.value<T>();
             return idx == 0 ? r.x() : idx == 1
                               ? r.y() : idx == 2 ? r.width() : r.height();
+        }
+
+        static QVariant fromSpinbox(const QList<SpinBox*>& sb)
+        {
+            return T(sb[0]->value(), sb[1]->value(),
+                     sb[2]->value(), sb[3]->value());
+        }
+    };
+
+    template <class T, class SB>
+    struct ConvertQLine
+    {
+        typedef SB SpinBox;
+        static double toValue(const QVariant& v, int idx)
+        {
+            T r = v.value<T>();
+            return idx == 0 ? r.x1() : idx == 1
+                              ? r.y1() : idx == 2 ? r.x2() : r.y2();
         }
 
         static QVariant fromSpinbox(const QList<SpinBox*>& sb)
@@ -643,11 +664,43 @@ void PropertyWidget::Private::createWidgets()
             {
                 QPROPS__SUBLAYOUT(QGridLayout);
                 auto sb = createSpinboxes<ConvertQRect<QRect,QSpinBox>>(
-                            container, 4, SIGNAL(valueChanged(double)));
+                            container, 4, SIGNAL(valueChanged(int)));
                 sb[0]->setStatusTip(tr("X Position"));
                 sb[1]->setStatusTip(tr("Y Position"));
                 sb[2]->setStatusTip(tr("Width"));
                 sb[3]->setStatusTip(tr("Height"));
+                layout->addWidget(sb[0], 0, 0);
+                layout->addWidget(sb[1], 1, 0);
+                layout->addWidget(sb[2], 0, 1);
+                layout->addWidget(sb[3], 1, 1);
+            }
+            break;
+
+            case QMetaType::QLine:
+            {
+                QPROPS__SUBLAYOUT(QGridLayout);
+                auto sb = createSpinboxes<ConvertQLine<QLine,QSpinBox>>(
+                            container, 4, SIGNAL(valueChanged(int)));
+                sb[0]->setStatusTip(tr("X1 Position"));
+                sb[1]->setStatusTip(tr("Y1 Position"));
+                sb[2]->setStatusTip(tr("X2 Position"));
+                sb[3]->setStatusTip(tr("Y2 Position"));
+                layout->addWidget(sb[0], 0, 0);
+                layout->addWidget(sb[1], 1, 0);
+                layout->addWidget(sb[2], 0, 1);
+                layout->addWidget(sb[3], 1, 1);
+            }
+            break;
+
+            case QMetaType::QLineF:
+            {
+                QPROPS__SUBLAYOUT(QGridLayout);
+                auto sb = createSpinboxes<ConvertQLine<QLineF,QDoubleSpinBox>>(
+                            container, 4, SIGNAL(valueChanged(double)));
+                sb[0]->setStatusTip(tr("X1 Position"));
+                sb[1]->setStatusTip(tr("Y1 Position"));
+                sb[2]->setStatusTip(tr("X2 Position"));
+                sb[3]->setStatusTip(tr("Y2 Position"));
                 layout->addWidget(sb[0], 0, 0);
                 layout->addWidget(sb[1], 1, 0);
                 layout->addWidget(sb[2], 0, 1);
@@ -688,6 +741,60 @@ void PropertyWidget::Private::createWidgets()
                 f_update_widget = [=](){ e->setCurrentFont(v.value<QFont>()); };
                 f_update_value = [=](){ v = e->currentFont(); };
                 connect(e, SIGNAL(currentFontChanged(QFont)),
+                        widget, SLOT(onValueChanged_()));
+            }
+            break;
+
+            case QMetaType::QTime:
+            {
+                auto e = new QTimeEdit(widget);
+                edit = e;
+                if (props)
+                {
+                    if (props->hasMin(id))
+                        e->setMinimumTime(props->getMin(id).toTime());
+                    if (props->hasMax(id))
+                        e->setMaximumTime(props->getMax(id).toTime());
+                }
+                f_update_widget = [=](){ e->setTime(v.value<QTime>()); };
+                f_update_value = [=](){ v = e->time(); };
+                connect(e, SIGNAL(timeChanged(QTime)),
+                        widget, SLOT(onValueChanged_()));
+            }
+            break;
+
+            case QMetaType::QDateTime:
+            {
+                auto e = new QDateTimeEdit(widget);
+                edit = e;
+                if (props)
+                {
+                    if (props->hasMin(id))
+                        e->setMinimumDateTime(props->getMin(id).toDateTime());
+                    if (props->hasMax(id))
+                        e->setMaximumDateTime(props->getMax(id).toDateTime());
+                }
+                f_update_widget = [=](){ e->setDateTime(v.value<QDateTime>()); };
+                f_update_value = [=](){ v = e->dateTime(); };
+                connect(e, SIGNAL(dateTimeChanged(QDateTime)),
+                        widget, SLOT(onValueChanged_()));
+            }
+            break;
+
+            case QMetaType::QDate:
+            {
+                auto e = new QDateEdit(widget);
+                edit = e;
+                if (props)
+                {
+                    if (props->hasMin(id))
+                        e->setMinimumDate(props->getMin(id).toDate());
+                    if (props->hasMax(id))
+                        e->setMaximumDate(props->getMax(id).toDate());
+                }
+                f_update_widget = [=](){ e->setDate(v.value<QDate>()); };
+                f_update_value = [=](){ v = e->date(); };
+                connect(e, SIGNAL(dateChanged(QDate)),
                         widget, SLOT(onValueChanged_()));
             }
             break;
