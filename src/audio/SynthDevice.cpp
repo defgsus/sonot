@@ -22,6 +22,13 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/Bar.h"
 #include "core/NoteStream.h"
 
+#if (0)
+#   include <QDebug>
+#   define SONOT_DEBUG_SYNTH(arg__) qDebug() << arg__
+#else
+#   define SONOT_DEBUG_SYNTH(unused__)
+#endif
+
 namespace Sonot {
 
 
@@ -70,17 +77,26 @@ bool SynthDevice::p_fillBuffer()
 
     //double curTime = currentSecond();
     // time per bar
-    double barTime = 1.;
+    double barLength = 1.;
     // length of dsp buffer in samples
-    double bufferLength = (double)p_buffer.size() / sizeof(float)
-                            / sampleRate();
+    double bufferLength = (double)bufferSize() / sampleRate();
+    // time in dsp block
     double procTime = 0.;
+
+    SONOT_DEBUG_SYNTH("--- dsp-block --- " << bufferSize());
 
     while (procTime < bufferLength)
     {
+        SONOT_DEBUG_SYNTH("while(procTime < bufferLength) "
+                          << "procTime" << procTime
+                          << ", curBarTime" << p_curBarTime
+                          << ", bufferLength" << bufferLength
+                          << ", barLength" << barLength);
+
         // get next bar
-        if (p_curBarTime >= barTime)
+        if (p_curBarTime >= barLength)
         {
+            SONOT_DEBUG_SYNTH("next bar");
             // start again
             if (!p_index.nextBar())
             {
@@ -96,6 +112,14 @@ bool SynthDevice::p_fillBuffer()
         if (!cursor.isValid())
             break;
 
+        double windowLength = std::min(bufferLength - procTime,
+                                       barLength - p_curBarTime);
+
+        SONOT_DEBUG_SYNTH("processing bar window "
+                          << p_curBarTime << " to "
+                          << (p_curBarTime + windowLength)
+                          << " , len=" << windowLength);
+
         // send all notes in bar window to synth
         for (size_t r=0; r<cursor.getNoteStream().numRows(); ++r)
         {
@@ -107,31 +131,32 @@ bool SynthDevice::p_fillBuffer()
                     continue;
 
                 // window-local time
-                double ltime = barTime * bar.columnTime(c) - p_curBarTime;
-                if (ltime >= 0 && ltime < bufferLength)
+                double ltime = barLength * bar.columnTime(c) - p_curBarTime;
+                if (ltime >= 0 && ltime < windowLength)
                 {
+                    size_t samplePos = (procTime + ltime) * sampleRate();
+
                     // stop prev note
                     if (n.value() != Note::Space)
                     {
                         if (p_notesPlaying[r] >= 0)
-                            p_synth.noteOff(p_notesPlaying[r],
-                                            ltime * sampleRate());
+                            p_synth.noteOff(p_notesPlaying[r], samplePos);
                         p_notesPlaying[r] = Note::Invalid;
                     }
                     if (n.isNote())
                     {
-                        p_synth.noteOn(n.value(), 0.1, ltime * sampleRate());
+                        p_synth.noteOn(n.value(), 0.1, samplePos);
                         p_notesPlaying[r] = n.value();
                     }
                 }
             }
         }
 
-        double timeInc = std::min(barTime - p_curBarTime, bufferLength);
-        p_curBarTime += timeInc;
-        procTime += timeInc;
-    }
+        SONOT_DEBUG_SYNTH("fed " << windowLength);
 
+        p_curBarTime += windowLength;
+        procTime += windowLength;
+    }
 
     // execute synth block
     p_synth.process(reinterpret_cast<float*>(p_buffer.data()),

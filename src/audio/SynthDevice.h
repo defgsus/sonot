@@ -44,6 +44,7 @@ public:
     const Synth& synth() const { return p_synth; }
 
     size_t sampleRate() const { return p_synth.sampleRate(); }
+    size_t bufferSize() const { return p_buffer.size() / sizeof(float); }
 
     double currentSecond() const { return p_curSample * sampleRate(); }
 

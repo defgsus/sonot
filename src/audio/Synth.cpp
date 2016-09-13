@@ -470,7 +470,7 @@ void Synth::Private::process(float *output, size_t bufferLength)
         {
             SynthVoice::Private * v = i->p_;
 
-            // cued for stop
+            // cued for stop?
             if (v->cuedForStop && v->stopSample == sample)
             {
                 //qDebug() << "STOP " << v->note;
@@ -564,7 +564,8 @@ void Synth::Private::process(float ** outputs, size_t bufferLength)
         {
             if (v->startSample < bufferLength)
             {
-                SONOT_DEBUG_SYNTH("start cued voice " << v->index << " s=" << v->startSample);
+                SONOT_DEBUG_SYNTH("start cued voice "
+                                  << v->index << " s=" << v->startSample);
 
                 // start at specified start-sample
                 start = v->startSample;

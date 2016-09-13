@@ -49,6 +49,7 @@ struct MainWindow::Private
     void playSomething();
     NoteStream getNotes1();
     NoteStream getNotes2();
+    NoteStream getNotes3();
 
 
     MainWindow* p;
@@ -141,7 +142,7 @@ void MainWindow::Private::playSomething()
 
 
     Score score;
-    score.appendNoteStream(getNotes2());
+    score.appendNoteStream(getNotes3());
 
     synth->setScore(score);
     player->play(synth, 1, synth->sampleRate());
@@ -225,7 +226,46 @@ NoteStream MainWindow::Private::getNotes2()
         }
         {
             Bar bar;
-            bar << Note(72 + (i * 3) % 11);
+              bar << Note(72 + (i * 3) % 11);
+            rows << bar;
+        }
+
+        stream.appendBar(rows);
+    }
+
+    return stream;
+}
+
+NoteStream MainWindow::Private::getNotes3()
+{
+    NoteStream stream;
+
+    for (int i=0; i<8; ++i)
+    {
+        QList<Bar> rows;
+
+        if (i % 2 == 0)
+        {
+            Bar bar;
+            bar << Note(Note::C, 5)
+                << Note(Note::D, 5)
+                << Note(Note::E, 5)
+                << Note(Note::F, 5);
+            rows << bar;
+        }
+        else
+        {
+            Bar bar;
+            bar << Note(Note::G, 5)
+                << Note(Note::A, 5)
+                << Note(Note::B, 5)
+                << Note(Note::C, 6);
+            rows << bar;
+        }
+        if (0)
+        {
+            Bar bar;
+              bar << Note(72 + i * 2);
             rows << bar;
         }
 
