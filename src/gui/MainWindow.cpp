@@ -247,13 +247,13 @@ NoteStream MainWindow::Private::getNotes3()
     { Bar b1_; b1_ << a1_; b1_.transpose(24); rows << b1_; \
       Bar b2_; b2_ << a2_; b2_.transpose(24); rows << b2_; }
 
-    for (int i=0; i<8; ++i)
+    for (int i=0; i<32; ++i)
     {
         QList<Bar> rows;
         int barIdx = 0;
 
         SONOT__BAR("p"<<" "<<" "<<" ",
-                   "5"<<"6"<<"7"<<"1");
+                   "5"<<"6-4"<<"7"<<"1");
 
         SONOT__BAR("5"<<" "<<" "<<" ",
                    "7"<<"6"<<"5"<<"4");
@@ -279,8 +279,37 @@ NoteStream MainWindow::Private::getNotes3()
         SONOT__BAR(" "<<" "<<" "<<" ",
                    "5"<<"6"<<"7"<<"1");
 
+
+        SONOT__BAR("5"<<" "<<" "<<" ",
+                   "2"<<"3"<<"4"<<"5");
+
+        SONOT__BAR("1-4"<<" ",
+                   "6"  <<"3");
+
+        SONOT__BAR(" "<<" "<<" ",
+                   "4b"<<"3"<<"4");
+
+        SONOT__BAR("1-4"<<" "<<" ",
+                   "3"<<"2"<<"1");
+
+        SONOT__BAR("7"<<" ",
+                   "3"<<"5");
+
+        SONOT__BAR(" "<<" "<<" ",
+                   "4"<<"3"<<"2");
+
+        SONOT__BAR("6"<<" ",
+                   "1"<<"2");
+
+        SONOT__BAR("7"<<" "<<" "<<" ",
+                   " "<<"1"<<"7"<<"6");
+
+        SONOT__BAR(" "<<" "<<" "<<" ",
+                   "5"<<"4"<<"3"<<" ");
+
         stream.appendBar(rows);
     }
+#undef SONOT__BAR
 
     return stream;
 }
