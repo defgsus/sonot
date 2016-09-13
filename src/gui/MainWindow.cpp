@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "PageLayout.h"
 #include "TextItem.h"
 #include "audio/SamplePlayer.h"
-#include "audio/Synth.h"
+#include "audio/SynthDevice.h"
 
 namespace Sonot {
 
@@ -107,6 +107,7 @@ void MainWindow::showEvent(QShowEvent*)
 
 void MainWindow::Private::playSomething()
 {
+#if 0
     std::vector<float> data;
 #if 0
     for (int i=0; i<44100*3; ++i)
@@ -123,8 +124,12 @@ void MainWindow::Private::playSomething()
     synth.process(data.data(), data.size());
 #endif
 
-    player->play(data.data(), data.size(), 22100., 1);
-    player->play(data.data(), data.size(), 44100., 1);
+    player->play(data.data(), data.size(), 1, 22100);
+    player->play(data.data(), data.size(), 1, 44100);
+#endif
+
+    auto synth = new SynthDevice(p);
+    player->play(synth, 1, synth->sampleRate());
 }
 
 } // namespace Sonot

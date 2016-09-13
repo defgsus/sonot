@@ -18,38 +18,52 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_SAMPLEPLAYER_H
-#define SONOTSRC_SAMPLEPLAYER_H
-
-#include <QObject>
-
-class QIODevice;
+#include "SynthDevice.h"
 
 namespace Sonot {
 
 
-/** Basic wrapper to QAudioOutput */
-class SamplePlayer : public QObject
+SynthDevice::SynthDevice(QObject* parent)
+    : QIODevice(parent)
+    , p_buffer  (1024*32)
+    , p_consumed(0)
+    , p_synth   ()
 {
-    Q_OBJECT
-public:
-    explicit SamplePlayer(QObject *parent = 0);
-    ~SamplePlayer();
 
-signals:
+}
 
-public slots:
 
-    void play(const float* samples, size_t numSamples,
-              size_t numChannels, size_t sampleRate);
+qint64 SynthDevice::readData(char *data, qint64 maxlen)
+{
+    qint64 written = 0;
 
-    void play(QIODevice* data, size_t numChannels, size_t sampleRate);
+    while (written < maxlen)
+    {
+        if (p_consumed >= (qint64)p_buffer.size())
+        {
+            p_fillBuffer();
+            p_consumed = 0;
+        }
 
-private:
-    struct Private;
-    Private* p_;
-};
+        while (written < maxlen && p_buffer.size() - p_consumed > 0)
+        {
+            *data = p_buffer[p_consumed];
+            ++data;
+            ++p_consumed;
+            ++written;
+        }
+    }
+
+    return written;
+}
+
+void SynthDevice::p_fillBuffer()
+{
+    p_synth.noteOn(60 + rand()%19, .1);
+
+    p_synth.process(reinterpret_cast<float*>(p_buffer.data()),
+                    p_buffer.size() / sizeof(float));
+
+}
 
 } // namespace Sonot
-
-#endif // SONOTSRC_SAMPLEPLAYER_H

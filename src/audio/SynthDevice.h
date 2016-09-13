@@ -18,38 +18,39 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_SAMPLEPLAYER_H
-#define SONOTSRC_SAMPLEPLAYER_H
+#ifndef SONOTSRC_SYNTHDEVICE_H
+#define SONOTSRC_SYNTHDEVICE_H
 
-#include <QObject>
+#include <vector>
 
-class QIODevice;
+#include <QIODevice>
+
+#include "Synth.h"
 
 namespace Sonot {
 
-
-/** Basic wrapper to QAudioOutput */
-class SamplePlayer : public QObject
+class SynthDevice : public QIODevice
 {
     Q_OBJECT
 public:
-    explicit SamplePlayer(QObject *parent = 0);
-    ~SamplePlayer();
+    SynthDevice(QObject* parent = nullptr);
 
-signals:
+    bool isSequential() const override { return true; }
 
-public slots:
+    qint64 readData(char *data, qint64 maxlen) override;
+    qint64 writeData(const char*, qint64 ) override { return 0; }
 
-    void play(const float* samples, size_t numSamples,
-              size_t numChannels, size_t sampleRate);
+    size_t sampleRate() const { return p_synth.sampleRate(); }
 
-    void play(QIODevice* data, size_t numChannels, size_t sampleRate);
+protected:
 
-private:
-    struct Private;
-    Private* p_;
+    void p_fillBuffer();
+
+    std::vector<char> p_buffer;
+    qint64 p_consumed;
+    Synth p_synth;
 };
 
 } // namespace Sonot
 
-#endif // SONOTSRC_SAMPLEPLAYER_H
+#endif // SONOTSRC_SYNTHDEVICE_H

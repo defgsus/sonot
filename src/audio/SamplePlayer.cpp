@@ -29,6 +29,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "SamplePlayer.h"
 
+namespace Sonot {
+
 struct SamplePlayer::Private
 {
     Private(SamplePlayer* p)
@@ -37,22 +39,28 @@ struct SamplePlayer::Private
 
     struct Sample
     {
-        Sample(size_t size)
-            : data      (size, Qt::Uninitialized)
-            , stream    (nullptr, nullptr)
+        Sample(size_t numSamples, size_t numChannels)
+            : data      (numSamples * numChannels * sizeof(float),
+                         Qt::Uninitialized)
+            , stream    (nullptr)
+            , lentDevice(nullptr)
             , audio     (nullptr)
         { }
 
         ~Sample()
         {
             qDebug() << "destroy " << (void*)this;
+            delete stream;
         }
 
         QByteArray data;
-        QBuffer stream;
+        QBuffer* stream;
+        QIODevice* lentDevice;
         QAudioFormat format;
         QAudioOutput* audio;
     };
+
+    QAudioFormat getFormat(size_t numChannels, size_t sampleRate);
 
     void remove(Sample* s)
     {
@@ -83,44 +91,47 @@ SamplePlayer::~SamplePlayer()
 }
 
 
-void SamplePlayer::play(const float* samplesFloat, size_t numSamples,
-                        size_t sampleRate, size_t numChannels)
+QAudioFormat SamplePlayer::Private::getFormat(
+        size_t numChannels, size_t sampleRate)
 {
-    auto sample = new Private::Sample(numSamples * numChannels * 2);
-
-    sample->format.setSampleRate(sampleRate);
-    sample->format.setChannelCount(numChannels);
-    sample->format.setSampleSize(32);
-    sample->format.setCodec("audio/pcm");
-    sample->format.setSampleType(QAudioFormat::Float);
+    QAudioFormat format;
+    format.setSampleRate(sampleRate);
+    format.setChannelCount(numChannels);
+    format.setSampleSize(32);
+    format.setCodec("audio/pcm");
+    format.setSampleType(QAudioFormat::Float);
 #if Q_BYTE_ORDER == Q_LITTLE_ENDIAN
-    sample->format.setByteOrder(QAudioFormat::LittleEndian);
+    format.setByteOrder(QAudioFormat::LittleEndian);
 #else
-    sample->format.setByteOrder(QAudioFormat::BigEndian);
+    format.setByteOrder(QAudioFormat::BigEndian);
 #endif
 
     QAudioDeviceInfo info(QAudioDeviceInfo::defaultOutputDevice());
-    if (!info.isFormatSupported(sample->format))
+    if (!info.isFormatSupported(format))
     {
-        qWarning() << "Raw audio format not supported by backend, "
+        qWarning() << "Audio format not supported by backend, "
                       "cannot play audio.";
-        return;
+        return QAudioFormat();
     }
+    return format;
+}
 
-    // create int16 version
-#if 0
-    {
-        const float* src = samplesFloat;
-        int16_t* dst = reinterpret_cast<int16_t*>(sample->data.data());
-        for (size_t i=0; i<numSamples * numChannels; ++i)
-            *dst++ = *src++ * std::numeric_limits<int16_t>::max();
-    }
-#else
-    sample->data = QByteArray(reinterpret_cast<const char*>(samplesFloat),
-                              numSamples * numChannels * sizeof(float));
-#endif
-    sample->stream.setData(sample->data);
-    sample->stream.open(QIODevice::ReadOnly);
+void SamplePlayer::play(const float* samplesFloat, size_t numSamples,
+                        size_t numChannels, size_t sampleRate)
+{
+    // create sample instance and check format
+    auto sample = new Private::Sample(numSamples, numChannels);
+    sample->format = p_->getFormat(numChannels, sampleRate);
+    if (!sample->format.isValid())
+        return;
+
+    // copy data
+    memcpy(sample->data.data(), samplesFloat, sample->data.size());
+
+    // create iodevice
+    sample->stream = new QBuffer(nullptr, nullptr);
+    sample->stream->setData(sample->data);
+    sample->stream->open(QIODevice::ReadOnly);
 
     sample->audio = new QAudioOutput(sample->format, this);
     connect(sample->audio, &QAudioOutput::stateChanged,
@@ -142,5 +153,45 @@ void SamplePlayer::play(const float* samplesFloat, size_t numSamples,
 
     p_->sampleMap.insert(sample->audio, sample);
 
-    sample->audio->start(&sample->stream);
+    sample->audio->start(sample->stream);
 }
+
+void SamplePlayer::play(QIODevice* lentDevice,
+                        size_t numChannels, size_t sampleRate)
+{
+    // create sample instance and check format
+    auto sample = new Private::Sample(0, numChannels);
+    sample->format = p_->getFormat(numChannels, sampleRate);
+    if (!sample->format.isValid())
+        return;
+
+    // copy iodevice
+    sample->lentDevice = lentDevice;
+    if (!sample->lentDevice->isOpen())
+        sample->lentDevice->open(QIODevice::ReadOnly);
+
+    sample->audio = new QAudioOutput(sample->format, this);
+    connect(sample->audio, &QAudioOutput::stateChanged,
+    [=](QAudio::State state)
+    {
+        switch (state)
+        {
+            case QAudio::ActiveState: qDebug() << "active"; break;
+            case QAudio::SuspendedState: qDebug() << "suspended"; break;
+            case QAudio::IdleState:
+                qDebug() << "idle";
+                p_->remove(sample);
+            break;
+            case QAudio::StoppedState:
+                qDebug() << "stopped";
+            break;
+        }
+    });
+
+    p_->sampleMap.insert(sample->audio, sample);
+
+    sample->audio->start(sample->lentDevice);
+}
+
+
+} // namespace Sonot
