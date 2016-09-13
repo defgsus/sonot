@@ -65,6 +65,7 @@ protected:
     Score::Index p_index;
     uint64_t p_curSample;
     double p_curBarTime;
+    std::vector<int> p_notesPlaying;
 };
 
 } // namespace Sonot

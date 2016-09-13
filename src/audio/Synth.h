@@ -182,7 +182,7 @@ public:
     /** Stops all active voices of the given note.
         Depending on their sustain level, they will immidiately stop
         (sustain==0) or enter into RELEASE evelope state. */
-    void noteOff(int note);
+    void noteOff(int note, size_t stopSample = 0);
 
     /** Turn all notes off imediately. */
     void panic();

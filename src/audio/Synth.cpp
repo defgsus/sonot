@@ -39,9 +39,11 @@ class SynthVoice::Private
         : synth     (synth),
           active	(false),
           cued      (false),
+          cuedForStop(false),
           note   	(0),
           index     (0),
           startSample(0),
+          stopSample(0),
           freq		(0.0),
           velo		(0.0),
           fenvAmt   (0),
@@ -55,10 +57,10 @@ class SynthVoice::Private
 
     Synth * synth;
 
-    bool active, cued;
+    bool active, cued, cuedForStop;
 
     int note;
-    size_t index, startSample;
+    size_t index, startSample, stopSample;
 
     double
         freq,
@@ -299,7 +301,8 @@ SynthVoice * Synth::Private::noteOn(
     // none free?
     if (i == voices.end())
     {
-        if (voicePolicy == Synth::VP_FORGET) return 0;
+        if (voicePolicy == Synth::VP_FORGET)
+            return nullptr;
 
         SONOT_DEBUG_SYNTH("Synth::noteOn() looking for voice to reuse");
 
@@ -405,6 +408,7 @@ SynthVoice * Synth::Private::noteOn(
     v->lifetime = 0;
     v->active = false;
     v->cued = true;
+    v->cuedForStop = false;
     v->note = note;
 
     v->freq = freq;
@@ -420,35 +424,27 @@ SynthVoice * Synth::Private::noteOn(
     }
     v->velo = velocity;
     v->startSample = startSample;
+    v->stopSample = 0;
     v->env.setSampleRate(sampleRate);
     v->env.setAttack(p->attack());
     v->env.setDecay(p->decay());
     v->env.setSustain(p->sustain());
     v->env.setRelease(p->release());
     v->data = userData;
-    v->nextUnison = 0;
+    v->nextUnison = nullptr;
 
     return *i;
 }
 
-void Synth::Private::noteOff(size_t /*stopSample*/, int note)
+void Synth::Private::noteOff(size_t stopSample, int note)
 {
-    // XXX implement stopSample cueing
-
-    for (auto i : voices)
-    if (i->p_->active && i->p_->note == note)
+    for (SynthVoice* i : voices)
+    if (i->p_->note == note
+        && (i->p_->active || (i->p_->cued && i->p_->startSample <= stopSample))
+        )
     {
-        if (i->p_->env.release() > 0)
-        {
-            i->p_->env.setState(ENV_RELEASE);
-        }
-        else
-        {
-            // XXX implement noteEnd callback
-
-            i->p_->env.stop();
-            i->p_->active = false;
-        }
+        i->p_->cuedForStop = true;
+        i->p_->stopSample = stopSample;
     }
 }
 
@@ -474,9 +470,29 @@ void Synth::Private::process(float *output, size_t bufferLength)
         {
             SynthVoice::Private * v = i->p_;
 
+            // cued for stop
+            if (v->cuedForStop && v->stopSample == sample)
+            {
+                //qDebug() << "STOP " << v->note;
+                v->cuedForStop = false;
+                if (v->env.release() > 0.)
+                {
+                    v->env.setState(ENV_RELEASE);
+                }
+                else
+                {
+                    v->env.stop();
+                    v->active = false;
+                    if (cbEnd_)
+                        cbEnd_(i);
+                    continue;
+                }
+            }
+
             // start cued voice
             if (v->cued && v->startSample == sample)
             {
+                //qDebug() << "START " << v->note;
                 v->env.trigger();
                 v->active = true;
                 v->cued = false;
@@ -733,9 +749,9 @@ SynthVoice * Synth::noteOn(int note, double velocity,
     return voice;
 }
 
-void Synth::noteOff(int note)
+void Synth::noteOff(int note, size_t stopSample)
 {
-    p_->noteOff(0, note);
+    p_->noteOff(stopSample, note);
 }
 
 void Synth::panic() { p_->panic(); }

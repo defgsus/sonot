@@ -83,7 +83,11 @@ bool SynthDevice::p_fillBuffer()
         {
             // start again
             if (!p_index.nextBar())
+            {
                 p_index = p_score.index(0,0,0,0);
+            }
+            if (p_index.isValid())
+                p_notesPlaying.resize(p_index.getNoteStream().numRows());
 
             p_curBarTime = 0.;
         }
@@ -99,13 +103,27 @@ bool SynthDevice::p_fillBuffer()
             for (size_t c=0; c<bar.length(); ++c)
             {
                 Note n = bar.note(c);
-                if (!n.isNote())
+                if (!n.isValid())
                     continue;
 
                 // window-local time
                 double ltime = barTime * bar.columnTime(c) - p_curBarTime;
                 if (ltime >= 0 && ltime < bufferLength)
-                    p_synth.noteOn(n.value(), 0.1, ltime * sampleRate());
+                {
+                    // stop prev note
+                    if (n.value() != Note::Space)
+                    {
+                        if (p_notesPlaying[r] >= 0)
+                            p_synth.noteOff(p_notesPlaying[r],
+                                            ltime * sampleRate());
+                        p_notesPlaying[r] = Note::Invalid;
+                    }
+                    if (n.isNote())
+                    {
+                        p_synth.noteOn(n.value(), 0.1, ltime * sampleRate());
+                        p_notesPlaying[r] = n.value();
+                    }
+                }
             }
         }
 
@@ -127,6 +145,8 @@ void SynthDevice::setScore(const Score &score)
 {
     p_score = score;
     p_index = p_score.index(0,0,0,0);
+    if (p_index.isValid())
+        p_notesPlaying.resize(p_index.getNoteStream().numRows());
     p_curSample = 0;
     p_curBarTime = 0;
 }
