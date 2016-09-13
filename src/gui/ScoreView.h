@@ -40,6 +40,7 @@ public:
 
     // ----- setter -----
 
+    // XXX TODO
     ScoreDocument& scoreDocument();
 
 signals:

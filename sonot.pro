@@ -15,6 +15,7 @@ CONFIG += c++11
 INCLUDEPATH += src
 
 include(src/core.pri)
+include(src/audio.pri)
 include(src/gui.pri)
 include(src/QProps.pri)
 
