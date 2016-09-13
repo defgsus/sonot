@@ -234,6 +234,7 @@ void Synth::Private::createProperties()
               tr("Master volume of all played voices"),
               1.);
     props.setMin("volume", 0.);
+    props.setStep("volume", 0.01);
 
     props.set("number-unisono-voices", tr("unisono voices"),
               tr("The number of unisono voices that will be played "
@@ -253,7 +254,7 @@ void Synth::Private::createProperties()
     props.set("unisono-detune", tr("uinsono-detune"),
               tr("The amount of random detuning for each individual "
                  "unisono voice in cents (100 per full note)"),
-              20.);
+              11.);
 
     props.set("base-freq", tr("base frequency"),
               tr("The frequency in Hertz of the lowest C note"),
@@ -266,20 +267,20 @@ void Synth::Private::createProperties()
 
     props.set("attack", tr("attack"),
               tr("Attack time of envelope in seconds"),
-              0.05, 0., 10000., 0.05);
+              0.02, 0., 10000., 0.01);
 
     props.set("decay", tr("decay"),
               tr("Decay time of envelope in seconds"),
-              1., 0., 10000., 0.05);
+              1., 0., 10000., 0.01);
 
     props.set("sustain", tr("sustain"),
               tr("Sustain level of envelope"),
               0.0);
-    props.setStep("sustain", 0.05);
+    props.setStep("sustain", 0.01);
 
     props.set("release", tr("release"),
               tr("Release time of envelope in seconds"),
-              1., 0., 10000., 0.05);
+              1., 0., 10000., 0.01);
 }
 
 

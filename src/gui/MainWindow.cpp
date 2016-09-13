@@ -45,7 +45,11 @@ struct MainWindow::Private
 
     void createWidgets();
 
+    // debugging
     void playSomething();
+    NoteStream getNotes1();
+    NoteStream getNotes2();
+
 
     MainWindow* p;
 
@@ -135,6 +139,16 @@ void MainWindow::Private::playSomething()
     player->play(data.data(), data.size(), 1, 44100);
 #endif
 
+
+    Score score;
+    score.appendNoteStream(getNotes2());
+
+    synth->setScore(score);
+    player->play(synth, 1, synth->sampleRate());
+}
+
+NoteStream MainWindow::Private::getNotes1()
+{
     NoteStream stream;
 
     for (int i=0; i<8; ++i)
@@ -143,47 +157,83 @@ void MainWindow::Private::playSomething()
 
         if (i % 3 < 2)
         {
-            Bar bar(4);
-            bar.setNote(0, Note(Note::C, 5));
-            bar.setNote(1, Note(Note::Dx, 5));
-            bar.setNote(2, Note(Note::G, 5));
-            bar.setNote(3, Note(Note::A, 5));
+            Bar bar;
+            bar << Note(Note::C, 5)
+                << Note(Note::Dx, 5)
+                << Note(Note::G, 5)
+                << Note(Note::A, 5);
             rows << bar;
         }
         if (i % 2 == 1)
         {
-            Bar bar(4);
-            bar.setNote(0, Note(Note::C, 6));
-            bar.setNote(1, Note(Note::Dx, 6));
-            bar.setNote(2, Note(Note::G, 6));
-            bar.setNote(3, Note(Note::D, 5));
+            Bar bar;
+            bar << Note(Note::C, 6)
+                << Note(Note::Dx, 6)
+                << Note(Note::G, 6)
+                << Note(Note::D, 5);
             rows << bar;
         }
         if (i > 1)
         {
-            Bar bar(3);
-            bar.setNote(0, Note(Note::C, 6));
-            bar.setNote(1, Note(Note::F, 6));
-            bar.setNote(2, Note(Note::D, 6));
+            Bar bar;
+            bar << Note(Note::C, 6)
+                << Note(Note::F, 6)
+                << Note(Note::D, 6);
             rows << bar;
         }
         if (i % 4 == 0)
         {
-            Bar bar(4);
-            bar.setNote(0, Note(Note::C, 6));
-            bar.setNote(2, Note(Note::G, 6));
-            bar.setNote(3, Note(Note::D, 7));
+            Bar bar;
+            bar << Note(Note::C, 6)
+                << Note(Note::Space)
+                << Note(Note::G, 6)
+                << Note(Note::D, 7);
             rows << bar;
         }
 
         stream.appendBar(rows);
     }
 
-    Score score;
-    score.appendNoteStream(stream);
-
-    synth->setScore(score);
-    player->play(synth, 1, synth->sampleRate());
+    return stream;
 }
+
+NoteStream MainWindow::Private::getNotes2()
+{
+    NoteStream stream;
+
+    for (int i=0; i<8; ++i)
+    {
+        QList<Bar> rows;
+
+        if (i % 2 == 0)
+        {
+            Bar bar;
+            bar << Note(Note::C, 6)
+                << Note(Note::A, 5)
+                << Note(Note::Ax, 5)
+                << Note(Note::G, 5);
+            rows << bar;
+        }
+        else
+        {
+            Bar bar;
+            bar << Note(Note::A, 5)
+                << Note(Note::Dx, 5)
+                << Note(Note::G, 5)
+                << Note(Note::C, 5);
+            rows << bar;
+        }
+        {
+            Bar bar;
+            bar << Note(72 + (i * 3) % 11);
+            rows << bar;
+        }
+
+        stream.appendBar(rows);
+    }
+
+    return stream;
+}
+
 
 } // namespace Sonot

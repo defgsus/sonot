@@ -69,6 +69,13 @@ void Bar::setNote(size_t column, const Note &n)
     p_data_[column] = n;
 }
 
+Bar& Bar::append(const Note &n)
+{
+    resize(length() + 1);
+    p_data_[length() - 1] = n;
+    return *this;
+}
+
 bool Bar::isAnnotated() const
 {
     for (const Note& n : p_data_)

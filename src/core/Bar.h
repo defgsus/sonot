@@ -66,6 +66,9 @@ public:
         @warning No range checking! */
     void setNote(size_t column, const Note& n);
 
+    Bar& append(const Note& n);
+    Bar& operator << (const Note& n) { return append(n); }
+
 private:
     std::vector<Note> p_data_;
 };
