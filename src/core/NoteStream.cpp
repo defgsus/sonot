@@ -180,6 +180,7 @@ QJsonObject NoteStream::toJson() const
 {
     QProps::JsonInterfaceHelper json("NoteStream");
 
+    // write [[bar,bar,bar],[bar,barbar]]
     QJsonArray jrows;
     for (size_t row = 0; row < numRows(); ++row)
     {
@@ -207,14 +208,20 @@ void NoteStream::fromJson(const QJsonObject& o)
     {
         json.beginContext(QString("Reading row %1").arg(row));
         QJsonArray jbars = json.expectArray(jrows[row]);
-        std::vector<Bar> bars;
+        if (data.empty())
+        {
+            data.resize(jbars.size());
+            for (int i=0; i<jbars.size(); ++i)
+                data[i].resize(jrows.size());
+        }
+        else if (data[0].size() != size_t(jbars.size()))
+                QPROPS_IO_ERROR("row length mismatch, expected "
+                                << data[0].size() << ", got " << jbars.size());
         for (int i=0; i<jbars.size(); ++i)
         {
-            Bar bar;
-            bar.fromJson(json.expectObject(jbars.at(row)));
-            bars.push_back(bar);
+            data[i][row].fromJson(json.expectObject(jbars.at(i)));
         }
-        data.push_back(bars);
+
         json.endContext();
     }
 

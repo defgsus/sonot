@@ -29,22 +29,20 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace Sonot {
 
 Bar::Bar(size_t length)
-    : p_numNotes_   (length)
-    , p_data_       (p_numNotes_, Note(Note::Space))
+    : p_data_       (length, Note(Note::Space))
 {
 
 }
 
 bool Bar::operator == (const Bar& rhs) const
 {
-    return p_numNotes_ == rhs.p_numNotes_
-        && p_data_ == rhs.p_data_;
+    return p_data_ == rhs.p_data_;
 }
 
 
 const Note& Bar::note(size_t column) const
 {
-    QPROPS_ASSERT_LT(column, p_numNotes_, "in Bar::note()");
+    QPROPS_ASSERT_LT(column, length(), "in Bar::note()");
 
     return p_data_[column];
 }
@@ -53,12 +51,11 @@ void Bar::resize(size_t length)
 {
     std::vector<Note> v(length, Note(Note::Space));
 
-    const size_t cols = std::min(length, p_numNotes_);
+    const size_t cols = std::min(length, p_data_.size());
     for (size_t x = 0; x < cols; ++x)
         v[x] = note(x);
 
     p_data_.swap(v);
-    p_numNotes_ = length;
 }
 
 void Bar::setNote(size_t column, const Note &n)
@@ -80,22 +77,23 @@ QJsonObject Bar::toJson() const
     QProps::JsonInterfaceHelper json("Bar");
 
     QJsonObject o;
-    o.insert("len", QJsonValue((qint64)p_numNotes_));
 
-    std::vector<int> v;
-    for (const Note& n : p_data_)
-        v.push_back(n.value());
-    o.insert("notes", json.toArray(v));
+    if (length() > 0)
+    {
+        std::vector<int> v;
+        for (const Note& n : p_data_)
+            v.push_back(n.value());
+        o.insert("notes", json.toArray(v));
+    }
 
     if (isAnnotated())
     {
         QJsonObject ann;
-        for (size_t col=0; col<p_numNotes_; ++col)
+        for (size_t col=0; col<length(); ++col)
         {
             const Note& n = note(col);
-            if (!n.isAnnotated())
-                continue;
-            ann.insert(QString::number(col), n.annotation());
+            if (n.isAnnotated())
+                ann.insert(QString::number(col), n.annotation());
         }
         o.insert("text", ann);
     }
@@ -106,17 +104,17 @@ QJsonObject Bar::toJson() const
 void Bar::fromJson(const QJsonObject& o)
 {
     QProps::JsonInterfaceHelper json("Bar");
-    const int len = json.expectChild<int>(o, "len");
 
-    QJsonArray jnotes = json.expectArray(json.expectChildValue(o, "notes"));
-    if (jnotes.size() != len)
-        QPROPS_IO_ERROR("Mismatching note data size " << jnotes.size()
-                       << ", expected " << len);
     std::vector<Note> notes;
-    for (int i=0; i<jnotes.size(); ++i)
+
+    if (o.contains("notes"))
     {
-        size_t n = jnotes[i].toInt(Note::Invalid);
-        notes.push_back(Note(n));
+        QJsonArray jnotes = json.expectArray(json.expectChildValue(o, "notes"));
+        for (int i=0; i<jnotes.size(); ++i)
+        {
+            size_t n = jnotes[i].toInt(Note::Invalid);
+            notes.push_back(Note(n));
+        }
     }
 
     if (o.contains("text"))
@@ -142,7 +140,6 @@ void Bar::fromJson(const QJsonObject& o)
         json.endContext();
     }
 
-    p_numNotes_ = len;
     p_data_.swap(notes);
 }
 

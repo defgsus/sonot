@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
-/** A bar/messure of notes. */
+/** A single-row bar/messure of notes. */
 class Bar : public QProps::JsonInterface
 {
 public:
@@ -41,7 +41,8 @@ public:
 
     // --- getter ---
 
-    size_t length() const { return p_numNotes_; }
+    /** Number of Notes */
+    size_t length() const { return p_data_.size(); }
 
     /** Returns the note at given column.
         @warning No range checking! */
@@ -62,7 +63,6 @@ public:
     void setNote(size_t column, const Note& n);
 
 private:
-    size_t p_numNotes_;
     std::vector<Note> p_data_;
 };
 
