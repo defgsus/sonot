@@ -35,7 +35,8 @@ public:
     SonotCoreTest() { }
 
     static Bar createRandomBar(size_t length);
-    //static Score createScoreForIndexTest();
+    static QList<Bar> createRandomBar(size_t length, size_t rows);
+    static Score createScoreForIndexTest();
 
 private slots:
 
@@ -44,8 +45,8 @@ private slots:
     void testJsonBar();
     void testJsonStream();
     void testJsonScore();
-    //void testScoreIndexNextNote();
-    //void testScoreIndexPrevNote();
+    void testScoreIndexNextNote();
+    void testScoreIndexPrevNote();
 };
 
 Bar SonotCoreTest::createRandomBar(size_t length)
@@ -65,6 +66,14 @@ Bar SonotCoreTest::createRandomBar(size_t length)
         }
     }
     return b;
+}
+
+QList<Bar> SonotCoreTest::createRandomBar(size_t length, size_t rows)
+{
+    QList<Bar> l;
+    for (size_t i=0; i<rows; ++i)
+        l << createRandomBar(length);
+    return l;
 }
 
 namespace QTest {
@@ -153,7 +162,7 @@ void SonotCoreTest::testJsonScore()
     //qDebug() << score2.toJsonString();
 }
 
-#if 0
+
 Score SonotCoreTest::createScoreForIndexTest()
 {
     Score score;
@@ -174,8 +183,8 @@ Score SonotCoreTest::createScoreForIndexTest()
     }
     return score;
     // xxxx xxx xxxxx  xx xxxxx xxxxxxxx xxx
-    // xxxx xxx xxxxx     xxxxx xxxxxxxx xxx
-    // xxxx     xxxxx           xxxxxxxx
+    // xxxx xxx xxxxx  x  xxxxx xxxxxxxx xxx
+    // xxxx x   xxxxx  x  x     xxxxxxxx x
 }
 
 void SonotCoreTest::testScoreIndexPrevNote()
@@ -184,21 +193,27 @@ void SonotCoreTest::testScoreIndexPrevNote()
 
     Score::Index idx = score.index(1,3,0,2);
     QVERIFY(idx.isValid());
-    while (idx.prevNote());
+    int cnt = 1;
+    while (idx.prevNote()) ++cnt;
     QVERIFY(idx.isValid());
     QCOMPARE(idx, score.index(0, 0, 0, 0));
+    QCOMPARE(cnt, 30);
 
-    idx = score.index(1,3,1,2);
+    idx = score.index(1, 3, 1, 2);
     QVERIFY(idx.isValid());
-    while (idx.prevNote());
+    cnt = 1;
+    while (idx.prevNote()) ++cnt;
     QVERIFY(idx.isValid());
-    QCOMPARE(idx, score.index(1, 1, 1, 0));
+    QCOMPARE(idx, score.index(0,0,1,0));
+    QCOMPARE(cnt, 29);
 
-    idx = score.index(0,2,2,4);
+    idx = score.index(1, 3, 2, 0);
     QVERIFY(idx.isValid());
-    while (idx.prevNote());
+    cnt = 1;
+    while (idx.prevNote()) ++cnt;
     QVERIFY(idx.isValid());
-    QCOMPARE(idx, score.index(0, 2, 2, 0));
+    QCOMPARE(idx, score.index(0,0,2,0));
+    QCOMPARE(cnt, 21);
 }
 
 void SonotCoreTest::testScoreIndexNextNote()
@@ -207,24 +222,28 @@ void SonotCoreTest::testScoreIndexNextNote()
 
     Score::Index idx = score.index(0,0,0,0);
     QVERIFY(idx.isValid());
-    while (idx.nextNote());
+    int cnt = 1;
+    while (idx.nextNote()) ++cnt;
     QVERIFY(idx.isValid());
     QCOMPARE(idx, score.index(1, 3, 0, 2));
-
-    idx = score.index(0,0,2,0);
-    QVERIFY(idx.isValid());
-    while (idx.nextNote());
-    QVERIFY(idx.isValid());
-    QCOMPARE(idx, score.index(0, 0, 2, 3));
+    QCOMPARE(cnt, 30);
 
     idx = score.index(0,0,1,0);
     QVERIFY(idx.isValid());
-    while (idx.nextNote());
+    cnt = 1;
+    while (idx.nextNote()) ++cnt;
     QVERIFY(idx.isValid());
-    QCOMPARE(idx, score.index(0, 2, 1, 4));
-}
-#endif
+    QCOMPARE(idx, score.index(1, 3, 1, 2));
+    QCOMPARE(cnt, 29);
 
+    idx = score.index(0,0,2,0);
+    QVERIFY(idx.isValid());
+    cnt = 1;
+    while (idx.nextNote()) ++cnt;
+    QVERIFY(idx.isValid());
+    QCOMPARE(idx, score.index(1, 3, 2, 0));
+    QCOMPARE(cnt, 21);
+}
 
 
 

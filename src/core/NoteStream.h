@@ -43,6 +43,8 @@ public:
 
     // --- getter ---
 
+    const Bar defaultBar() const { return Bar(1); }
+
     /** Number of Bars in this collection */
     size_t numBars() const { return p_data_.size(); }
 
@@ -71,10 +73,14 @@ public:
 
     /** Read/Write reference to @p idx'th Bar */
     Bar& bar(size_t idx, size_t row);
+
+    void clear() { p_data_.clear(); }
+
     /** Overwrite specific Note from Bar */
     void setNote(size_t barIdx, size_t row, size_t column, const Note& n);
 
-    void clear() { p_data_.clear(); }
+    /** Change number of voices. */
+    void setNumRows(size_t numRows);
 
     void removeBar(size_t idx);
     /** Remove @p count Bars starting at @p idx.
@@ -83,8 +89,11 @@ public:
 
     /** Inserts a Bar before given index.
         If @p idx is >= numBars(), the Bar will be appended. */
-    void insertBar(size_t idx, const Bar& b);
-    void appendBar(const Bar& b);
+    void insertBar(size_t idx, const Bar& row);
+    void appendBar(const Bar& row) { insertBar(numBars(), row); }
+
+    void insertBar(size_t idx, const QList<Bar>& rows);
+    void appendBar(const QList<Bar>& rows) { insertBar(numBars(), rows); }
 
 private:
     std::vector<std::vector<Bar>> p_data_;

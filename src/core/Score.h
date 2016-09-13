@@ -122,7 +122,7 @@ public:
         @note The returned Index is tied to this Score instance and
         must only be referenced during it's lifetime. */
     Index index(
-            size_t stream, size_t bar, size_t row, size_t column) const;
+            size_t stream, size_t barIdx, size_t row, size_t column) const;
 
     bool operator == (const Score& rhs) const;
     bool operator != (const Score& rhs) const { return !(*this == rhs); }

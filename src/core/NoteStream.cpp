@@ -105,6 +105,20 @@ void NoteStream::removeBar(size_t idx)
     p_data_.erase(p_data_.begin() + idx);
 }
 
+void NoteStream::setNumRows(size_t newRows)
+{
+    if (newRows == numRows())
+        return;
+    for (std::vector<Bar>& rows : p_data_)
+    {
+        size_t n = rows.size();
+        rows.resize(newRows);
+        for (size_t i=n; i<newRows; ++i)
+            rows[n] = defaultBar();
+    }
+}
+
+
 void NoteStream::removeBars(size_t idx, int count)
 {
     QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::removeBars()");
@@ -132,10 +146,30 @@ void NoteStream::insertBar(size_t idx, const Bar &b)
         p_data_.push_back(bars);
 }
 
-void NoteStream::appendBar(const Bar &b)
+
+
+void NoteStream::insertBar(size_t idx, const QList<Bar>& barList)
 {
-    insertBar(numBars(), b);
+    std::vector<Bar> bars;
+    for (auto& b : barList)
+        bars.push_back( b );
+
+    if (bars.size() < numRows())
+    {
+        // append empty bars to insertion
+        for (size_t i=1; i<numRows(); ++i)
+            bars.push_back( defaultBar() );
+    }
+    else
+        // otherwise resize data
+        setNumRows(bars.size());
+
+    if (idx < numBars())
+        p_data_.insert(p_data_.begin() + idx, bars);
+    else
+        p_data_.push_back(bars);
 }
+
 
 
 QString NoteStream::toString() const
