@@ -48,6 +48,10 @@ public:
         @warning No range checking! */
     const Note& note(size_t column) const;
 
+    /** Returns the given column's time in range [0,1]
+        scaled from length(). */
+    double columnTime(size_t column) const;
+
     /** Is any of the Notes annotated? */
     bool isAnnotated() const;
 

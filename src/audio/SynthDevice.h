@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QIODevice>
 
 #include "Synth.h"
+#include "core/Score.h"
 
 namespace Sonot {
 
@@ -40,15 +41,30 @@ public:
     qint64 readData(char *data, qint64 maxlen) override;
     qint64 writeData(const char*, qint64 ) override { return 0; }
 
+    const Synth& synth() const { return p_synth; }
+
     size_t sampleRate() const { return p_synth.sampleRate(); }
+
+    double currentSecond() const { return p_curSample * sampleRate(); }
+
+public slots:
+
+    void setScore(const Score& score);
+
+    void setSynthProperties(const QProps::Properties& p)
+        { p_synth.setProperties(p); }
 
 protected:
 
-    void p_fillBuffer();
+    bool p_fillBuffer();
 
     std::vector<char> p_buffer;
     qint64 p_consumed;
     Synth p_synth;
+    Score p_score;
+    Score::Index p_index;
+    uint64_t p_curSample;
+    double p_curBarTime;
 };
 
 } // namespace Sonot

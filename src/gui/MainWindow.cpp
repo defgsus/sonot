@@ -31,6 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "TextItem.h"
 #include "audio/SamplePlayer.h"
 #include "audio/SynthDevice.h"
+#include "core/NoteStream.h"
 
 namespace Sonot {
 
@@ -39,6 +40,7 @@ struct MainWindow::Private
     Private(MainWindow*w)
         : p         (w)
         , player    (new SamplePlayer(p))
+        , synth     (new SynthDevice(p))
     { }
 
     void createWidgets();
@@ -51,6 +53,7 @@ struct MainWindow::Private
     QProps::PropertiesView* propsView;
 
     SamplePlayer* player;
+    SynthDevice* synth;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -88,15 +91,19 @@ void MainWindow::Private::createWidgets()
             //scoreView->scoreDocument().scoreLayout(0).props()
             //scoreView->scoreDocument().pageLayout(0).marginsEven()
             //scoreView->scoreDocument().pageAnnotation(0).
-            scoreView->scoreDocument().pageAnnotation(0).textItems()[0].props()
+            //scoreView->scoreDocument().pageAnnotation(0).textItems()[0].props()
+            synth->synth().props()
             //TextItem().props()
             );
         connect(propsView, &QProps::PropertiesView::propertyChanged, [=]()
         {
+            /*
             PageAnnotation anno = scoreView->scoreDocument().pageAnnotation(0);
             anno.textItems()[0].setProperties(propsView->properties());
             scoreView->scoreDocument().setPageAnnotation(0, anno);
             scoreView->update();
+            */
+            synth->setSynthProperties(propsView->properties());
         });
 }
 
@@ -128,7 +135,54 @@ void MainWindow::Private::playSomething()
     player->play(data.data(), data.size(), 1, 44100);
 #endif
 
-    auto synth = new SynthDevice(p);
+    NoteStream stream;
+
+    for (int i=0; i<8; ++i)
+    {
+        QList<Bar> rows;
+
+        if (i % 3 < 2)
+        {
+            Bar bar(4);
+            bar.setNote(0, Note(Note::C, 5));
+            bar.setNote(1, Note(Note::Dx, 5));
+            bar.setNote(2, Note(Note::G, 5));
+            bar.setNote(3, Note(Note::A, 5));
+            rows << bar;
+        }
+        if (i % 2 == 1)
+        {
+            Bar bar(4);
+            bar.setNote(0, Note(Note::C, 6));
+            bar.setNote(1, Note(Note::Dx, 6));
+            bar.setNote(2, Note(Note::G, 6));
+            bar.setNote(3, Note(Note::D, 5));
+            rows << bar;
+        }
+        if (i > 1)
+        {
+            Bar bar(3);
+            bar.setNote(0, Note(Note::C, 6));
+            bar.setNote(1, Note(Note::F, 6));
+            bar.setNote(2, Note(Note::D, 6));
+            rows << bar;
+        }
+        if (i % 4 == 0)
+        {
+            Bar bar(4);
+            bar.setNote(0, Note(Note::C, 6));
+            bar.setNote(2, Note(Note::G, 6));
+            bar.setNote(3, Note(Note::D, 7));
+            rows << bar;
+        }
+
+        stream.appendBar(rows);
+    }
+
+    Score score;
+    score.appendNoteStream(stream);
+
+    synth->setScore(score);
     player->play(synth, 1, synth->sampleRate());
 }
 

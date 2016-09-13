@@ -60,13 +60,18 @@ public:
             the NoteStream, Bar, it's rows and columns.
             The check is performed against the current Score. */
         bool isValid() const;
+        bool isValid(int stream, int barIdx, int row, int column) const;
 
         bool operator == (const Index& rhs) const;
         bool operator != (const Index& rhs) const { return !(*this == rhs); }
 
         const NoteStream& getNoteStream() const;
-        const Bar& getBar() const;
+        const Bar& getBar(int row = 0) const;
         const Note& getNote() const;
+
+        const Note& getNote(int row, int column) const;
+
+        Index topLeft() const { return score()->index(stream(), bar(), 0, 0); }
 
         QString toString() const;
 

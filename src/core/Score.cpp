@@ -222,22 +222,42 @@ bool Score::Index::isValid() const
         && column() < score()->noteStream(stream()).bar(bar(), row()).length();
 }
 
+bool Score::Index::isValid(int s, int b, int r, int c) const
+{
+    return s >= 0 && s < score()->noteStreams().size()
+        && b >= 0 && (size_t)b < score()->noteStream(stream()).numBars()
+        && r >= 0 && (size_t)r < score()->noteStream(stream()).numRows()
+        && c >= 0 && (size_t)c < score()->noteStream(
+                                stream()).bar(bar(), row()).length();
+}
+
 const NoteStream& Score::Index::getNoteStream() const
 {
     QPROPS_ASSERT(isValid(), "in Score::Index::getNoteStream()");
     return score()->noteStream(stream());
 }
 
-const Bar& Score::Index::getBar() const
+const Bar& Score::Index::getBar(int r) const
 {
-    QPROPS_ASSERT(isValid(), "in Score::Index::getBar()");
-    return score()->noteStream(stream()).bar(bar(), row());
+    r += row();
+    QPROPS_ASSERT(isValid(stream(), bar(), r, 0),
+                  "in Score::Index::getBar(" << r << ")");
+    return score()->noteStream(stream()).bar(bar(), r);
 }
 
 const Note& Score::Index::getNote() const
 {
     QPROPS_ASSERT(isValid(), "in Score::Index::getNote()");
     return score()->noteStream(stream()).bar(bar(), row()).note(column());
+}
+
+const Note& Score::Index::getNote(int r, int c) const
+{
+    r += row();
+    c += column();
+    QPROPS_ASSERT(isValid(stream(), bar(), r, c),
+                  "in Score::Index::getNote(" << r << ", " << c << ")");
+    return score()->noteStream(stream()).bar(bar(), r).note(c);
 }
 
 bool Score::Index::nextNote()

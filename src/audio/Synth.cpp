@@ -637,7 +637,7 @@ size_t Synth::sampleRate() const { return p_->sampleRate; }
 
 const QProps::Properties& Synth::props() const { return p_->props; }
 
-void Synth::setProperties(QProps::Properties& p)
+void Synth::setProperties(const QProps::Properties& p)
 {
     p_->props = p;
     p_->noteFreq.setBaseFrequency( baseFreq() );

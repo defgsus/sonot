@@ -147,7 +147,7 @@ public:
     /** Sets the sampling rate in Hertz. */
     void setSampleRate(size_t sr);
 
-    void setProperties(QProps::Properties& p);
+    void setProperties(const QProps::Properties& p);
 
     // ---------- callbacks ---------------
 
