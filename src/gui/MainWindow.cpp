@@ -21,13 +21,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QLayout>
 #include <QStatusBar>
 
+#include "QProps/PropertiesView.h"
+
 #include "MainWindow.h"
 #include "ScoreView.h"
 #include "ScoreDocument.h"
 #include "ScoreLayout.h"
 #include "PageLayout.h"
 #include "TextItem.h"
-#include "QProps/PropertiesView.h"
+#include "audio/SamplePlayer.h"
+#include "audio/Synth.h"
 
 namespace Sonot {
 
@@ -35,14 +38,19 @@ struct MainWindow::Private
 {
     Private(MainWindow*w)
         : p         (w)
+        , player    (new SamplePlayer(p))
     { }
 
     void createWidgets();
+
+    void playSomething();
 
     MainWindow* p;
 
     ScoreView* scoreView;
     QProps::PropertiesView* propsView;
+
+    SamplePlayer* player;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -54,6 +62,7 @@ MainWindow::MainWindow(QWidget *parent)
     setGeometry(0,0,720,600);
     p_->createWidgets();
 
+    p_->playSomething();
 }
 
 MainWindow::~MainWindow()
@@ -94,6 +103,27 @@ void MainWindow::Private::createWidgets()
 void MainWindow::showEvent(QShowEvent*)
 {
     p_->scoreView->showPage(0);
+}
+
+void MainWindow::Private::playSomething()
+{
+    std::vector<float> data;
+#if 0
+    for (int i=0; i<44100*3; ++i)
+    {
+        float t = (float)i / 44100.;
+        data.push_back( std::sin(t * 3.14159265 * 2. * 437.) );
+    }
+#else
+    Synth synth;
+    for (int i=0; i<16; ++i)
+        synth.noteOn(50 + rand()%39, .1, i*3000);
+
+    data.resize(44100*3);
+    synth.process(data.data(), data.size());
+#endif
+
+    player->play(data.data(), data.size(), 44100., 1);
 }
 
 } // namespace Sonot

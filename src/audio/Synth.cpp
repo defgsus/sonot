@@ -133,7 +133,6 @@ public:
           cbEnd_        (0)
     {
         createProperties();
-        setNumVoices(p->numberVoices());
     }
 
     ~Private()
@@ -626,7 +625,7 @@ void Synth::Private::process(float ** outputs, size_t bufferLength)
 Synth::Synth()
     : p_    (new Private(this))
 {
-
+    p_->setNumVoices(numberVoices());
 }
 
 Synth::~Synth()
