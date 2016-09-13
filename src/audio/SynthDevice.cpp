@@ -77,7 +77,7 @@ bool SynthDevice::p_fillBuffer()
 
     //double curTime = currentSecond();
     // time per bar
-    double barLength = 1.;
+    double barLength = 1.15;
     // length of dsp buffer in samples
     double bufferLength = (double)bufferSize() / sampleRate();
     // time in dsp block

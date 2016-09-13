@@ -69,10 +69,26 @@ void Bar::setNote(size_t column, const Note &n)
     p_data_[column] = n;
 }
 
+void Bar::transpose(int8_t noteStep)
+{
+    for (Note& n : p_data_)
+        if (n.isNote())
+            n.transpose(noteStep);
+}
+
 Bar& Bar::append(const Note &n)
 {
     resize(length() + 1);
     p_data_[length() - 1] = n;
+    return *this;
+}
+
+Bar& Bar::operator<<(const char* name) { return *this << QString(name); }
+Bar& Bar::operator<<(const QString& name)
+{
+    Note n(name);
+    if (n.isValid())
+        append(n);
     return *this;
 }
 
@@ -83,6 +99,16 @@ bool Bar::isAnnotated() const
             return true;
     return false;
 }
+
+QString Bar::toString() const
+{
+    QString s;
+    for (const Note& n : p_data_)
+        s += n.to3String() + " ";
+    return s;
+}
+
+
 
 QJsonObject Bar::toJson() const
 {

@@ -150,6 +150,9 @@ void NoteStream::insertBar(size_t idx, const Bar &b)
 
 void NoteStream::insertBar(size_t idx, const QList<Bar>& barList)
 {
+    if (barList.isEmpty())
+        return;
+
     std::vector<Bar> bars;
     for (auto& b : barList)
         bars.push_back( b );
@@ -200,7 +203,7 @@ QString NoteStream::toString() const
             if (i < b.length())
                 n = b.note(i);
             if (n.isNote())
-                s[uint(y*w + x + i)] = n.toNoteString()[0];
+                s[uint(y*w + x + i)] = n.to3String()[0];
         }
         x += blength;
     }

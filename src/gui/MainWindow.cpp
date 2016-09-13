@@ -142,7 +142,9 @@ void MainWindow::Private::playSomething()
 
 
     Score score;
-    score.appendNoteStream(getNotes3());
+    NoteStream stream = getNotes3();
+    qDebug().noquote() << stream.toString();
+    score.appendNoteStream(stream);
 
     synth->setScore(score);
     player->play(synth, 1, synth->sampleRate());
@@ -160,7 +162,7 @@ NoteStream MainWindow::Private::getNotes1()
         {
             Bar bar;
             bar << Note(Note::C, 5)
-                << Note(Note::Dx, 5)
+                << Note(Note::Dis, 5)
                 << Note(Note::G, 5)
                 << Note(Note::A, 5);
             rows << bar;
@@ -169,7 +171,7 @@ NoteStream MainWindow::Private::getNotes1()
         {
             Bar bar;
             bar << Note(Note::C, 6)
-                << Note(Note::Dx, 6)
+                << Note(Note::Dis, 6)
                 << Note(Note::G, 6)
                 << Note(Note::D, 5);
             rows << bar;
@@ -211,7 +213,7 @@ NoteStream MainWindow::Private::getNotes2()
             Bar bar;
             bar << Note(Note::C, 6)
                 << Note(Note::A, 5)
-                << Note(Note::Ax, 5)
+                << Note(Note::Ais, 5)
                 << Note(Note::G, 5);
             rows << bar;
         }
@@ -219,7 +221,7 @@ NoteStream MainWindow::Private::getNotes2()
         {
             Bar bar;
             bar << Note(Note::A, 5)
-                << Note(Note::Dx, 5)
+                << Note(Note::Dis, 5)
                 << Note(Note::G, 5)
                 << Note(Note::C, 5);
             rows << bar;
@@ -240,34 +242,42 @@ NoteStream MainWindow::Private::getNotes3()
 {
     NoteStream stream;
 
+#define SONOT__BAR(a1_, a2_) \
+    if (i == barIdx++) \
+    { Bar b1_; b1_ << a1_; b1_.transpose(24); rows << b1_; \
+      Bar b2_; b2_ << a2_; b2_.transpose(24); rows << b2_; }
+
     for (int i=0; i<8; ++i)
     {
         QList<Bar> rows;
+        int barIdx = 0;
 
-        if (i % 2 == 0)
-        {
-            Bar bar;
-            bar << Note(Note::C, 5)
-                << Note(Note::D, 5)
-                << Note(Note::E, 5)
-                << Note(Note::F, 5);
-            rows << bar;
-        }
-        else
-        {
-            Bar bar;
-            bar << Note(Note::G, 5)
-                << Note(Note::A, 5)
-                << Note(Note::B, 5)
-                << Note(Note::C, 6);
-            rows << bar;
-        }
-        if (0)
-        {
-            Bar bar;
-              bar << Note(72 + i * 2);
-            rows << bar;
-        }
+        SONOT__BAR("p"<<" "<<" "<<" ",
+                   "5"<<"6"<<"7"<<"1");
+
+        SONOT__BAR("5"<<" "<<" "<<" ",
+                   "7"<<"6"<<"5"<<"4");
+
+        SONOT__BAR(" "<<" "<<" "<<" ",
+                   "3"<<"5"<<"4"<<"3");
+
+        SONOT__BAR("6"<<" "<<" "<<" ",
+                   "2"<<"2"<<"7"<<"1");
+
+        SONOT__BAR("7"<<" "<<" "<<" ",
+                   "2"<<"1"<<"7"<<"6");
+
+        SONOT__BAR(" "<<" "<<" "<<" ",
+                   "5"<<"5"<<"2"<<"7");
+
+        SONOT__BAR("7"<<" "<<" ",
+                   "3"<<"2"<<"3");
+
+        SONOT__BAR("7"<<" ",
+                   "3"<<"4");
+
+        SONOT__BAR(" "<<" "<<" "<<" ",
+                   "5"<<"6"<<"7"<<"1");
 
         stream.appendBar(rows);
     }

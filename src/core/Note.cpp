@@ -40,6 +40,25 @@ Note::Note(Name noteName, int8_t octave)
 
 }
 
+Note::Note(NameCrossing noteName, int8_t octave)
+    : p_value_   (std::max(-1, noteName % 12)
+                               + 12 * ((noteName == Ces ? -1 : 1) + octave) )
+{
+
+}
+
+Note::Note(const char *str)
+    : p_value_  (valueFromString(str))
+{
+
+}
+
+Note::Note(const QString &str)
+    : p_value_  (valueFromString(str))
+{
+
+}
+
 bool Note::operator == (const Note& rhs) const
 {
     return p_value_ == rhs.p_value_
@@ -48,7 +67,7 @@ bool Note::operator == (const Note& rhs) const
 
 int8_t Note::octave() const
 {
-    return p_value_ < 0 ? p_value_ / 12 : 0;
+    return p_value_ < 0 ? 0 : p_value_ / 12;
 }
 
 Note::Name Note::noteName() const
@@ -56,29 +75,106 @@ Note::Name Note::noteName() const
     return p_value_ < 0 ? C : Name(p_value_ % 12);
 }
 
-QString Note::toNoteString() const
+int8_t Note::valueFromString(const char *str)
+{
+    return valueFromString(QString(str));
+}
+
+int8_t Note::valueFromString(const QString &s)
+{
+    if (s.isEmpty())
+        return Invalid;
+
+    QString str = s.toLower();
+
+    if (str.startsWith(" "))
+        return Space;
+    if (str.startsWith("-") || str.startsWith("p") || str.startsWith("r"))
+        return Rest;
+
+    int8_t val = Invalid;
+    int8_t oct = 3;
+
+    // spanish note names
+    if (str.at(0).isDigit())
+    {
+        switch ((short)str.at(0).unicode() - short('0'))
+        {
+            case 1: val = F; break;
+            case 2: val = G; break;
+            case 3: val = A; break;
+            case 4: val = B; break;
+            case 5: val = C; break;
+            case 6: val = D; break;
+            case 7: val = E; break;
+        }
+    }
+    else
+    if (str.at(0).isLetter())
+    {
+        switch ((short)str.at(0).unicode() - short('a'))
+        {
+            case 0: val = A; break;
+            case 7:
+            case 1: val = B; break;
+            case 2: val = C; break;
+            case 3: val = D; break;
+            case 4: val = E; break;
+            case 5: val = F; break;
+            case 6: val = G; break;
+        }
+    }
+    else
+        return Invalid;
+
+    // flat or sharp ?
+    if (str.size() > 1)
+    {
+        QString add = str.mid(1);
+        if (add.startsWith("#") || add.startsWith("is") || add.startsWith("x"))
+            ++val;
+        else if (add.startsWith("b")
+                 || add.startsWith("es") || add.startsWith("s"))
+            --val;
+    }
+
+    // octave digit?
+    int i=1;
+    while (i < str.size() && !str.at(i).isDigit())
+        ++i;
+    if (i < str.size())
+    {
+        oct = (short)str.at(i).unicode() - short('0');
+    }
+
+    val += oct * 12;
+
+    return val >= 0 ? val : int8_t(Invalid);
+}
+
+QString Note::to3String() const
 {
     if (p_value_ == Invalid)
         return QString();
     if (p_value_ == Rest)
-        return "p";
+        return " p ";
     if (p_value_ == Space)
-        return " ";
+        return " . ";
 
     QString n;
     switch (noteName())
     {
         case C:  n = "C-"; break;
-        case Cx: n = "C#"; break;
+        case Cis: n = "C#"; break;
         case D:  n = "D-"; break;
-        case Dx: n = "D#"; break;
+        case Dis: n = "D#"; break;
         case E:  n = "E-"; break;
         case F:  n = "F-"; break;
-        case Fx: n = "F#"; break;
+        case Fis: n = "F#"; break;
         case G:  n = "G-"; break;
-        case Gx: n = "G#"; break;
+        case Gis: n = "G#"; break;
         case A:  n = "A-"; break;
-        case Ax: n = "A#"; break;
+        case Ais: n = "A#"; break;
         case B:  n = "B-"; break;
     }
     n += QString("%1").arg(octave());
@@ -98,6 +194,17 @@ Note& Note::setNoteName(Name n)
 {
     p_value_ = n + octave() * 12;
     return *this;
+}
+
+void Note::transpose(int8_t noteStep)
+{
+    if (isNote())
+    {
+        int value = int(p_value_) + int(noteStep);
+        if (value < 0 || value > 127)
+            value = Space;
+        p_value_ = value;
+    }
 }
 
 } // namespace Sonot

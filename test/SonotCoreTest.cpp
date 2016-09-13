@@ -40,6 +40,7 @@ public:
 
 private slots:
 
+    void testNoteFromString();
     void testResize();
     void testKeepDataOnResize();
     void testJsonBar();
@@ -79,9 +80,21 @@ QList<Bar> SonotCoreTest::createRandomBar(size_t length, size_t rows)
 namespace QTest {
 
     template <>
+    char* toString(const int8_t& i)
+    {
+        return toString(QString::number(i));
+    }
+
+    template <>
     char* toString(const Score::Index& idx)
     {
         return toString(idx.toString());
+    }
+
+    template <>
+    char* toString(const Note& n)
+    {
+        return toString(n.to3String());
     }
 
     template <>
@@ -97,6 +110,64 @@ namespace QTest {
     }
 
 } // namespace QTest
+
+
+
+void SonotCoreTest::testNoteFromString()
+{
+#define SONOT__COMPARE(str__, N__) \
+    QCOMPARE(Note(str__),       Note(Note::N__, 3)); \
+    QCOMPARE(Note(str__ "4"),   Note(Note::N__, 4)); \
+    QCOMPARE(Note(str__ "-5"),  Note(Note::N__, 5));
+    //QCOMPARE(Note(str__).value(), int8_t(Note::N__ + 3 * 12));
+    //qDebug() << Note(str__).toNoteString() << Note(Note::N__, 3).toNoteString();
+
+    SONOT__COMPARE("C",     C);
+
+    SONOT__COMPARE("ces",   Ces);
+    SONOT__COMPARE("c",     C);
+    SONOT__COMPARE("cis",   Cis);
+    SONOT__COMPARE("des",   Des);
+    SONOT__COMPARE("d",     D);
+    SONOT__COMPARE("dis",   Dis);
+    SONOT__COMPARE("es",    Es);
+    SONOT__COMPARE("e",     E);
+    SONOT__COMPARE("eis",   Eis);
+    SONOT__COMPARE("fes",   Fes);
+    SONOT__COMPARE("f",     F);
+    SONOT__COMPARE("fis",   Fis);
+    SONOT__COMPARE("ges",   Ges);
+    SONOT__COMPARE("g",     G);
+    SONOT__COMPARE("gis",   Gis);
+    SONOT__COMPARE("as",    As);
+    SONOT__COMPARE("a",     A);
+    SONOT__COMPARE("ais",   Ais);
+    SONOT__COMPARE("bes",   Bes);
+    SONOT__COMPARE("b",     B);
+    SONOT__COMPARE("bis",   Bis);
+    SONOT__COMPARE("h",     B);
+
+    SONOT__COMPARE("1b",    E);
+    SONOT__COMPARE("1",     F);
+    SONOT__COMPARE("1x",    Fis);
+    SONOT__COMPARE("2b",    Fis);
+    SONOT__COMPARE("2",     G);
+    SONOT__COMPARE("2x",    Gis);
+    SONOT__COMPARE("3b",    Gis);
+    SONOT__COMPARE("3",     A);
+    SONOT__COMPARE("3x",    Ais);
+    SONOT__COMPARE("4b",    Ais);
+    SONOT__COMPARE("4",     B);
+    SONOT__COMPARE("5",     C);
+    SONOT__COMPARE("5x",    Cis);
+    SONOT__COMPARE("6b",    Cis);
+    SONOT__COMPARE("6",     D);
+    SONOT__COMPARE("6x",    Dis);
+    SONOT__COMPARE("7b",    Dis);
+    SONOT__COMPARE("7",     E);
+    SONOT__COMPARE("7x",    F);
+}
+
 
 void SonotCoreTest::testResize()
 {

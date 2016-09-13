@@ -58,6 +58,8 @@ public:
     bool operator == (const Bar& rhs) const;
     bool operator != (const Bar& rhs) const { return !(*this == rhs); }
 
+    QString toString() const;
+
     // --- setter ---
 
     void resize(size_t length);
@@ -66,8 +68,13 @@ public:
         @warning No range checking! */
     void setNote(size_t column, const Note& n);
 
+    void transpose(int8_t noteStep);
+
     Bar& append(const Note& n);
+
     Bar& operator << (const Note& n) { return append(n); }
+    Bar& operator << (const char* name);
+    Bar& operator << (const QString& name);
 
 private:
     std::vector<Note> p_data_;
