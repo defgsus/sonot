@@ -46,13 +46,20 @@ public:
     /** Number of Bars in this collection */
     size_t numBars() const { return p_data_.size(); }
 
-    /** Returns the accumulated number of notes */
-    size_t numNotes() const;
-    /** Returns the maximum number of rows of all Bars */
+    /** Returns the number of rows */
     size_t numRows() const;
 
+    /** Returns the accumulated number of notes */
+    size_t numNotes() const;
+
+    /** Returns the maximum number of notes in Bar */
+    size_t numNotes(size_t barIdx) const;
+
     /** Read reference to @p idx'th Bar */
-    const Bar& bar(size_t idx) const;
+    const Bar& bar(size_t barIdx, size_t row) const;
+
+    /** Returns Note from Bar */
+    const Note& note(size_t barIdx, size_t row, size_t column) const;
 
     /** Returns a multi-line ascii string representing the data */
     QString toString() const;
@@ -63,7 +70,9 @@ public:
     // --- setter ---
 
     /** Read/Write reference to @p idx'th Bar */
-    Bar& bar(size_t idx);
+    Bar& bar(size_t idx, size_t row);
+    /** Overwrite specific Note from Bar */
+    void setNote(size_t barIdx, size_t row, size_t column, const Note& n);
 
     void clear() { p_data_.clear(); }
 
@@ -78,7 +87,7 @@ public:
     void appendBar(const Bar& b);
 
 private:
-    std::vector<Bar> p_data_;
+    std::vector<std::vector<Bar>> p_data_;
 };
 
 } // namespace Sonot

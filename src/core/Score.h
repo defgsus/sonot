@@ -49,10 +49,10 @@ public:
         Score* score() const { return p_score; }
         /** The NoteStream index (zero-based) */
         size_t stream() const { return p_stream; }
-        /** The index of the Bar within the NoteStream (zero-based) */
-        size_t bar() const { return p_bar; }
-        /** The index of the row in the Bar (zero-based) */
+        /** The index of the row/voice (zero-based) */
         size_t row() const { return p_row; }
+        /** The index of the Bar within the row() (zero-based) */
+        size_t bar() const { return p_bar; }
         /** The index of the Note in the Bar (zero-based) */
         size_t column() const { return p_column; }
 

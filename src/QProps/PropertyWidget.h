@@ -36,7 +36,8 @@ class Properties;
     compound types that QVariant supports.
 
     @note uint32_t, int64_t, uint64_t are bounded by the
-          range of QSpinBox's int32_t
+          range of QSpinBox's int32_t.
+    @note QVector of non-primitive types is not supported.
     */
 class PropertyWidget : public QWidget
 {

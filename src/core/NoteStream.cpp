@@ -42,31 +42,62 @@ bool NoteStream::operator == (const NoteStream& rhs) const
 size_t NoteStream::numNotes() const
 {
     size_t n = 0;
-    for (const Bar& b : p_data_)
-        n += b.length();
+    for (const std::vector<Bar>& bars : p_data_)
+    {
+        size_t m = 0;
+        for (const Bar& b : bars)
+            m = std::max(m, b.length());
+        n += m;
+    }
+    return n;
+}
+
+size_t NoteStream::numNotes(size_t barIdx) const
+{
+    QPROPS_ASSERT_LT(barIdx, numBars(), "in NoteStream::numNotes()");
+    size_t n = 0;
+    for (const Bar& b : p_data_[barIdx])
+        n = std::max(n, b.length());
     return n;
 }
 
 size_t NoteStream::numRows() const
 {
-    size_t n = 0;
-    for (const Bar& b : p_data_)
-        n = std::max(n, b.numRows());
-    return n;
+    return p_data_.empty() ? 0
+                           : p_data_.front().size();
 }
 
-const Bar& NoteStream::bar(size_t idx) const
+const Bar& NoteStream::bar(size_t idx, size_t row) const
 {
     QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
-    return p_data_[idx];
+    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::bar()");
+    return p_data_[idx][row];
 }
 
-Bar& NoteStream::bar(size_t idx)
+Bar& NoteStream::bar(size_t idx, size_t row)
 {
     QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
-    return p_data_[idx];
+    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::bar()");
+    return p_data_[idx][row];
 }
 
+const Note& NoteStream::note(size_t idx, size_t row, size_t column) const
+{
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
+    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::bar()");
+    const Bar& b = bar(idx, row);
+    QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::bar()");
+    return b.note(column);
+}
+
+void NoteStream::setNote(size_t idx, size_t row, size_t column, const Note& n)
+{
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
+    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::bar()");
+    Bar& b = bar(idx, row);
+    QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::bar()");
+    b.setNote(column, n);
+}
 
 void NoteStream::removeBar(size_t idx)
 {
@@ -82,22 +113,28 @@ void NoteStream::removeBars(size_t idx, int count)
     if (count < 0)
         count = numBars() - idx;
     QPROPS_ASSERT_LTE(idx + count, numBars(),
-                     "in NoteStream::removeBars(" << idx << ", " << count << ")");
+                      "in NoteStream::removeBars("
+                      << idx << ", " << count << ")");
 
     p_data_.erase(p_data_.begin() + idx, p_data_.begin() + idx + count);
 }
 
 void NoteStream::insertBar(size_t idx, const Bar &b)
 {
+    std::vector<Bar> bars;
+    bars.push_back(b);
+    for (size_t i=1; i<numRows(); ++i)
+        bars.push_back( Bar(1) );
+
     if (idx < numBars())
-        p_data_.insert(p_data_.begin() + idx, b);
+        p_data_.insert(p_data_.begin() + idx, bars);
     else
-        p_data_.push_back(b);
+        p_data_.push_back(bars);
 }
 
 void NoteStream::appendBar(const Bar &b)
 {
-    p_data_.push_back(b);
+    insertBar(numBars(), b);
 }
 
 
@@ -113,21 +150,25 @@ QString NoteStream::toString() const
         s[uint(y*w + w-1)] = '\n';
 
     size_t x = 0;
-    for (const Bar& b : p_data_)
+    for (size_t barIdx = 0; barIdx < numBars(); ++barIdx)
     {
         // left Bar marker
         for (size_t y=0; y<h; ++y)
             s[uint(y*w + x)] = '|';
         x += 1;
         // note values
-        for (size_t y=0; y<b.numRows(); ++y)
-        for (size_t i=0; i<b.length(); ++i)
+        const size_t blength = numNotes(barIdx);
+        for (size_t i=0; i<blength; ++i)
+        for (size_t y=0; y<numRows(); ++y)
         {
-            const Note n = b.note(i, y);
+            const Bar& b = bar(barIdx, y);
+            Note n(Note::Space);
+            if (i < b.length())
+                n = b.note(i);
             if (n.isNote())
                 s[uint(y*w + x + i)] = n.toNoteString()[0];
         }
-        x += b.length();
+        x += blength;
     }
 
     return s;
@@ -139,14 +180,19 @@ QJsonObject NoteStream::toJson() const
 {
     QProps::JsonInterfaceHelper json("NoteStream");
 
-    QJsonArray jbars;
-    for (const Bar& bar : p_data_)
+    QJsonArray jrows;
+    for (size_t row = 0; row < numRows(); ++row)
     {
-        jbars.append(QJsonValue(bar.toJson()));
+        QJsonArray jbars;
+        for (size_t i = 0; i < numBars(); ++i)
+        {
+            jbars.append(QJsonValue(bar(i, row).toJson()));
+        }
+        jrows.append( jbars );
     }
 
     QJsonObject o;
-    o.insert("bars", jbars);
+    o.insert("bars", jrows);
     return o;
 }
 
@@ -154,14 +200,22 @@ void NoteStream::fromJson(const QJsonObject& o)
 {
     QProps::JsonInterfaceHelper json("NoteStream");
 
-    QJsonArray jbars = json.expectArray(json.expectChildValue(o, "bars"));
+    QJsonArray jrows = json.expectArray(json.expectChildValue(o, "bars"));
 
-    std::vector<Bar> data;
-    for (int i=0; i<jbars.size(); ++i)
+    std::vector<std::vector<Bar>> data;
+    for (int row=0; row<jrows.size(); ++row)
     {
-        Bar bar;
-        bar.fromJson(json.expectObject(jbars.at(i)));
-        data.push_back(bar);
+        json.beginContext(QString("Reading row %1").arg(row));
+        QJsonArray jbars = json.expectArray(jrows[row]);
+        std::vector<Bar> bars;
+        for (int i=0; i<jbars.size(); ++i)
+        {
+            Bar bar;
+            bar.fromJson(json.expectObject(jbars.at(row)));
+            bars.push_back(bar);
+        }
+        data.push_back(bars);
+        json.endContext();
     }
 
     p_data_.swap(data);

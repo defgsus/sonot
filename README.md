@@ -45,11 +45,11 @@ Framework: Qt, License: GPL
 
 ### Bar
 - length (number Notes)
-- rows
-- data[rows,length] of Note
+- data[length] of Note
 
 ### NoteStream
-- data[] of Bar
+- voices
+- data[voice] of Bar
 
 ### Score
 - data[] of NoteStream

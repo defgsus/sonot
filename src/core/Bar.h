@@ -32,7 +32,7 @@ namespace Sonot {
 class Bar : public QProps::JsonInterface
 {
 public:
-    Bar(size_t length = 0, size_t numRows = 0);
+    Bar(size_t length = 0);
 
     // --- io ---
 
@@ -42,11 +42,10 @@ public:
     // --- getter ---
 
     size_t length() const { return p_numNotes_; }
-    size_t numRows() const { return p_numRows_; }
 
-    /** Returns the note at given column and row.
+    /** Returns the note at given column.
         @warning No range checking! */
-    const Note& note(size_t column, size_t row) const;
+    const Note& note(size_t column) const;
 
     /** Is any of the Notes annotated? */
     bool isAnnotated() const;
@@ -56,16 +55,14 @@ public:
 
     // --- setter ---
 
-    void resize(size_t length, size_t numRows);
-    void setLength(size_t length) { resize(length, p_numRows_); }
-    void setNumRows(size_t rows) { resize(p_numNotes_, rows); }
+    void resize(size_t length);
 
     /** Stores the Note at given column and row.
         @warning No range checking! */
-    void setNote(size_t column, size_t row, const Note& n);
+    void setNote(size_t column, const Note& n);
 
 private:
-    size_t p_numNotes_, p_numRows_;
+    size_t p_numNotes_;
     std::vector<Note> p_data_;
 };
 

@@ -218,8 +218,8 @@ bool Score::Index::isValid() const
 {
     return stream() < (size_t)score()->noteStreams().size()
         && bar() < score()->noteStream(stream()).numBars()
-        && row() < score()->noteStream(stream()).bar(bar()).numRows()
-        && column() < score()->noteStream(stream()).bar(bar()).length();
+        && row() < score()->noteStream(stream()).numRows()
+        && column() < score()->noteStream(stream()).bar(bar(), row()).length();
 }
 
 const NoteStream& Score::Index::getNoteStream() const
@@ -231,13 +231,13 @@ const NoteStream& Score::Index::getNoteStream() const
 const Bar& Score::Index::getBar() const
 {
     QPROPS_ASSERT(isValid(), "in Score::Index::getBar()");
-    return score()->noteStream(stream()).bar(bar());
+    return score()->noteStream(stream()).bar(bar(), row());
 }
 
 const Note& Score::Index::getNote() const
 {
     QPROPS_ASSERT(isValid(), "in Score::Index::getNote()");
-    return score()->noteStream(stream()).bar(bar()).note(column(), row());
+    return score()->noteStream(stream()).bar(bar(), row()).note(column());
 }
 
 bool Score::Index::nextNote()
@@ -252,8 +252,6 @@ bool Score::Index::nextNote()
                 return false;
             else
             {
-                if (score()->noteStream(stream()+1).bar(0).numRows() <= row())
-                    return false;
                 ++p_stream;
                 p_bar = 0;
                 p_column = 0;
@@ -261,8 +259,6 @@ bool Score::Index::nextNote()
         }
         else
         {
-            if (getNoteStream().bar(bar()+1).numRows() <= row())
-                return false;
             ++p_bar;
             p_column = 0;
         }
@@ -285,8 +281,6 @@ bool Score::Index::prevNote()
             else
             {
                 auto st = score()->noteStream(stream()-1);
-                if (st.bar(st.numBars()-1).numRows() <= row())
-                    return false;
                 --p_stream;
                 p_bar = st.numBars() - 1;
                 p_column = getBar().length() - 1;
@@ -294,8 +288,6 @@ bool Score::Index::prevNote()
         }
         else
         {
-            if (getNoteStream().bar(bar()-1).numRows() <= row())
-                return false;
             --p_bar;
             p_column = getBar().length() - 1;
         }
