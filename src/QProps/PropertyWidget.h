@@ -32,7 +32,12 @@ namespace QProps {
 class Properties;
 
 /** Dynamic widget for a Properties::Property.
-    Most common types supported. */
+    Supports all primitive types, QVector of primitive types and most
+    compound types that QVariant supports.
+
+    @note uint32_t, int64_t, uint64_t are bounded by the
+          range of QSpinBox's int32_t
+    */
 class PropertyWidget : public QWidget
 {
     Q_OBJECT

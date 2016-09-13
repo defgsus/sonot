@@ -44,21 +44,51 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace std {
 
+/*
+template <>
+struct numeric_limits<QChar>
+{
+    typedef numeric_limits<ushort> Proxy;
+    static Q_CONSTEXPR int min() noexcept { return Proxy::min(); }
+    static Q_CONSTEXPR int max() noexcept { return Proxy::max(); }
+};
+*/
+/*
+template <>
+struct numeric_limits<uint>
+{
+    typedef numeric_limits<uint32_t> Proxy;
+    static Q_CONSTEXPR int min() noexcept { return Proxy::min(); }
+    static Q_CONSTEXPR int max() noexcept { return Proxy::max(); }
+};
+
+template <>
+struct numeric_limits<ulong>
+{
+    typedef numeric_limits<uint64_t> Proxy;
+    static Q_CONSTEXPR int min() noexcept { return Proxy::min(); }
+    static Q_CONSTEXPR int max() noexcept { return Proxy::max(); }
+};
+
+template <>
+struct numeric_limits<qulonglong>
+{
+    typedef numeric_limits<uint64_t> Proxy;
+    static Q_CONSTEXPR int min() noexcept { return Proxy::min(); }
+    static Q_CONSTEXPR int max() noexcept { return Proxy::max(); }
+};
+*/
+/*
 template <>
 struct numeric_limits<QChar>
 {
     typedef numeric_limits<ushort> Proxy;
   static Q_CONSTEXPR bool is_specialized = true;
-
-  static Q_CONSTEXPR int
-  min() noexcept { return Proxy::min(); }
-
-  static Q_CONSTEXPR int
-  max() noexcept { return Proxy::max(); }
+  static Q_CONSTEXPR int min() noexcept { return Proxy::min(); }
+  static Q_CONSTEXPR int max() noexcept { return Proxy::max(); }
 
 #if __cplusplus >= 201103L
-  static constexpr int
-  lowest() noexcept { return Proxy::lowest(); }
+  static constexpr int lowest() noexcept { return Proxy::lowest(); }
 #endif
 
   static Q_CONSTEXPR int digits = Proxy::digits;
@@ -71,11 +101,10 @@ struct numeric_limits<QChar>
   static Q_CONSTEXPR bool is_exact = Proxy::is_exact;
   static Q_CONSTEXPR int radix = Proxy::radix;
 
-  static Q_CONSTEXPR long double
-  epsilon() noexcept { return Proxy::epsilon(); }
+  static Q_CONSTEXPR long double epsilon() noexcept { return Proxy::epsilon(); }
 
-  static Q_CONSTEXPR long double
-  round_error() noexcept { return Proxy::round_error(); }
+  static Q_CONSTEXPR long double round_error() noexcept
+    { return Proxy::round_error(); }
 
   static Q_CONSTEXPR int min_exponent = Proxy::min_exponent;
   static Q_CONSTEXPR int min_exponent10 = Proxy::min_exponent10;
@@ -88,17 +117,13 @@ struct numeric_limits<QChar>
   static Q_CONSTEXPR float_denorm_style has_denorm = Proxy::has_denorm;
   static Q_CONSTEXPR bool has_denorm_loss = Proxy::has_denorm_loss;
 
-  static Q_CONSTEXPR long double
-  infinity() noexcept { return Proxy::infinity(); }
+  static Q_CONSTEXPR long double infinity() noexcept { return Proxy::infinity(); }
 
-  static Q_CONSTEXPR long double
-  quiet_NaN() noexcept { return Proxy::quiet_NaN(); }
+  static Q_CONSTEXPR long double quiet_NaN() noexcept { return Proxy::quiet_NaN(); }
 
-  static Q_CONSTEXPR long double
-  signaling_NaN() noexcept { return Proxy::signaling_NaN(); }
+  static Q_CONSTEXPR long double signaling_NaN() noexcept { return Proxy::signaling_NaN(); }
 
-  static Q_CONSTEXPR long double
-  denorm_min() noexcept { return Proxy::denorm_min(); }
+  static Q_CONSTEXPR long double denorm_min() noexcept { return Proxy::denorm_min(); }
 
   static Q_CONSTEXPR bool is_iec559 = Proxy::is_iec559;
   static Q_CONSTEXPR bool is_bounded = Proxy::is_bounded;
@@ -108,7 +133,7 @@ struct numeric_limits<QChar>
   static Q_CONSTEXPR bool tinyness_before = Proxy::tinyness_before;
   static Q_CONSTEXPR float_round_style round_style = Proxy::round_style;
 };
-
+*/
 
 } // namespace std
 
@@ -193,14 +218,71 @@ void PropertyWidget::onValueChanged_()
     }
 }
 
+// -- type traits --
 
 namespace {
+
+    // -- convert T to number (for QSpinBox::setValue()) --
 
     template <typename T>
     T to_number(T t) { return t; }
 
     int to_number(const QChar& c) { return c.unicode(); }
 
+
+    // -- limits for types in QSpinBox --
+
+    template <typename T>
+    struct sb_limits
+    {
+        static constexpr T min() { return std::numeric_limits<T>::min(); }
+        static constexpr T max() { return std::numeric_limits<T>::max(); }
+    };
+
+    template <>
+    struct sb_limits<QChar>
+    {
+        static constexpr int32_t min() { return 0; }
+        static constexpr int32_t max() { return std::numeric_limits<uint16_t>::max(); }
+    };
+
+    // QSpinBox only supports int32 :(
+    // for 64bit we use the range of signed 32bit
+    // (for unsigned 64bit: 0 - signed 32bit)
+    // that way all widget macros below expand equally
+    // and the correct type is kept at least in QVariant
+
+#define QPROPS__LIMIT_SIGNED(T__) \
+        template <> \
+        struct sb_limits<T__> \
+        { \
+            static constexpr int32_t min() \
+                { return std::numeric_limits<int32_t>::min(); } \
+            static constexpr int32_t max() \
+                { return std::numeric_limits<int32_t>::max(); } \
+        };
+
+#define QPROPS__LIMIT_UNSIGNED(T__) \
+        template <> \
+        struct sb_limits<T__> \
+        { \
+            static constexpr int32_t min() { return 0; } \
+            static constexpr int32_t max() \
+                { return std::numeric_limits<int32_t>::max(); } \
+        };
+
+    QPROPS__LIMIT_SIGNED(int64_t);
+    QPROPS__LIMIT_SIGNED(qlonglong);
+
+    QPROPS__LIMIT_UNSIGNED(uint32_t);
+    QPROPS__LIMIT_UNSIGNED(uint64_t);
+    QPROPS__LIMIT_UNSIGNED(qulonglong);
+
+#undef QPROPS__LIMIT_SIGNED
+#undef QPROPS__LIMIT_UNSIGNED
+
+    // -- convert back and forth between
+    //    compound type <-> and QList<SpinBox> --
 
     template <class T, class SB>
     struct ConvertQSize
@@ -520,10 +602,10 @@ void PropertyWidget::Private::createWidgets()
 
 // create spinbox with appropriate limits
 // and optional range
-#define QPROPS__SB_IMPL(SB__, sb__, Type__, Meta__, Conv__, Signal__) \
+#define QPROPS__SB_IMPL(SB__,sb__,Type__,Meta__,Conv__,Signal__) \
                 sb__ = new SB__(widget); \
-                sb__->setRange(std::numeric_limits<Type__>::min(), \
-                               std::numeric_limits<Type__>::max()); \
+                sb__->setRange(sb_limits<Type__>::min(), \
+                               sb_limits<Type__>::max()); \
                 if (props) \
                 { \
                     if (props->hasMin(id)) \
@@ -534,7 +616,8 @@ void PropertyWidget::Private::createWidgets()
                         sb__->setSingleStep(props->getStep(id).Conv__()); \
                 } \
                 f_update_widget = [=](){ sb__->setValue(v.Conv__()); }; \
-                f_update_value = [=](){ v = (Type__)sb__->value(); }; \
+                f_update_value = [=](){ \
+                    v = QVariant::fromValue((Type__)sb__->value()); }; \
                 connect(sb__, Signal__, widget, SLOT(onValueChanged_()));
 
 #define QPROPS__INT_SB(sb__, Type__, Meta__, Conv__) \
@@ -545,8 +628,15 @@ void PropertyWidget::Private::createWidgets()
     QPROPS__SB_IMPL(QDoubleSpinBox, sb__, Type__, Meta__, Conv__, \
                     SIGNAL(valueChanged(double)))
 
-            case QMetaType::SChar:
             case QMetaType::Char:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, char, Char, toInt);
+                edit = sb;
+            }
+            break;
+
+            case QMetaType::SChar:
             {
                 QSpinBox* sb;
                 QPROPS__INT_SB(sb, int8_t, Char, toInt);
@@ -566,7 +656,7 @@ void PropertyWidget::Private::createWidgets()
             case QMetaType::QChar:
             {
                 QSpinBox* sb;
-                QPROPS__INT_SB(sb, uint16_t, QChar, toUInt);
+                QPROPS__INT_SB(sb, QChar, QChar, toUInt);
                 edit = sb;
             }
             break;
@@ -588,21 +678,49 @@ void PropertyWidget::Private::createWidgets()
             break;
 
             case QMetaType::Int:
-            case QMetaType::Long:
-            case QMetaType::LongLong:
             {
                 QSpinBox* sb;
-                QPROPS__INT_SB(sb, int32_t, Int, toLongLong);
+                QPROPS__INT_SB(sb, int32_t, Int, toInt);
                 edit = sb;
             }
             break;
 
             case QMetaType::UInt:
-            case QMetaType::ULong:
-            case QMetaType::ULongLong:
             {
                 QSpinBox* sb;
                 QPROPS__INT_SB(sb, uint32_t, UInt, toULongLong);
+                edit = sb;
+            }
+            break;
+
+            case QMetaType::Long:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, int64_t, Int, toLongLong);
+                edit = sb;
+            }
+            break;
+
+            case QMetaType::LongLong:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, int64_t, Int, toLongLong);
+                edit = sb;
+            }
+            break;
+
+            case QMetaType::ULong:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, uint64_t, Int, toULongLong);
+                edit = sb;
+            }
+            break;
+
+            case QMetaType::ULongLong:
+            {
+                QSpinBox* sb;
+                QPROPS__INT_SB(sb, uint64_t, Int, toULongLong);
                 edit = sb;
             }
             break;
@@ -922,8 +1040,8 @@ void PropertyWidget::Private::createWidgets()
         for (int i=0; i<vec.size(); ++i) \
         { \
             sb << new SpinBox__(container); \
-            sb.back()->setRange(std::numeric_limits<T__>::min(), \
-                                std::numeric_limits<T__>::max()); \
+            sb.back()->setRange(sb_limits<T__>::min(), \
+                                sb_limits<T__>::max()); \
         } \
         if (props) \
         { \

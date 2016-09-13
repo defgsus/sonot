@@ -23,8 +23,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QMainWindow>
 
-#include <QProps/Properties.h>
-#include <QProps/PropertiesView.h>
 
 class MainWindow : public QMainWindow
 {
@@ -35,11 +33,8 @@ public:
     ~MainWindow();
 
 private:
-    void createProperties();
-    void createWidgets();
-
-    QProps::Properties p_props;
-    QProps::PropertiesView* p_view;
+    struct Private;
+    Private* p_;
 };
 
 #endif // MAINWINDOW_H
