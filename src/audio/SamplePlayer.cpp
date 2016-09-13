@@ -45,7 +45,7 @@ struct SamplePlayer::Private
 
         ~Sample()
         {
-
+            qDebug() << "destroy " << (void*)this;
         }
 
         QByteArray data;
@@ -54,7 +54,19 @@ struct SamplePlayer::Private
         QAudioOutput* audio;
     };
 
+    void remove(Sample* s)
+    {
+        if (s->audio)
+        {
+            s->audio->stop();
+            s->audio->deleteLater();
+        }
+        sampleMap.remove(s->audio);
+        delete s;
+    }
+
     SamplePlayer* p;
+    QMap<QAudioOutput*, Sample*> sampleMap;
 };
 
 
@@ -78,9 +90,9 @@ void SamplePlayer::play(const float* samplesFloat, size_t numSamples,
 
     sample->format.setSampleRate(sampleRate);
     sample->format.setChannelCount(numChannels);
-    sample->format.setSampleSize(16);
+    sample->format.setSampleSize(32);
     sample->format.setCodec("audio/pcm");
-    sample->format.setSampleType(QAudioFormat::SignedInt);
+    sample->format.setSampleType(QAudioFormat::Float);
 #if Q_BYTE_ORDER == Q_LITTLE_ENDIAN
     sample->format.setByteOrder(QAudioFormat::LittleEndian);
 #else
@@ -96,26 +108,39 @@ void SamplePlayer::play(const float* samplesFloat, size_t numSamples,
     }
 
     // create int16 version
+#if 0
     {
         const float* src = samplesFloat;
         int16_t* dst = reinterpret_cast<int16_t*>(sample->data.data());
         for (size_t i=0; i<numSamples * numChannels; ++i)
             *dst++ = *src++ * std::numeric_limits<int16_t>::max();
     }
+#else
+    sample->data = QByteArray(reinterpret_cast<const char*>(samplesFloat),
+                              numSamples * numChannels * sizeof(float));
+#endif
     sample->stream.setData(sample->data);
     sample->stream.open(QIODevice::ReadOnly);
 
     sample->audio = new QAudioOutput(sample->format, this);
     connect(sample->audio, &QAudioOutput::stateChanged,
-    [](QAudio::State state)
+    [=](QAudio::State state)
     {
         switch (state)
         {
             case QAudio::ActiveState: qDebug() << "active"; break;
             case QAudio::SuspendedState: qDebug() << "suspended"; break;
-            case QAudio::StoppedState: qDebug() << "stopped"; break;
-            case QAudio::IdleState: qDebug() << "idle"; break;
+            case QAudio::IdleState:
+                qDebug() << "idle";
+                p_->remove(sample);
+            break;
+            case QAudio::StoppedState:
+                qDebug() << "stopped";
+            break;
         }
     });
+
+    p_->sampleMap.insert(sample->audio, sample);
+
     sample->audio->start(&sample->stream);
 }

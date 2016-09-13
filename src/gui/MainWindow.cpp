@@ -117,12 +117,13 @@ void MainWindow::Private::playSomething()
 #else
     Synth synth;
     for (int i=0; i<16; ++i)
-        synth.noteOn(50 + rand()%39, .1, i*3000);
+        synth.noteOn(70 + rand()%19, .1, i*5000);
 
     data.resize(44100*3);
     synth.process(data.data(), data.size());
 #endif
 
+    player->play(data.data(), data.size(), 22100., 1);
     player->play(data.data(), data.size(), 44100., 1);
 }
 
