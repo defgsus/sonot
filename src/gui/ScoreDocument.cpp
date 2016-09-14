@@ -27,13 +27,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "QProps/error.h"
 
 #include "ScoreDocument.h"
-#include "core/Score.h"
 #include "core/NoteStream.h"
+#include "core/ScoreEditor.h"
 #include "PageLayout.h"
 #include "ScoreLayout.h"
 #include "PerPage.h"
 #include "ScoreItem.h"
-
 
 namespace Sonot {
 
@@ -41,18 +40,21 @@ struct ScoreDocument::Private
 {
     Private(ScoreDocument* p)
         : p             (p)
+        , editor        (new ScoreEditor(nullptr))
         , props         ("score-document")
     {
-        props.set("page-spacing", tr("page spacing"),
-                  tr("Spacing between displayed pages"),
-                  QPointF(2, 10));
     }
 
     ~Private()
     {
+        delete editor;
     }
 
+    void initProps();
     void initLayout();
+    void initEditor();
+
+    Score* score() { return editor ? editor->score() : nullptr; }
 
     void createItems();
     bool createBarItems_Fixed(int pageIdx, Score::Index& scoreIdx);
@@ -60,12 +62,13 @@ struct ScoreDocument::Private
 
     ScoreDocument* p;
 
-    Score score;
+    ScoreEditor* editor;
+
+    // -- config --
+
     PerPage<ScoreLayout> scoreLayout;
     PerPage<PageAnnotation> pageAnnotation;
     PerPage<PageLayout> pageLayout;
-
-    // -- config --
 
     QProps::Properties props;
 
@@ -73,8 +76,9 @@ struct ScoreDocument::Private
 
     std::vector<std::shared_ptr<BarItems>> barItems;
 
-    // maps each page/line/bar the BarItems
+    // maps each page/line/bar to BarItems
     QMap<Index, BarItems*> barItemMap;
+    // maps Score::Index to each ScoreItem
     QMap<Score::Index, ScoreItem*> scoreItemMap;
 };
 
@@ -82,40 +86,49 @@ struct ScoreDocument::Private
 ScoreDocument::ScoreDocument()
     : p_        (new Private(this))
 {
+    p_->initProps();
+    p_->initEditor();
     initLayout();
-
-    setScore(p_->score);
 }
 
+/*
 ScoreDocument::ScoreDocument(const ScoreDocument& o)
     : p_        (new Private(this))
 {
     *this = o;
-}
+}*/
 
 ScoreDocument::~ScoreDocument()
 {
     delete p_;
 }
 
+void ScoreDocument::Private::initProps()
+{
+    props.set("page-spacing", tr("page spacing"),
+              tr("Spacing between displayed pages"),
+              QPointF(2, 10));
+}
+
 const QProps::Properties& ScoreDocument::props() const { return p_->props; }
 QProps::Properties& ScoreDocument::props() { return p_->props; }
 void ScoreDocument::setProperties(const QProps::Properties &p) { p_->props = p; }
 
+ScoreEditor* ScoreDocument::editor() const { return p_->editor; }
+
+/*
 ScoreDocument& ScoreDocument::operator = (const ScoreDocument& o)
 {
-    p_->score = o.p_->score;
     p_->scoreLayout = o.p_->scoreLayout;
     p_->pageAnnotation = o.p_->pageAnnotation;
     p_->pageLayout = o.p_->pageLayout;
     p_->props = o.p_->props;
     return *this;
-}
+}*/
 
 bool ScoreDocument::operator == (const ScoreDocument& o) const
 {
-    return p_->score == o.p_->score
-        && p_->scoreLayout == o.p_->scoreLayout
+    return p_->scoreLayout == o.p_->scoreLayout
         && p_->pageAnnotation == o.p_->pageAnnotation
         && p_->pageLayout == o.p_->pageLayout
         && p_->props == o.p_->props
@@ -127,7 +140,8 @@ QJsonObject ScoreDocument::toJson() const
 {
     QProps::JsonInterfaceHelper json("ScoreDocument");
     QJsonObject o;
-    o.insert("score", p_->score.toJson());
+    //if (p_->score())
+    //    o.insert("score", p_->score()->toJson());
     o.insert("score-layout", p_->scoreLayout.toJson());
     o.insert("page-layout", p_->pageLayout.toJson());
     o.insert("annotation", p_->pageAnnotation.toJson());
@@ -139,7 +153,6 @@ void ScoreDocument::fromJson(const QJsonObject& o)
 {
     QProps::JsonInterfaceHelper json("ScoreDocument");
     ScoreDocument tmp;
-    tmp.p_->score.fromJson( json.expectChildObject(o, "score") );
     tmp.p_->scoreLayout.fromJson( json.expectChildObject(o, "score-layout") );
     tmp.p_->pageLayout.fromJson( json.expectChildObject(o, "page-layout") );
     tmp.p_->pageAnnotation.fromJson(
@@ -147,13 +160,27 @@ void ScoreDocument::fromJson(const QJsonObject& o)
     tmp.p_->props = p_->props;
     tmp.p_->props.fromJson( json.expectChildObject(o, "props") );
 
-    *this = tmp;
+    /*if (o.contains("score"))
+    {
+        Score score;
+        score.fromJson( json.expectChildObject(o, "score") );
+    }*/
+
+    p_->scoreLayout = tmp.p_->scoreLayout;
+    p_->pageLayout = tmp.p_->pageLayout;
+    p_->pageAnnotation = tmp.p_->pageAnnotation;
+    p_->props = tmp.p_->props;
 }
 
 
-const Score& ScoreDocument::score() const
+const Score* ScoreDocument::score() const
 {
-    return p_->score;
+    return p_->score();
+}
+
+void ScoreDocument::setScore(const Score& s)
+{
+    p_->editor->setScore(s);
 }
 
 QRectF ScoreDocument::pageRect() const
@@ -357,13 +384,24 @@ void ScoreDocument::setPageLayout(int pageIndex, const PageLayout &p)
     p_->pageLayout.insert(id, p);
 }
 
-
-void ScoreDocument::setScore(const Score& s)
+void ScoreDocument::Private::initEditor()
 {
-    p_->score = s;
-    p_->createItems();
+    QObject::connect(editor, &ScoreEditor::scoreReset,
+            [=](Score* s)
+    {
+        createItems();
+    });
+    QObject::connect(editor, &ScoreEditor::streamsChanged,
+            [=](const ScoreEditor::IndexList& idxs)
+    {
+        createItems();
+    });
+    QObject::connect(editor, &ScoreEditor::noteValuesChanged,
+            [=](const ScoreEditor::IndexList& idxs)
+    {
+        createItems();
+    });
 }
-
 
 
 void ScoreDocument::Private::createItems()
@@ -371,8 +409,10 @@ void ScoreDocument::Private::createItems()
     barItems.clear();
     barItemMap.clear();
     scoreItemMap.clear();
+    if (!score())
+        return;
 
-    Score::Index scoreIdx = score.index(0,0,0,0);
+    Score::Index scoreIdx = score()->index(0,0,0,0);
     if (!scoreIdx.isValid())
         return;
 

@@ -36,8 +36,8 @@ class QPainter;
 
 namespace Sonot {
 
-//class Score;
 class ScoreItem;
+class ScoreEditor;
 
 /** Wrapper around Score and layout classes */
 class ScoreDocument : public QProps::JsonInterface
@@ -79,10 +79,10 @@ public:
     // --- ctor ---
 
     ScoreDocument();
-    ScoreDocument(const ScoreDocument& o);
+    ScoreDocument(const ScoreDocument& o) = delete;
     ~ScoreDocument();
 
-    ScoreDocument& operator = (const ScoreDocument& o);
+    ScoreDocument& operator = (const ScoreDocument& o) = delete;
 
     bool operator == (const ScoreDocument& rhs) const;
     bool operator != (const ScoreDocument& rhs) const { return !(*this == rhs); }
@@ -94,7 +94,8 @@ public:
 
     // ----- getter -------
 
-    const Score& score() const;
+    const Score* score() const;
+    ScoreEditor* editor() const;
 
     QRectF pageRect() const;
     const PageLayout& pageLayout(const QString& id) const;

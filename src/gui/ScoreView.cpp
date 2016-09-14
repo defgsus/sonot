@@ -48,6 +48,7 @@ struct ScoreView::Private
 
     Private(ScoreView* p)
         : p                     (p)
+        , document              (nullptr)
         , matrix                ()
         , action                (A_NOTHING)
         , brushBackground       (QColor(155,155,155))
@@ -77,7 +78,7 @@ struct ScoreView::Private
 
     ScoreView* p;
 
-    ScoreDocument document;
+    ScoreDocument* document;
 
     QTransform matrix, imatrix;
 
@@ -109,8 +110,6 @@ ScoreView::ScoreView(QWidget *parent)
     grabKeyboard();
 
     p_->matrix.scale(2., 2.);
-
-    goToPage(0);
 }
 
 ScoreView::~ScoreView()
@@ -118,17 +117,17 @@ ScoreView::~ScoreView()
     delete p_;
 }
 
-const ScoreDocument& ScoreView::scoreDocument() const { return p_->document; }
-ScoreDocument& ScoreView::scoreDocument() { return p_->document; }
+ScoreDocument* ScoreView::scoreDocument() const { return p_->document; }
 
-void ScoreView::setScore(const Score& s)
+void ScoreView::setScoreDocument(ScoreDocument* s)
 {
-    p_->document.setScore(s);
+    p_->document = s;
+    goToPage(0);
 }
 
 void ScoreView::goToPage(int pageIndex, double margin)
 {
-    auto p = p_->document.pagePosition(pageIndex)
+    auto p = p_->document->pagePosition(pageIndex)
                             - QPointF(margin, margin);
 
     // current matrix without translation
@@ -167,8 +166,8 @@ void ScoreView::showRect(const QRectF& dst, double bo)
 
 void ScoreView::showPage(int pageIndex, double margin_mm)
 {
-    auto r = p_->document.pageRect();
-    r.moveTo(p_->document.pagePosition(pageIndex));
+    auto r = p_->document->pageRect();
+    r.moveTo(p_->document->pagePosition(pageIndex));
     showRect(r, margin_mm);
 }
 
@@ -216,7 +215,7 @@ void ScoreView::mousePressEvent(QMouseEvent* e)
     p_->lastMouseDownDoc = p_->imatrix.map(p_->lastMouseDown);
     p_->lastMouseDownMatrix = p_->matrix;
 
-    Score::Index idx = p_->document.getScoreIndex(p_->lastMouseDownDoc);
+    Score::Index idx = p_->document->getScoreIndex(p_->lastMouseDownDoc);
     qDebug() << idx.toString();
 
     if (e->button() == Qt::LeftButton)
@@ -306,8 +305,8 @@ void ScoreView::Private::paintPage(
         QPainter *p, const QRect& updateRect, int pageIndex) const
 {
     auto mat = matrix;
-    auto pageLayout = document.pageLayout(pageIndex);
-    auto pagePos = document.pagePosition(pageIndex);
+    auto pageLayout = document->pageLayout(pageIndex);
+    auto pagePos = document->pagePosition(pageIndex);
 
     mat.translate(pagePos.x(), pagePos.y());
 
@@ -341,12 +340,12 @@ void ScoreView::Private::paintPage(
 void ScoreView::Private::paintPageAnnotation(
         QPainter* p, const QRect& /*updateRect*/, int pageIndex) const
 {
-    PageAnnotation anno = document.pageAnnotation(pageIndex);
+    PageAnnotation anno = document->pageAnnotation(pageIndex);
 
-    auto pageLayout = document.pageLayout(pageIndex);
+    auto pageLayout = document->pageLayout(pageIndex);
     auto pageRect = pageLayout.pageRect();
     auto contentRect = pageLayout.contentRect();
-    auto pageNum = document.pageNumberForIndex(pageIndex);
+    auto pageNum = document->pageNumberForIndex(pageIndex);
 
     for (const TextItem& item : anno.textItems())
     {
@@ -366,7 +365,7 @@ void ScoreView::Private::paintPageAnnotation(
 
         // fill in tags
         text.replace("#page", QString::number(pageNum));
-        auto props = document.score().props();
+        auto props = document->score()->props();
         for (auto i = props.begin(); i!=props.end(); ++i)
             text.replace("#" + i.key(), i.value().toString());
 
@@ -383,8 +382,8 @@ void ScoreView::Private::paintPageAnnotation(
 void ScoreView::Private::paintScore(
         QPainter* p, const QRect& /*updateRect*/, int pageIndex) const
 {
-    auto pageLayout = document.pageLayout(pageIndex);
-    auto scoreLayout = document.scoreLayout(pageIndex);
+    auto pageLayout = document->pageLayout(pageIndex);
+    auto scoreLayout = document->scoreLayout(pageIndex);
     //auto srect = pageLayout.scoreRect();
 
     /*
@@ -405,7 +404,7 @@ void ScoreView::Private::paintScore(
     */
 
     p->setPen(penScoreItem);
-    document.paintScoreItems(*p, pageIndex);
+    document->paintScoreItems(*p, pageIndex);
 }
 
 

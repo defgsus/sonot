@@ -30,6 +30,7 @@ struct ScoreEditor::Private
 {
     Private(ScoreEditor* p)
         : p         (p)
+        , score_    (nullptr)
     { }
 
     Score* score() const { return score_; }
@@ -67,9 +68,10 @@ Score* ScoreEditor::score() const { return p_->score_; }
     QPROPS_ASSERT(i__.score() == score(), \
      "non-matching index in ScoreEditor");
 
-void ScoreEditor::setScore(Score* s)
+void ScoreEditor::setScore(const Score& s)
 {
-    p_->score_ = s;
+    delete p_->score_;
+    p_->score_ = new Score(s);
     emit scoreReset(p_->score_);
 }
 

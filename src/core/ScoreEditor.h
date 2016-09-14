@@ -41,7 +41,7 @@ public:
 
     // --- editing ---
 
-    void setScore(Score*);
+    void setScore(const Score& s);
     void insertNote(const Score::Index&, const Note& n);
     void insertBars(const Score::Index&, const QList<Bar>& rows);
     void changeNote(const Score::Index&, const Note& n);

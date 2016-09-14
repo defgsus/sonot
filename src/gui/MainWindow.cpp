@@ -32,6 +32,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "audio/SamplePlayer.h"
 #include "audio/SynthDevice.h"
 #include "core/NoteStream.h"
+#include "core/Score.h"
+#include "core/ScoreEditor.h"
 
 namespace Sonot {
 
@@ -39,9 +41,15 @@ struct MainWindow::Private
 {
     Private(MainWindow*w)
         : p         (w)
+        , document  (nullptr)
         , player    (new SamplePlayer(p))
         , synth     (new SynthDevice(p))
     { }
+
+    ~Private()
+    {
+        delete document;
+    }
 
     void createWidgets();
 
@@ -56,6 +64,7 @@ struct MainWindow::Private
     MainWindow* p;
 
     ScoreView* scoreView;
+    ScoreDocument* document;
     QProps::PropertiesView* propsView;
 
     SamplePlayer* player;
@@ -122,8 +131,13 @@ void MainWindow::showEvent(QShowEvent*)
 
 void MainWindow::setScore(const Score& s)
 {
-    p_->scoreView->setScore(s);
-    p_->scoreView->showPage(0);
+    if (!p_->document)
+    {
+        p_->document = new ScoreDocument();
+        p_->scoreView->setScoreDocument(p_->document);
+    }
+
+    p_->document->setScore(s);
 }
 
 

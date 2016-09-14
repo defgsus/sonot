@@ -27,6 +27,7 @@ namespace Sonot {
 
 class Score;
 class ScoreDocument;
+class ScoreEditor;
 
 class ScoreView : public QWidget
 {
@@ -37,14 +38,12 @@ public:
 
     // ----- getter -----
 
-    const ScoreDocument& scoreDocument() const;
+    ScoreDocument* scoreDocument() const;
 
     // ----- setter -----
 
-    void setScore(const Score&);
-
-    // XXX TODO
-    ScoreDocument& scoreDocument();
+    /** Ownership is not taken */
+    void setScoreDocument(ScoreDocument*);
 
 signals:
 
