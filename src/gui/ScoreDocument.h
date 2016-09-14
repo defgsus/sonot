@@ -97,6 +97,8 @@ public:
     const Score* score() const;
     ScoreEditor* editor() const;
 
+    size_t numPages() const;
+
     QRectF pageRect() const;
     const PageLayout& pageLayout(const QString& id) const;
     const ScoreLayout& scoreLayout(const QString& id) const;

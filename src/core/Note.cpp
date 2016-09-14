@@ -104,9 +104,9 @@ int8_t Note::valueFromString(const QString &s)
             case 2: val = G; break;
             case 3: val = A; break;
             case 4: val = B; break;
-            case 5: val = C; break;
-            case 6: val = D; break;
-            case 7: val = E; break;
+            case 5: val = C; ++oct; break;
+            case 6: val = D; ++oct; break;
+            case 7: val = E; ++oct; break;
         }
     }
     else
@@ -114,14 +114,14 @@ int8_t Note::valueFromString(const QString &s)
     {
         switch ((short)str.at(0).unicode() - short('a'))
         {
-            case 0: val = A; break;
-            case 7:
-            case 1: val = B; break;
-            case 2: val = C; break;
-            case 3: val = D; break;
-            case 4: val = E; break;
-            case 5: val = F; break;
-            case 6: val = G; break;
+            case 'a': val = A; break;
+            case 'h':
+            case 'b': val = B; break;
+            case 'c': val = C; break;
+            case 'd': val = D; break;
+            case 'e': val = E; break;
+            case 'f': val = F; break;
+            case 'g': val = G; break;
         }
     }
     else

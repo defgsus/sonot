@@ -59,7 +59,8 @@ void ScoreItem::paint(QPainter& p)
     }
     else
     {
-        p.drawRect(p_rect_);
+        p.drawLine(p_rect_.x(), p_rect_.y(),
+                   p_rect_.bottomRight().x(), p_rect_.bottomRight().y());
     }
 }
 

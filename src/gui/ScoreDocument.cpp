@@ -41,6 +41,7 @@ struct ScoreDocument::Private
     Private(ScoreDocument* p)
         : p             (p)
         , editor        (new ScoreEditor(nullptr))
+        , numPages      (0)
         , props         ("score-document")
     {
     }
@@ -71,6 +72,7 @@ struct ScoreDocument::Private
     ScoreDocument* p;
 
     ScoreEditor* editor;
+    size_t numPages;
 
     // -- config --
 
@@ -190,6 +192,8 @@ void ScoreDocument::setScore(const Score& s)
 {
     p_->editor->setScore(s);
 }
+
+size_t ScoreDocument::numPages() const { return p_->numPages; }
 
 QRectF ScoreDocument::pageRect() const
 {
@@ -433,6 +437,7 @@ void ScoreDocument::Private::createItems()
     barItems.clear();
     barItemMap.clear();
     scoreItemMap.clear();
+    numPages = 0;
     if (!score())
         return;
 
@@ -449,6 +454,7 @@ void ScoreDocument::Private::createItems()
             //qDebug() << scoreIdx.toString();
             ++page;
         }
+        numPages = page + 1;
     }
 }
 

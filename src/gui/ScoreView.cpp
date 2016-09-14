@@ -65,6 +65,7 @@ struct ScoreView::Private
         , penCursor             (QColor(0,60,100,50))
         , penPlayCursor         (QColor(0,200,0,40))
     {
+        penScoreItem.setWidthF(.5);
         penLayoutFrame.setStyle(Qt::DotLine);
     }
 
@@ -607,8 +608,8 @@ void ScoreView::paintEvent(QPaintEvent* e)
 
     QRectF docUpdate = mapToDocument(e->rect());
 
-    for (int i=0; i<100; ++i)
-        p_->paintPage(&p, docUpdate, i);
+    for (size_t page=0; page < p_->document->numPages(); ++page)
+        p_->paintPage(&p, docUpdate, page);
 
     /*
     p.setBrush(QBrush(Qt::red));
@@ -631,6 +632,7 @@ void ScoreView::Private::paintBackground(
 void ScoreView::Private::paintPage(
         QPainter *p, const QRectF& updateRect, int pageIndex) const
 {
+    // dont paint this page
     {
         QRectF pr = document->pageRect(pageIndex);
         if (!pr.intersects(updateRect))
