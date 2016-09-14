@@ -35,6 +35,8 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    QString getScoreFilename(bool forSave);
+
 public slots:
 
     void setScore(const Score&);

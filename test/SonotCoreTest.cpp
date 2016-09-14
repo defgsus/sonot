@@ -115,59 +115,59 @@ namespace QTest {
 
 void SonotCoreTest::testNoteFromString()
 {
-#define SONOT__COMPARE(str__, N__) \
-    QCOMPARE(Note(str__),       Note(Note::N__, 3)); \
-    QCOMPARE(Note(str__ "4"),   Note(Note::N__, 4)); \
-    QCOMPARE(Note(str__ "-5"),  Note(Note::N__, 5)); \
-    QCOMPARE(Note(str__ ",,"),  Note(Note::N__, 1)); \
-    QCOMPARE(Note(str__ "'''"), Note(Note::N__, 6));
+#define SONOT__COMPARE(str__, N__, oct__) \
+    QCOMPARE(Note(str__),       Note(Note::N__, 3+(oct__))); \
+    QCOMPARE(Note(str__ "4"),   Note(Note::N__, 4        )); \
+    QCOMPARE(Note(str__ "-5"),  Note(Note::N__, 5        )); \
+    QCOMPARE(Note(str__ ",,"),  Note(Note::N__, 1+(oct__))); \
+    QCOMPARE(Note(str__ "'''"), Note(Note::N__, 6+(oct__)));
     //QCOMPARE(Note(str__).value(), int8_t(Note::N__ + 3 * 12));
     //qDebug() << Note(str__).toNoteString() << Note(Note::N__, 3).toNoteString();
 
-    SONOT__COMPARE("C",     C);
+    SONOT__COMPARE("C",     C   , 0);
 
-    SONOT__COMPARE("ces",   Ces);
-    SONOT__COMPARE("c",     C);
-    SONOT__COMPARE("cis",   Cis);
-    SONOT__COMPARE("des",   Des);
-    SONOT__COMPARE("d",     D);
-    SONOT__COMPARE("dis",   Dis);
-    SONOT__COMPARE("es",    Es);
-    SONOT__COMPARE("e",     E);
-    SONOT__COMPARE("eis",   Eis);
-    SONOT__COMPARE("fes",   Fes);
-    SONOT__COMPARE("f",     F);
-    SONOT__COMPARE("fis",   Fis);
-    SONOT__COMPARE("ges",   Ges);
-    SONOT__COMPARE("g",     G);
-    SONOT__COMPARE("gis",   Gis);
-    SONOT__COMPARE("as",    As);
-    SONOT__COMPARE("a",     A);
-    SONOT__COMPARE("ais",   Ais);
-    SONOT__COMPARE("bes",   Bes);
-    SONOT__COMPARE("b",     B);
-    SONOT__COMPARE("bis",   Bis);
-    SONOT__COMPARE("h",     B);
+    SONOT__COMPARE("ces",   Ces , 0);
+    SONOT__COMPARE("c",     C   , 0);
+    SONOT__COMPARE("cis",   Cis , 0);
+    SONOT__COMPARE("des",   Des , 0);
+    SONOT__COMPARE("d",     D   , 0);
+    SONOT__COMPARE("dis",   Dis , 0);
+    SONOT__COMPARE("es",    Es  , 0);
+    SONOT__COMPARE("e",     E   , 0);
+    SONOT__COMPARE("eis",   Eis , 0);
+    SONOT__COMPARE("fes",   Fes , 0);
+    SONOT__COMPARE("f",     F   , 0);
+    SONOT__COMPARE("fis",   Fis , 0);
+    SONOT__COMPARE("ges",   Ges , 0);
+    SONOT__COMPARE("g",     G   , 0);
+    SONOT__COMPARE("gis",   Gis , 0);
+    SONOT__COMPARE("as",    As  , 0);
+    SONOT__COMPARE("a",     A   , 0);
+    SONOT__COMPARE("ais",   Ais , 0);
+    SONOT__COMPARE("bes",   Bes , 0);
+    SONOT__COMPARE("b",     B   , 0);
+    SONOT__COMPARE("bis",   Bis , 0);
+    SONOT__COMPARE("h",     B   , 0);
 
-    SONOT__COMPARE("1b",    E);
-    SONOT__COMPARE("1",     F);
-    SONOT__COMPARE("1x",    Fis);
-    SONOT__COMPARE("2b",    Fis);
-    SONOT__COMPARE("2",     G);
-    SONOT__COMPARE("2x",    Gis);
-    SONOT__COMPARE("3b",    Gis);
-    SONOT__COMPARE("3",     A);
-    SONOT__COMPARE("3x",    Ais);
-    SONOT__COMPARE("4b",    Ais);
-    SONOT__COMPARE("4",     B);
-    SONOT__COMPARE("5",     C);
-    SONOT__COMPARE("5x",    Cis);
-    SONOT__COMPARE("6b",    Cis);
-    SONOT__COMPARE("6",     D);
-    SONOT__COMPARE("6x",    Dis);
-    SONOT__COMPARE("7b",    Dis);
-    SONOT__COMPARE("7",     E);
-    SONOT__COMPARE("7x",    F);
+    SONOT__COMPARE("1b",    E   , 0);
+    SONOT__COMPARE("1",     F   , 0);
+    SONOT__COMPARE("1x",    Fis , 0);
+    SONOT__COMPARE("2b",    Fis , 0);
+    SONOT__COMPARE("2",     G   , 0);
+    SONOT__COMPARE("2x",    Gis , 0);
+    SONOT__COMPARE("3b",    Gis , 0);
+    SONOT__COMPARE("3",     A   , 0);
+    SONOT__COMPARE("3x",    Ais , 0);
+    SONOT__COMPARE("4b",    Ais , 0);
+    SONOT__COMPARE("4",     B   , 0);
+    SONOT__COMPARE("5",     C   , 1);
+    SONOT__COMPARE("5x",    Cis , 1);
+    SONOT__COMPARE("6b",    Cis , 1);
+    SONOT__COMPARE("6",     D   , 1);
+    SONOT__COMPARE("6x",    Dis , 1);
+    SONOT__COMPARE("7b",    Dis , 1);
+    SONOT__COMPARE("7",     E   , 1);
+    SONOT__COMPARE("7x",    F   , 1);
 }
 
 
@@ -221,8 +221,8 @@ void SonotCoreTest::testJsonScore()
     for (int i=0; i<5; ++i)
     {
         NoteStream stream;
-        for (int j=0; j<5; ++j)
-            stream.appendBar( createRandomBar(rand()%4 + 4) );
+        for (int j=0; j<5 + rand()%20; ++j)
+            stream.appendBar( createRandomBar(rand()%4 + 4, i+1) );
         score1.appendNoteStream(stream);
     }
     score1.setTitle("Amazing Haze");
@@ -232,6 +232,7 @@ void SonotCoreTest::testJsonScore()
 
     score2.fromJsonString(score1.toJsonString());
     QCOMPARE(score1, score2);
+    //qDebug() << score1.noteStream(0).toString();
     //qDebug() << score2.toJsonString();
 }
 

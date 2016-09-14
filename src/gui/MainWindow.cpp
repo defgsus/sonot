@@ -20,8 +20,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QLayout>
 #include <QStatusBar>
+#include <QMenu>
+#include <QMenuBar>
+#include <QAction>
+#include <QFileDialog>
+#include <QMessageBox>
 
 #include "QProps/PropertiesView.h"
+#include "QProps/error.h"
 
 #include "MainWindow.h"
 #include "ScoreView.h"
@@ -42,8 +48,8 @@ struct MainWindow::Private
     Private(MainWindow*w)
         : p         (w)
         , document  (nullptr)
-        , player    (new SamplePlayer(p))
-        , synth     (new SynthDevice(p))
+        , player    (nullptr)
+        , synthStream(nullptr)
     { }
 
     ~Private()
@@ -52,6 +58,13 @@ struct MainWindow::Private
     }
 
     void createWidgets();
+    void createObjects();
+    void createMenu();
+
+    bool loadScore(Score& s, const QString& fn);
+    bool saveScore(const Score& s, const QString& fn);
+    Score createNewScore();
+
 
     // debugging
     void playSomething();
@@ -68,7 +81,7 @@ struct MainWindow::Private
     QProps::PropertiesView* propsView;
 
     SamplePlayer* player;
-    SynthDevice* synth;
+    SynthDevice* synthStream;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -78,11 +91,14 @@ MainWindow::MainWindow(QWidget *parent)
     setObjectName("MainWindow");
     setMinimumSize(320, 320);
     setGeometry(0,0,720,600);
+
+    p_->createObjects();
     p_->createWidgets();
+    p_->createMenu();
 
-    p_->player->play(p_->synth, 1, p_->synth->sampleRate());
+    p_->player->play(p_->synthStream, 1, p_->synthStream->sampleRate());
 
-    p_->playSomething();
+    //p_->playSomething();
 
     setScore(p_->getSomeScore());
 }
@@ -102,15 +118,18 @@ void MainWindow::Private::createWidgets()
         scoreView = new ScoreView(p);
         scoreView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         lh->addWidget(scoreView);
+        scoreView->setDocument(document);
         connect(scoreView, &ScoreView::noteEntered, [=](const Note& n)
         {
             if (n.isNote())
-                synth->playNote(n.value());
+                synthStream->playNote(n.value());
         });
-        connect(synth, SIGNAL(indexChanged(Score::Index)),
+        connect(synthStream, SIGNAL(indexChanged(Score::Index)),
                 scoreView, SLOT(setPlayingIndex(Score::Index)));
 
         propsView = new QProps::PropertiesView(p);
+        propsView->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+        propsView->setVisible(false);
         lh->addWidget(propsView);
 
         propsView->setProperties(
@@ -118,7 +137,7 @@ void MainWindow::Private::createWidgets()
             //scoreView->scoreDocument().pageLayout(0).marginsEven()
             //scoreView->scoreDocument().pageAnnotation(0).
             //scoreView->scoreDocument().pageAnnotation(0).textItems()[0].props()
-            synth->synth().props()
+            synthStream->synth().props()
             //TextItem().props()
             );
         connect(propsView, &QProps::PropertiesView::propertyChanged, [=]()
@@ -129,8 +148,106 @@ void MainWindow::Private::createWidgets()
             scoreView->scoreDocument().setPageAnnotation(0, anno);
             scoreView->update();
             */
-            synth->setSynthProperties(propsView->properties());
+            synthStream->setSynthProperties(propsView->properties());
         });
+}
+
+void MainWindow::Private::createObjects()
+{
+    player = new SamplePlayer(p);
+
+    synthStream = new SynthDevice(p);
+
+    document = new ScoreDocument();
+    connect(document->editor(), &ScoreEditor::scoreReset,
+            [=](Score* s)
+    {
+        synthStream->setScore(s);
+        synthStream->setIndex(s->index(0,0,0,0));
+    });
+
+}
+
+void MainWindow::Private::createMenu()
+{
+    p->setMenuBar(new QMenuBar(p) );
+    QMenu* menu;
+    QAction* a;
+
+    menu = p->menuBar()->addMenu(tr("File"));
+
+    a = menu->addAction(tr("New"));
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        p->setScore(createNewScore());
+    });
+
+    a = menu->addAction(tr("Load Score"));
+    a->setShortcut(Qt::CTRL + Qt::Key_L);
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        Score s;
+        QString fn = p->getScoreFilename(false);
+        if (!fn.isEmpty() && loadScore(s, fn))
+            p->setScore(s);
+    });
+
+    a = menu->addAction(tr("Save Score as"));
+    a->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_S);
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        QString fn = p->getScoreFilename(true);
+        if (!fn.isEmpty())
+            saveScore(*document->score(), fn);
+    });
+
+    menu = p->menuBar()->addMenu(tr("Playback"));
+
+    a = menu->addAction(tr("Play whole"));
+    a->setShortcut(Qt::Key_F5);
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        synthStream->setIndex(synthStream->score()->index(0,0,0,0));
+        synthStream->setPlaying(true);
+    });
+
+    a = menu->addAction(tr("Continue"));
+    a->setShortcut(Qt::Key_F6);
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        synthStream->setPlaying(true);
+    });
+
+    a = menu->addAction(tr("Play from cursor"));
+    a->setShortcut(Qt::Key_F7);
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        auto idx = scoreView->currentIndex();
+        if (!idx.isValid())
+            idx = synthStream->score()->index(0,0,0,0);
+        synthStream->setIndex(idx);
+        synthStream->setPlaying(true);
+    });
+
+    a = menu->addAction(tr("Stop"));
+    a->setShortcut(Qt::Key_F8);
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        synthStream->setPlaying(false);
+    });
+
+
+    menu = p->menuBar()->addMenu(tr("View"));
+
+    a = menu->addAction(tr("Properties"));
+    a->setShortcut(Qt::ALT + Qt::Key_P);
+    a->setCheckable(true);
+    a->setChecked(false);
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        propsView->setVisible(a->isChecked());
+    });
+
 }
 
 void MainWindow::showEvent(QShowEvent*)
@@ -140,14 +257,73 @@ void MainWindow::showEvent(QShowEvent*)
 
 void MainWindow::setScore(const Score& s)
 {
-    if (!p_->document)
-    {
-        p_->document = new ScoreDocument();
-        p_->scoreView->setDocument(p_->document);
-    }
-
     p_->document->setScore(s);
 }
+
+bool MainWindow::Private::loadScore(Score& s, const QString& fn)
+{
+    try
+    {
+        s.loadJsonFile(fn);
+        return true;
+    }
+    catch (const QProps::Exception& e)
+    {
+        QMessageBox::critical(p, tr("load score"),
+                              tr("Could not load score from\n%1\n%2")
+                              .arg(fn).arg(e.what()));
+    }
+    return false;
+}
+
+bool MainWindow::Private::saveScore(const Score& s, const QString& fn)
+{
+    try
+    {
+        s.saveJsonFile(fn);
+        return true;
+    }
+    catch (const QProps::Exception& e)
+    {
+        QMessageBox::critical(p, tr("save score"),
+                              tr("Could not save score to\n%1\n%2")
+                              .arg(fn).arg(e.what()));
+    }
+    return false;
+}
+
+Score MainWindow::Private::createNewScore()
+{
+    NoteStream n;
+    QList<Bar> rows;
+    Bar b;
+    b << " " << " " << " " << " ";
+    rows << b << b;
+    for (int i=0; i<8; ++i)
+        n.appendBar(rows);
+
+    Score s;
+    s.appendNoteStream(n);
+    return s;
+}
+
+QString MainWindow::getScoreFilename(bool forSave)
+{
+    QString dir = "../sonot/score",
+            filter = "*.sonot.json";
+    QString fn;
+    if (forSave)
+        fn = QFileDialog::getSaveFileName(this, tr("save score"),
+                                 dir, filter, &filter);
+    else
+        fn = QFileDialog::getOpenFileName(this, tr("load score"),
+                                 dir, filter, &filter);
+    return fn;
+}
+
+
+
+
 
 
 
@@ -180,7 +356,7 @@ void MainWindow::Private::playSomething()
     //qDebug().noquote() << stream.toString();
     score.appendNoteStream(stream);
 
-    synth->setScore(score);
+    //synth->setScore(score);
 }
 
 Score MainWindow::Private::getSomeScore()

@@ -151,6 +151,7 @@ void SamplePlayer::play(const float* samplesFloat, size_t numSamples,
     sample->stream->open(QIODevice::ReadOnly);
 
     sample->audio = new QAudioOutput(sample->format, this);
+    sample->audio->setBufferSize(1024);
     connect(sample->audio, &QAudioOutput::stateChanged,
     [=](QAudio::State state)
     {

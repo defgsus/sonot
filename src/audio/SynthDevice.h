@@ -41,7 +41,9 @@ public:
     qint64 readData(char *data, qint64 maxlen) override;
     qint64 writeData(const char*, qint64 ) override { return 0; }
 
+
     const Synth& synth() const { return p_synth; }
+    const Score* score() const { return p_score; }
 
     size_t sampleRate() const { return p_synth.sampleRate(); }
     size_t bufferSize() const { return p_buffer.size() / sizeof(float); }
@@ -50,7 +52,10 @@ public:
 
 public slots:
 
-    void setScore(const Score& score);
+    void setScore(const Score* score);
+    void setIndex(const Score::Index&);
+
+    void setPlaying(bool e) { p_playing = e; }
 
     void setSynthProperties(const QProps::Properties& p)
         { p_synth.setProperties(p); }
@@ -70,7 +75,8 @@ protected:
     std::vector<char> p_buffer;
     qint64 p_consumed;
     Synth p_synth;
-    Score p_score;
+    bool p_playing;
+    const Score* p_score;
     Score::Index p_index;
     uint64_t p_curSample;
     double p_curBarTime;

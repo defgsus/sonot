@@ -34,10 +34,12 @@ namespace Sonot {
 
 SynthDevice::SynthDevice(QObject* parent)
     : QIODevice (parent)
-    , p_buffer  (1024*4)
+    , p_buffer  (1024)
     , p_consumed(0)
     , p_synth   ()
-    , p_index   (p_score.index(0,0,0,0))
+    , p_playing (false)
+    , p_score   (nullptr)
+    , p_index   (p_score->index(0,0,0,0))
     , p_curSample(0)
     , p_curBarTime(0.)
 {
@@ -75,6 +77,25 @@ qint64 SynthDevice::readData(char *data, qint64 maxlen)
     return written;
 }
 
+
+void SynthDevice::setScore(const Score* score)
+{
+    p_score = score;
+    p_index = p_score->index(p_index.stream(), p_index.bar(),
+                             p_index.row(), p_index.column());
+    if (p_index.isValid())
+        p_notesPlaying.resize(p_index.getStream().numRows());
+    p_curSample = 0;
+    p_curBarTime = 0;
+}
+
+void SynthDevice::setIndex(const Score::Index& idx)
+{
+    p_index = idx;
+    p_curBarTime = 0;
+}
+
+
 void SynthDevice::playNote(int8_t note, double /*duration*/)
 {
     p_playNotes.push_back( note );
@@ -82,9 +103,8 @@ void SynthDevice::playNote(int8_t note, double /*duration*/)
 
 bool SynthDevice::p_fillBuffer()
 {
-    if (p_index.isValid())
+    if (p_playing && p_score && p_index.isValid() && p_index.score() == p_score)
     {
-
         //double curTime = currentSecond();
         // time per bar
         double barLength = 1.15;
@@ -110,7 +130,7 @@ bool SynthDevice::p_fillBuffer()
                 // start again
                 if (!p_index.nextBar())
                 {
-                    p_index = p_score.index(0,0,0,0);
+                    p_index = p_score->index(0,0,0,0);
                 }
                 if (p_index.isValid())
                     p_notesPlaying.resize(p_index.getStream().numRows());
@@ -184,14 +204,5 @@ bool SynthDevice::p_fillBuffer()
     return true;
 }
 
-void SynthDevice::setScore(const Score &score)
-{
-    p_score = score;
-    p_index = p_score.index(0,0,0,0);
-    if (p_index.isValid())
-        p_notesPlaying.resize(p_index.getStream().numRows());
-    p_curSample = 0;
-    p_curBarTime = 0;
-}
 
 } // namespace Sonot

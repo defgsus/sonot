@@ -133,6 +133,7 @@ ScoreView::~ScoreView()
 
 ScoreDocument* ScoreView::scoreDocument() const { return p_->document; }
 ScoreEditor* ScoreView::editor() const { return p_->document->editor(); }
+const Score::Index& ScoreView::currentIndex() const { return p_->cursor; }
 
 void ScoreView::setDocument(ScoreDocument* doc)
 {

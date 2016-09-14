@@ -112,7 +112,7 @@ int8_t Note::valueFromString(const QString &s)
     else
     if (str.at(0).isLetter())
     {
-        switch ((short)str.at(0).unicode() - short('a'))
+        switch ((short)str.at(0).unicode())
         {
             case 'a': val = A; break;
             case 'h':
@@ -195,25 +195,26 @@ QString Note::toSpanishString() const
         return ".";
 
     QString n;
+    int oct = octave();
     switch (noteName())
     {
-        case C:  n =  "5"; break;
-        case Cis: n = "6b"; break;
-        case D:  n =  "6"; break;
-        case Dis: n = "7b"; break;
-        case E:  n =  "7"; break;
-        case F:  n =  "1"; break;
+        case C:   n = "5";  --oct; break;
+        case Cis: n = "6b"; --oct; break;
+        case D:   n = "6";  --oct; break;
+        case Dis: n = "7b"; --oct; break;
+        case E:   n = "7";  --oct; break;
+        case F:   n = "1";  break;
         case Fis: n = "2b"; break;
-        case G:  n =  "2"; break;
+        case G:   n = "2";  break;
         case Gis: n = "3b"; break;
-        case A:  n =  "3"; break;
+        case A:   n = "3";  break;
         case Ais: n = "4b"; break;
-        case B:  n =  "4"; break;
+        case B:   n = "4";  break;
     }
     if (octave() > 3)
-        n += QString("'").repeated(octave()-3);
+        n += QString("'").repeated(oct-3);
     else if (octave() < 3)
-        n += QString(",").repeated(3-octave());
+        n += QString(",").repeated(3-oct);
     return n;
 }
 

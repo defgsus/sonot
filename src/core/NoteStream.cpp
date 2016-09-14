@@ -251,9 +251,9 @@ void NoteStream::fromJson(const QJsonObject& o)
             for (int i=0; i<jbars.size(); ++i)
                 data[i].resize(jrows.size());
         }
-        else if (data[0].size() != size_t(jbars.size()))
+        else if (data.size() != size_t(jbars.size()))
                 QPROPS_IO_ERROR("row length mismatch, expected "
-                                << data[0].size() << ", got " << jbars.size());
+                                << data.size() << ", got " << jbars.size());
         for (int i=0; i<jbars.size(); ++i)
         {
             data[i][row].fromJson(json.expectObject(jbars.at(i)));
