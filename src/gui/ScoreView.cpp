@@ -52,9 +52,11 @@ struct ScoreView::Private
         , action                (A_NOTHING)
         , brushBackground       (QColor(155,155,155))
         , brushPageBackground   (QColor(255,255,240))
-        , penScoreRow           (QColor(180,180,180))
+        , penLayoutFrame        (QColor(0,50,50,30))
+        , penScoreRow           (QColor(0,0,0,50))
+        , penScoreItem          (QColor(0,0,0))
     {
-
+        penLayoutFrame.setStyle(Qt::DotLine);
     }
 
     // --- gui / state ---
@@ -82,14 +84,20 @@ struct ScoreView::Private
     // -- gui --
 
     Action action;
-    QPointF lastMouseDown;
+    QPointF lastMouseDown,
+        // in document space
+        lastMouseDownDoc;
     QTransform lastMouseDownMatrix;
+
+    Score::Index cursor;
 
     // -- config --
 
     QBrush  brushBackground,
             brushPageBackground;
-    QPen    penScoreRow;
+    QPen    penLayoutFrame,
+            penScoreRow,
+            penScoreItem;
 };
 
 
@@ -98,7 +106,7 @@ ScoreView::ScoreView(QWidget *parent)
     : QWidget       (parent)
     , p_            (new Private(this))
 {
-    //grabKeyboard();
+    grabKeyboard();
 
     p_->matrix.scale(2., 2.);
 
@@ -113,6 +121,10 @@ ScoreView::~ScoreView()
 const ScoreDocument& ScoreView::scoreDocument() const { return p_->document; }
 ScoreDocument& ScoreView::scoreDocument() { return p_->document; }
 
+void ScoreView::setScore(const Score& s)
+{
+    p_->document.setScore(s);
+}
 
 void ScoreView::goToPage(int pageIndex, double margin)
 {
@@ -201,7 +213,11 @@ void ScoreView::mousePressEvent(QMouseEvent* e)
     //                p_->imatrix.map(e->pos())));
 
     p_->lastMouseDown = QPointF(e->pos());
+    p_->lastMouseDownDoc = p_->imatrix.map(p_->lastMouseDown);
     p_->lastMouseDownMatrix = p_->matrix;
+
+    Score::Index idx = p_->document.getScoreIndex(p_->lastMouseDownDoc);
+    qDebug() << idx.toString();
 
     if (e->button() == Qt::LeftButton)
     {
@@ -310,8 +326,8 @@ void ScoreView::Private::paintPage(
     // content borders / margins
     if (doShowLayoutBoxes())
     {
-        p->setPen(Qt::DotLine);
         p->setBrush(Qt::NoBrush);
+        p->setPen(penLayoutFrame);
         p->drawRect(pageLayout.contentRect());
         p->drawRect(pageLayout.scoreRect());
     }
@@ -340,7 +356,7 @@ void ScoreView::Private::paintPageAnnotation(
         if (doShowLayoutBoxes())
         {
             p->setBrush(Qt::NoBrush);
-            p->setPen(Qt::DashDotDotLine);
+            p->setPen(penLayoutFrame);
             p->drawRect(box);
         }
 
@@ -369,8 +385,9 @@ void ScoreView::Private::paintScore(
 {
     auto pageLayout = document.pageLayout(pageIndex);
     auto scoreLayout = document.scoreLayout(pageIndex);
-    auto srect = pageLayout.scoreRect();
+    //auto srect = pageLayout.scoreRect();
 
+    /*
     double y = 0.;
     while (y < srect.height())
     {
@@ -385,6 +402,10 @@ void ScoreView::Private::paintScore(
 
         y += scoreLayout.lineSpacing();
     }
+    */
+
+    p->setPen(penScoreItem);
+    document.paintScoreItems(*p, pageIndex);
 }
 
 

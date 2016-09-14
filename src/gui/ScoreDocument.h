@@ -28,13 +28,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "PageLayout.h"
 #include "PageAnnotation.h"
 #include "ScoreLayout.h"
+#include "core/Score.h"
 
-class QPointF;
 class QRectF;
+class QPointF;
+class QPainter;
 
 namespace Sonot {
 
-class Score;
+//class Score;
+class ScoreItem;
 
 /** Wrapper around Score and layout classes */
 class ScoreDocument : public QProps::JsonInterface
@@ -42,6 +45,39 @@ class ScoreDocument : public QProps::JsonInterface
     Q_DECLARE_TR_FUNCTIONS(ScoreDocument);
 
 public:
+
+    // --- types ---
+
+    struct Index
+    {
+        int pageIdx, lineIdx, barIdx;
+
+        Index (int page = 0, int line = 0, int bar = 0)
+            : pageIdx(page), lineIdx(line), barIdx(bar) { }
+
+        bool operator == (const Index& o) const
+            { return barIdx == o.barIdx && lineIdx == o.lineIdx
+                    && pageIdx == o.pageIdx; }
+        bool operator < (const Index& o) const
+        {
+            return pageIdx == o.pageIdx
+                     ? lineIdx == o.lineIdx
+                         ? barIdx < o.barIdx
+                         : lineIdx < o.lineIdx
+                     : pageIdx < o.pageIdx;
+        }
+    };
+
+    struct BarItems
+    {
+        QList<ScoreItem> items;
+        Index docIndex;
+        Score::Index scoreIndex;
+        QRectF boundingBox;
+    };
+
+    // --- ctor ---
+
     ScoreDocument();
     ScoreDocument(const ScoreDocument& o);
     ~ScoreDocument();
@@ -66,11 +102,11 @@ public:
     const PageAnnotation& pageAnnotation(const QString& id) const;
 
     const PageLayout& pageLayout(int pageIdx) const
-        { return pageLayout(keyForIndex(pageIdx)); }
+        { return pageLayout(layoutKeyForIndex(pageIdx)); }
     const ScoreLayout& scoreLayout(int pageIdx) const
-        { return scoreLayout(keyForIndex(pageIdx)); }
+        { return scoreLayout(layoutKeyForIndex(pageIdx)); }
     const PageAnnotation& pageAnnotation(int pageIdx) const
-        { return pageAnnotation(keyForIndex(pageIdx)); }
+        { return pageAnnotation(layoutKeyForIndex(pageIdx)); }
 
     const QProps::Properties& props() const;
 
@@ -89,7 +125,16 @@ public:
     /** Returns the page number for the page index */
     int pageNumberForIndex(int pageIndex) const;
 
-    QString keyForIndex(int pageIdx) const;
+    QString layoutKeyForIndex(int pageIdx) const;
+
+    BarItems* getBarItems(const Index&) const;
+    BarItems* getBarItems(int pageIdx, int lineIdx, int barIdx) const
+        { return getBarItems(Index(pageIdx, lineIdx, barIdx)); }
+    BarItems* getBarItems(int pageIdx, const QPointF& pagePos) const;
+    Score::Index getScoreIndex(int pageIdx, const QPointF& pagePos) const;
+    Score::Index getScoreIndex(const QPointF& documentPos) const;
+    ScoreItem* getScoreItem(const Score::Index& i) const;
+    void updateScoreIndex(const Score::Index& i);
 
     // ----- settter ------
 
@@ -102,6 +147,11 @@ public:
 
     void setPageSpacing(const QPointF& f) { props().set("page-spacing", f); }
     void setProperties(const QProps::Properties& p);
+
+
+    // ----- render -----
+
+    void paintScoreItems(QPainter& p, int pageIdx) const;
 
 private:
     QProps::Properties& props();

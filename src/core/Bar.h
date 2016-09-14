@@ -50,7 +50,7 @@ public:
 
     /** Returns the given column's time in range [0,1]
         scaled from length(). */
-    double columnTime(size_t column) const;
+    double columnTime(double columnWithFraction) const;
 
     /** Is any of the Notes annotated? */
     bool isAnnotated() const;

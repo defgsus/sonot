@@ -25,6 +25,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
+class Score;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -32,6 +34,10 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+public slots:
+
+    void setScore(const Score&);
 
 protected:
     void showEvent(QShowEvent*) override;

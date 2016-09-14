@@ -18,42 +18,46 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_SAMPLEPLAYER_H
-#define SONOTSRC_SAMPLEPLAYER_H
+#include <QPainter>
 
-#include <QObject>
-
-class QIODevice;
+#include "ScoreItem.h"
 
 namespace Sonot {
 
-
-/** Basic interface to Qt's QAudioOutput.
-    Currently expects float* data */
-class SamplePlayer : public QObject
+ScoreItem::ScoreItem(const Score::Index& i, const QRectF& rect)
+    : p_index_      (i)
+    , p_type_       (T_NOTE)
+    , p_rect_       (rect)
 {
-    Q_OBJECT
-public:
-    explicit SamplePlayer(QObject *parent = 0);
-    ~SamplePlayer();
 
-signals:
+}
 
-public slots:
+ScoreItem::ScoreItem(const Score::Index& i, const QLineF& line)
+    : p_index_      (i)
+    , p_type_       (T_BAR_SLASH)
+    , p_rect_       (line.x1(), line.y1(),
+                     line.x2()-line.x1(), line.y2()-line.y1())
+{
 
-    void play(const float* samples, size_t numSamples,
-              size_t numChannels, size_t sampleRate);
+}
 
-    void play(QIODevice* data, size_t numChannels, size_t sampleRate);
+void ScoreItem::paint(QPainter& p)
+{
+    if (p_type_ == T_NOTE)
+    {
+        QString t = note().toSpanishString();
 
-    /** Stops all samples */
-    void stop();
-
-private:
-    struct Private;
-    Private* p_;
-};
+        QFont f(p.font());
+        f.setPixelSize(p_rect_.height());
+        f.setBold(true);
+        p.setFont(f);
+        p.drawText(p_rect_, Qt::AlignCenter | Qt::TextDontClip, t);
+        //p.drawRect(p_rect_);
+    }
+    else
+    {
+        p.drawRect(p_rect_);
+    }
+}
 
 } // namespace Sonot
-
-#endif // SONOTSRC_SAMPLEPLAYER_H

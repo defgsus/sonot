@@ -18,42 +18,52 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_SAMPLEPLAYER_H
-#define SONOTSRC_SAMPLEPLAYER_H
+#ifndef SONOTSRC_SCOREITEM_H
+#define SONOTSRC_SCOREITEM_H
 
-#include <QObject>
+#include <QRectF>
 
-class QIODevice;
+#include "core/Note.h"
+#include "core/Score.h"
+
+class QPainter;
 
 namespace Sonot {
 
-
-/** Basic interface to Qt's QAudioOutput.
-    Currently expects float* data */
-class SamplePlayer : public QObject
+class ScoreItem
 {
-    Q_OBJECT
 public:
-    explicit SamplePlayer(QObject *parent = 0);
-    ~SamplePlayer();
+    enum Type
+    {
+        T_NOTE,
+        T_BAR_SLASH
+    };
 
-signals:
+    ScoreItem(const Score::Index& i, const QRectF& rect);
+    ScoreItem(const Score::Index& i, const QLineF& rect);
 
-public slots:
+    // ---- getter ----
 
-    void play(const float* samples, size_t numSamples,
-              size_t numChannels, size_t sampleRate);
+    Score* score() const { return p_index_.score(); }
+    Score::Index index() const { return p_index_; }
+    Type type() const { return p_type_; }
 
-    void play(QIODevice* data, size_t numChannels, size_t sampleRate);
+    const Note& note() const { return p_index_.getNote(); }
 
-    /** Stops all samples */
-    void stop();
+    QRectF boundingBox() const { return p_rect_; }
+
+    // ---- render ----
+
+    void paint(QPainter& p);
+
 
 private:
-    struct Private;
-    Private* p_;
+
+    Score::Index p_index_;
+    Type p_type_;
+    QRectF p_rect_;
 };
 
 } // namespace Sonot
 
-#endif // SONOTSRC_SAMPLEPLAYER_H
+#endif // SONOTSRC_SCOREITEM_H

@@ -47,6 +47,7 @@ struct MainWindow::Private
 
     // debugging
     void playSomething();
+    Score getScore();
     NoteStream getNotes1();
     NoteStream getNotes2();
     NoteStream getNotes3();
@@ -71,6 +72,8 @@ MainWindow::MainWindow(QWidget *parent)
     p_->createWidgets();
 
     p_->playSomething();
+
+    setScore(p_->getScore());
 }
 
 MainWindow::~MainWindow()
@@ -117,6 +120,14 @@ void MainWindow::showEvent(QShowEvent*)
     p_->scoreView->showPage(0);
 }
 
+void MainWindow::setScore(const Score& s)
+{
+    p_->scoreView->setScore(s);
+    p_->scoreView->showPage(0);
+}
+
+
+
 void MainWindow::Private::playSomething()
 {
 #if 0
@@ -148,6 +159,17 @@ void MainWindow::Private::playSomething()
 
     synth->setScore(score);
     player->play(synth, 1, synth->sampleRate());
+}
+
+Score MainWindow::Private::getScore()
+{
+    Score score;
+    score.setTitle("Space Invaders");
+    score.setCopyright("(c) 1963, Ingsoc");
+    score.setAuthor("Dorian Gray");
+
+    score.appendNoteStream( getNotes3() );
+    return score;
 }
 
 NoteStream MainWindow::Private::getNotes1()
@@ -244,8 +266,8 @@ NoteStream MainWindow::Private::getNotes3()
 
 #define SONOT__BAR(a1_, a2_) \
     if (i == barIdx++) \
-    { Bar b1_; b1_ << a1_; b1_.transpose(24); rows << b1_; \
-      Bar b2_; b2_ << a2_; b2_.transpose(24); rows << b2_; }
+    { Bar b1_; b1_ << a1_; b1_.transpose(0); rows << b1_; \
+      Bar b2_; b2_ << a2_; b2_.transpose(0); rows << b2_; }
 
     for (int i=0; i<32; ++i)
     {

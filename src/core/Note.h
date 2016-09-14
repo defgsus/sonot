@@ -108,6 +108,7 @@ public:
 
     /** Returns a string in the format 'C#3' */
     QString to3String() const;
+    QString toSpanishString() const;
 
     bool isValid() const { return p_value_ != Invalid; }
     bool isNote() const { return p_value_ >= 0; }

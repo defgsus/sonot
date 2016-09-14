@@ -46,6 +46,9 @@ public:
         must only be used during the lifetime of the Score instance! */
     struct Index
     {
+        /** Creates Invalid index */
+        Index() : p_score(nullptr) { }
+
         Score* score() const { return p_score; }
         /** The NoteStream index (zero-based) */
         size_t stream() const { return p_stream; }
@@ -62,16 +65,24 @@ public:
         bool isValid() const;
         bool isValid(int stream, int barIdx, int row, int column) const;
 
+        /** Returns the number of rows in current NoteStream */
+        size_t numRows() const;
+
         bool operator == (const Index& rhs) const;
         bool operator != (const Index& rhs) const { return !(*this == rhs); }
+        bool operator < (const Index& rhs) const;
 
         const NoteStream& getNoteStream() const;
         const Bar& getBar(int row = 0) const;
         const Note& getNote() const;
+        QList<Bar> getBars(int startRow = -1, int numRows = -1) const;
 
         const Note& getNote(int row, int column) const;
 
         Index topLeft() const { return score()->index(stream(), bar(), 0, 0); }
+        Index offset(int row_, int column_) const
+            { return score()->index(stream(), bar(),
+                                    row()+row_, column()+column_); }
 
         QString toString() const;
 
@@ -90,7 +101,6 @@ public:
 
     private:
         friend class Score;
-        Index() { }
         Score* p_score;
         size_t p_stream, p_bar, p_row, p_column;
     };

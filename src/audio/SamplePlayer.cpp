@@ -62,16 +62,8 @@ struct SamplePlayer::Private
 
     QAudioFormat getFormat(size_t numChannels, size_t sampleRate);
 
-    void remove(Sample* s)
-    {
-        if (s->audio)
-        {
-            s->audio->stop();
-            s->audio->deleteLater();
-        }
-        sampleMap.remove(s->audio);
-        delete s;
-    }
+    void remove(Sample* s);
+    void removeAll();
 
     SamplePlayer* p;
     QMap<QAudioOutput*, Sample*> sampleMap;
@@ -87,7 +79,32 @@ SamplePlayer::SamplePlayer(QObject *parent)
 
 SamplePlayer::~SamplePlayer()
 {
+    p_->removeAll();
     delete p_;
+}
+
+void SamplePlayer::stop() { p_->removeAll(); }
+
+
+
+void SamplePlayer::Private::remove(Sample* s)
+{
+    if (s->audio)
+    {
+        s->audio->stop();
+        s->audio->deleteLater();
+    }
+    sampleMap.remove(s->audio);
+    delete s;
+}
+
+void SamplePlayer::Private::removeAll()
+{
+    while (!sampleMap.isEmpty())
+    {
+        Sample* s = sampleMap.first();
+        remove(s);
+    }
 }
 
 

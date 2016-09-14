@@ -181,6 +181,37 @@ QString Note::to3String() const
     return n;
 }
 
+QString Note::toSpanishString() const
+{
+    if (p_value_ == Invalid)
+        return QString();
+    if (p_value_ == Rest)
+        return "p";
+    if (p_value_ == Space)
+        return ".";
+
+    QString n;
+    switch (noteName())
+    {
+        case C:  n =  "5"; break;
+        case Cis: n = "6b"; break;
+        case D:  n =  "6"; break;
+        case Dis: n = "7b"; break;
+        case E:  n =  "7"; break;
+        case F:  n =  "1"; break;
+        case Fis: n = "2b"; break;
+        case G:  n =  "2"; break;
+        case Gis: n = "3b"; break;
+        case A:  n =  "3"; break;
+        case Ais: n = "4b"; break;
+        case B:  n =  "4"; break;
+    }
+    if (octave() > 3)
+        n += QString("'").repeated(octave()-3);
+    else if (octave() < 3)
+        n += QString(",").repeated(3-octave());
+    return n;
+}
 
 
 Note& Note::setOctave(int8_t o)

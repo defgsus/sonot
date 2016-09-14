@@ -18,15 +18,22 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#include <QJsonObject>
-#include <QJsonValue>
+#include <vector>
+#include <memory>
+
+#include <QPainter>
+
+#include "QProps/JsonInterfaceHelper.h"
+#include "QProps/error.h"
 
 #include "ScoreDocument.h"
 #include "core/Score.h"
+#include "core/NoteStream.h"
 #include "PageLayout.h"
 #include "ScoreLayout.h"
 #include "PerPage.h"
-#include "QProps/JsonInterfaceHelper.h"
+#include "ScoreItem.h"
+
 
 namespace Sonot {
 
@@ -47,6 +54,10 @@ struct ScoreDocument::Private
 
     void initLayout();
 
+    void createItems();
+    bool createBarItems_Fixed(int pageIdx, Score::Index& scoreIdx);
+    bool createBarItems_Fixed(int pageIdx, int lineIdx, Score::Index& scoreIdx);
+
     ScoreDocument* p;
 
     Score score;
@@ -57,15 +68,23 @@ struct ScoreDocument::Private
     // -- config --
 
     QProps::Properties props;
+
+    // -- render --
+
+    std::vector<std::shared_ptr<BarItems>> barItems;
+
+    // maps each page/line/bar the BarItems
+    QMap<Index, BarItems*> barItemMap;
+    QMap<Score::Index, ScoreItem*> scoreItemMap;
 };
+
 
 ScoreDocument::ScoreDocument()
     : p_        (new Private(this))
 {
     initLayout();
-    p_->score.setTitle("Space Invaders");
-    p_->score.setCopyright("(c) 1963, Ingsoc");
-    p_->score.setAuthor("Dorian Gray");
+
+    setScore(p_->score);
 }
 
 ScoreDocument::ScoreDocument(const ScoreDocument& o)
@@ -162,7 +181,7 @@ int ScoreDocument::pageNumberForIndex(int pageIndex) const
     return pageIndex + 1;
 }
 
-QString ScoreDocument::keyForIndex(int pageIdx) const
+QString ScoreDocument::layoutKeyForIndex(int pageIdx) const
 {
     return pageIdx == 0 ? "title"
                         : (pageIdx & 1) == 1 ? "left"
@@ -194,6 +213,65 @@ int ScoreDocument::pageIndexForDocumentPosition(const QPointF& p0) const
     return int(p.ry()) * 2 + int(p.rx()) - 1;
 }
 
+ScoreDocument::BarItems* ScoreDocument::getBarItems(const Index& idx) const
+{
+    auto i = p_->barItemMap.find(idx);
+    return i == p_->barItemMap.end() ? nullptr : i.value();
+}
+
+
+ScoreItem* ScoreDocument::getScoreItem(const Score::Index &idx) const
+{
+    auto i = p_->scoreItemMap.find(idx);
+    return i == p_->scoreItemMap.end() ? nullptr : i.value();
+}
+
+ScoreDocument::BarItems* ScoreDocument::getBarItems(
+        int pageIdx, const QPointF& pagePos) const
+{
+    for (auto& sp : p_->barItems)
+    {
+        BarItems* items = sp.get();
+        if (items->docIndex.pageIdx == pageIdx
+         && items->boundingBox.contains(pagePos))
+        {
+            return items;
+        }
+    }
+    return nullptr;
+}
+
+Score::Index ScoreDocument::getScoreIndex(
+        int pageIdx, const QPointF& pagePos) const
+{
+    for (auto& sp : p_->barItems)
+    {
+        BarItems* items = sp.get();
+        if (items->docIndex.pageIdx == pageIdx
+         && items->boundingBox.contains(pagePos))
+        {
+            for (const ScoreItem& i : items->items)
+                if (i.boundingBox().contains(pagePos))
+                    return i.index();
+        }
+    }
+    return Score::Index();
+}
+
+Score::Index ScoreDocument::getScoreIndex(
+        const QPointF& documentPos) const
+{
+    int page = pageIndexForDocumentPosition(documentPos);
+    if (page < 0)
+        return Score::Index();
+    return getScoreIndex(page, documentPos - pagePosition(page));
+}
+
+void ScoreDocument::updateScoreIndex(const Score::Index& i)
+{
+    QPROPS_ASSERT(i.isValid(), "in ScoreDocument::updateScoreIndex()");
+    auto s = getScoreItem(i);
+}
 
 
 void ScoreDocument::initLayout() { p_->initLayout(); }
@@ -269,13 +347,13 @@ void ScoreDocument::Private::initLayout()
 
 void ScoreDocument::setPageAnnotation(int pageIndex, const PageAnnotation &p)
 {
-    const QString id = keyForIndex(pageIndex);
+    const QString id = layoutKeyForIndex(pageIndex);
     p_->pageAnnotation.insert(id, p);
 }
 
 void ScoreDocument::setPageLayout(int pageIndex, const PageLayout &p)
 {
-    const QString id = keyForIndex(pageIndex);
+    const QString id = layoutKeyForIndex(pageIndex);
     p_->pageLayout.insert(id, p);
 }
 
@@ -283,7 +361,129 @@ void ScoreDocument::setPageLayout(int pageIndex, const PageLayout &p)
 void ScoreDocument::setScore(const Score& s)
 {
     p_->score = s;
+    p_->createItems();
 }
 
+
+
+void ScoreDocument::Private::createItems()
+{
+    barItems.clear();
+    barItemMap.clear();
+    scoreItemMap.clear();
+
+    Score::Index scoreIdx = score.index(0,0,0,0);
+    if (!scoreIdx.isValid())
+        return;
+
+    /// @todo non-fixed layout
+    if (p->scoreLayout(0).isFixedBarWidth())
+    {
+        createBarItems_Fixed(0, scoreIdx);
+    }
+}
+
+bool ScoreDocument::Private::createBarItems_Fixed(
+        int pageIdx, Score::Index& scoreIdx)
+{
+    int line = 0;
+    while (createBarItems_Fixed(pageIdx, line, scoreIdx))
+        ++line;
+    return false;
+}
+
+bool ScoreDocument::Private::createBarItems_Fixed(
+        int pageIdx, int lineIdx, Score::Index& scoreIdx)
+{
+    const ScoreLayout& slayout = p->scoreLayout(pageIdx);
+    const PageLayout& playout = p->pageLayout(pageIdx);
+
+    double noteSize = slayout.noteSize(),
+           rowSpace = slayout.rowSpacing();
+    size_t numBarsPerLine = slayout.barsPerLine();
+    QPROPS_ASSERT(numBarsPerLine > 0, "");
+    QRectF scoreRect = playout.scoreRect();
+    double barWidth = scoreRect.width() / numBarsPerLine;
+
+    for (size_t barIdx = 0; barIdx < numBarsPerLine; ++barIdx)
+    {
+        // max num notes in this bar
+        //size_t numNotes = scoreIdx.getNoteStream().numNotes(scoreIdx.bar());
+
+        //auto scoreIdx.getBars();
+
+        auto items = new BarItems;
+        items->docIndex = Index(pageIdx, lineIdx, barIdx);
+        items->scoreIndex = scoreIdx;
+
+        double lineHeight = slayout.lineHeight(scoreIdx.numRows())
+                          + slayout.lineSpacing();
+
+        // create item for each note in this bar block
+        for (size_t row=0; row<scoreIdx.numRows(); ++row)
+        {
+            double y = lineIdx * lineHeight + rowSpace * row;
+
+            const Bar& b = scoreIdx.getBar(row);
+            for (size_t col=0; col<b.length(); ++col)
+            {
+                if (! scoreIdx.offset(row, col).getNote().isValid())
+                    continue;
+
+                double x = barIdx * barWidth
+                         + b.columnTime(col+.5) * barWidth;
+
+                QRect rect(x + scoreRect.x() -noteSize/2.,
+                           y + scoreRect.y(),
+                           noteSize, noteSize);
+                items->items.push_back(
+                            ScoreItem(scoreIdx.offset(row, col), rect) );
+                scoreItemMap.insert(
+                            items->items.back().index(),
+                            &items->items.back() );
+            }
+        }
+
+        // bar-slash item
+        double x = barIdx * barWidth + scoreRect.x(),
+               y = lineIdx * lineHeight + scoreRect.y();
+        QLineF line(x, y, x, y + slayout.lineHeight(scoreIdx.numRows()));
+        items->items.push_back( ScoreItem(scoreIdx, line) );
+
+        // get bounding rect
+        if (!items->items.isEmpty())
+        {
+            items->boundingBox = items->items.at(0).boundingBox();
+            for (const ScoreItem& i : items->items)
+                items->boundingBox |= i.boundingBox();
+        }
+
+        // store items
+        std::shared_ptr<BarItems> pit(items);
+        barItems.push_back(pit);
+
+        barItemMap.insert(items->docIndex, items);
+
+        if (!scoreIdx.nextBar())
+            return false;
+    }
+    return true;
+}
+
+void ScoreDocument::paintScoreItems(QPainter &p, int pageIdx) const
+{
+    for (auto& sp : p_->barItems)
+    {
+        BarItems* items = sp.get();
+        if (items->docIndex.pageIdx != pageIdx)
+            return;
+
+        //p.drawRect(items->boundingBox);
+        for (ScoreItem& item : items->items)
+        {
+            item.paint(p);
+        }
+    }
+}
 
 } // namespace Sonot

@@ -46,13 +46,16 @@ public:
 
     const QProps::Properties& props() const { return p_props_; }
 
+    bool isFixedBarWidth() const
+                    { return p_props_.get("fixed-bar-width").toBool(); }
+
     double noteSpacing() const { return p_props_.get("note-spacing").toDouble(); }
     double rowSpacing() const { return p_props_.get("row-spacing").toDouble(); }
     double lineSpacing() const { return p_props_.get("line-spacing").toDouble(); }
     double minBarWidth() const { return p_props_.get("min-bar-width").toDouble(); }
     double maxBarWidth() const { return p_props_.get("max-bar-width").toDouble(); }
-
     double noteSize() const { return p_props_.get("note-size").toDouble(); }
+    int barsPerLine() const { return p_props_.get("bars-per-line").toInt(); }
 
     bool operator == (const ScoreLayout& o) const;
     bool operator != (const ScoreLayout& o) const { return !(*this == o); }
@@ -65,14 +68,7 @@ public:
 
     // --- setter ---
 
-    QProps::Properties& props() { return p_props_; }
-
-    void setNoteSpacing(double v) { p_props_.set("note-spacing", v); }
-    void setRowSpacing(double v) {  p_props_.set("row-spacing", v); }
-    void setLineSpacing(double v) { p_props_.set("line-spacing", v); }
-    void setMinBarWidth(double v) { p_props_.set("min-bar-width", v); }
-    void setMaxBarWidth(double v) { p_props_.set("max-bar-width", v); }
-    void setNoteSize(double v) {    p_props_.set("note-size", v); }
+    void setProperties(QProps::Properties& p) { p_props_ = p; }
 
 private:
     QProps::Properties p_props_;

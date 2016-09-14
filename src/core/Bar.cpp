@@ -47,9 +47,9 @@ const Note& Bar::note(size_t column) const
     return p_data_[column];
 }
 
-double Bar::columnTime(size_t column) const
+double Bar::columnTime(double column) const
 {
-    return length() ? double(column) / length() : 0;
+    return length() ? column / length() : 0;
 }
 
 void Bar::resize(size_t length)

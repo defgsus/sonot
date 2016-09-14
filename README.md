@@ -104,7 +104,7 @@ Framework: Qt, License: GPL
 - min/max Bar width
 
 ### ScoreItem
-- line, bar, note, TextItem, ...
+- bar, note, TextItem, ...
 - bounding box
 - draw()
 

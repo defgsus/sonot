@@ -8,7 +8,8 @@ HEADERS += \
     src/gui/ScoreLayout.h \
     src/gui/ScoreDocument.h \
     src/gui/AllPropertiesView.h \
-    src/gui/PerPage.h
+    src/gui/PerPage.h \
+    $$PWD/gui/ScoreItem.h
 
 SOURCES += \
     src/gui/MainWindow.cpp \
@@ -20,4 +21,5 @@ SOURCES += \
     src/gui/ScoreLayout.cpp \
     src/gui/ScoreDocument.cpp \
     src/gui/AllPropertiesView.cpp \
-    src/gui/PerPage.cpp
+    src/gui/PerPage.cpp \
+    $$PWD/gui/ScoreItem.cpp

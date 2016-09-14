@@ -201,8 +201,9 @@ Score::Index Score::index(
 
 QString Score::Index::toString() const
 {
-    return QString("(%1,%2,%3,%4)")
-            .arg(p_stream).arg(p_bar).arg(p_row).arg(p_column);
+    return isValid() ? QString("(%1,%2,%3,%4)")
+                       .arg(p_stream).arg(p_bar).arg(p_row).arg(p_column)
+                     : QString("invalid");
 }
 
 bool Score::Index::operator == (const Index& rhs) const
@@ -214,9 +215,21 @@ bool Score::Index::operator == (const Index& rhs) const
         && p_column == rhs.p_column;
 }
 
+bool Score::Index::operator < (const Index& o) const
+{
+    return p_stream == o.p_stream
+             ? p_bar == o.p_bar
+               ? p_row == o.p_row
+                 ? p_column < o.p_column
+                 : p_row < o.p_row
+               : p_bar < o.p_bar
+             : p_stream < o.p_stream;
+}
+
 bool Score::Index::isValid() const
 {
-    return stream() < (size_t)score()->noteStreams().size()
+    return p_score != nullptr
+        && stream() < (size_t)score()->noteStreams().size()
         && bar() < score()->noteStream(stream()).numBars()
         && row() < score()->noteStream(stream()).numRows()
         && column() < score()->noteStream(stream()).bar(bar(), row()).length();
@@ -224,11 +237,17 @@ bool Score::Index::isValid() const
 
 bool Score::Index::isValid(int s, int b, int r, int c) const
 {
-    return s >= 0 && s < score()->noteStreams().size()
+    return p_score != nullptr
+        && s >= 0 && s < score()->noteStreams().size()
         && b >= 0 && (size_t)b < score()->noteStream(stream()).numBars()
         && r >= 0 && (size_t)r < score()->noteStream(stream()).numRows()
         && c >= 0 && (size_t)c < score()->noteStream(
                                 stream()).bar(bar(), row()).length();
+}
+
+size_t Score::Index::numRows() const
+{
+    return isValid() ? getNoteStream().numRows() : 0;
 }
 
 const NoteStream& Score::Index::getNoteStream() const
@@ -243,6 +262,22 @@ const Bar& Score::Index::getBar(int r) const
     QPROPS_ASSERT(isValid(stream(), bar(), r, 0),
                   "in Score::Index::getBar(" << r << ")");
     return score()->noteStream(stream()).bar(bar(), r);
+}
+
+QList<Bar> Score::Index::getBars(int startRow, int numRows) const
+{
+    QPROPS_ASSERT(isValid(), "in Score::Index::getBars("
+                             << startRow << ", " << numRows << ")");
+    if (startRow < 0)
+        startRow = 0;
+    if (numRows < 0)
+        numRows = getNoteStream().numRows();
+    numRows = std::min((size_t)numRows, getNoteStream().numRows());
+
+    QList<Bar> bars;
+    for (int i=startRow; i<numRows; ++i)
+        bars << getNoteStream().bar(bar(), i);
+    return bars;
 }
 
 const Note& Score::Index::getNote() const

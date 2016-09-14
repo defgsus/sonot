@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
+class Score;
 class ScoreDocument;
 
 class ScoreView : public QWidget
@@ -39,6 +40,8 @@ public:
     const ScoreDocument& scoreDocument() const;
 
     // ----- setter -----
+
+    void setScore(const Score&);
 
     // XXX TODO
     ScoreDocument& scoreDocument();
