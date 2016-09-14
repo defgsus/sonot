@@ -69,6 +69,19 @@ void Bar::setNote(size_t column, const Note &n)
     p_data_[column] = n;
 }
 
+void Bar::insertNote(size_t column, const Note &n)
+{
+    if (column >= length())
+        append(n);
+    p_data_.insert(p_data_.begin() + column, n);
+}
+
+void Bar::removeNote(size_t column)
+{
+    QPROPS_ASSERT_LT(column, length(), "in Bar::removeNote");
+    p_data_.erase(p_data_.begin() + column);
+}
+
 void Bar::transpose(int8_t noteStep)
 {
     for (Note& n : p_data_)

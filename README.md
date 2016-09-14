@@ -51,19 +51,38 @@ Framework: Qt, License: GPL
 - voices
 - data[voice] of Bar
 
+### Score::Index
+- stream
+- bar
+- row
+- column
+
 ### Score
 - data[] of NoteStream
-- NoteId
-- pageIndex[]
-
-### NoteId
-- id = score.notestream.bar.note
+- Score::Index
 
 ### ScoreEditor
-- add/del/change
 - undo/redo
 - ScoreEditorCursor
+- add/del/change
+    - setScore(Score)
+    - insertNote(Index, n)
+    - insertBars(Index, QList<Bar> rows)
+    - changeNote(Index, n)
+    - changeBar(Index, b)
+    - deleteNote(Index)
+    - deleteBar(Index)
+    - deleteStream(Index)
 - Qt signals
+    - scoreChanged()
+    - noteValuesChanged(QList<Index>)
+    - barsChanged(QList<Index>)
+    - streamChanged(Index)
+    - notesAboutToBeDeleted(QList<Index>)
+    - notesDeleted(QList<Index>)
+    - barsAboutToBeDeleted(QList<Index>)
+    - barsDeleted(QList<Index>)
+    - streamsAboutToBeDeleted(QList<Index>)
 
 ### ScoreEditorCursor
 - move within bar

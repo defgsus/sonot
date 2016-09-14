@@ -247,10 +247,10 @@ bool Score::Index::isValid(int s, int b, int r, int c) const
 
 size_t Score::Index::numRows() const
 {
-    return isValid() ? getNoteStream().numRows() : 0;
+    return isValid() ? getStream().numRows() : 0;
 }
 
-const NoteStream& Score::Index::getNoteStream() const
+const NoteStream& Score::Index::getStream() const
 {
     QPROPS_ASSERT(isValid(), "in Score::Index::getNoteStream()");
     return score()->noteStream(stream());
@@ -271,12 +271,12 @@ QList<Bar> Score::Index::getBars(int startRow, int numRows) const
     if (startRow < 0)
         startRow = 0;
     if (numRows < 0)
-        numRows = getNoteStream().numRows();
-    numRows = std::min((size_t)numRows, getNoteStream().numRows());
+        numRows = getStream().numRows();
+    numRows = std::min((size_t)numRows, getStream().numRows());
 
     QList<Bar> bars;
     for (int i=startRow; i<numRows; ++i)
-        bars << getNoteStream().bar(bar(), i);
+        bars << getStream().bar(bar(), i);
     return bars;
 }
 
@@ -301,7 +301,7 @@ bool Score::Index::nextNote()
         return false;
     if (column() + 1 >= getBar().length())
     {
-        if (bar() + 1 >= getNoteStream().numBars())
+        if (bar() + 1 >= getStream().numBars())
         {
             if (stream() + 1 >= score()->numNoteStreams())
                 return false;
@@ -356,7 +356,7 @@ bool Score::Index::nextBar()
 {
     if (!isValid())
         return false;
-    if (bar() + 1 >= getNoteStream().numBars())
+    if (bar() + 1 >= getStream().numBars())
     {
         if (stream() + 1 >= score()->numNoteStreams())
             return false;
@@ -388,7 +388,7 @@ bool Score::Index::prevBar()
         else
         {
             --p_stream;
-            p_bar = getNoteStream().numBars() - 1;
+            p_bar = getStream().numBars() - 1;
             p_column = 0;
             p_row = 0;
         }

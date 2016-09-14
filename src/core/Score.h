@@ -72,7 +72,7 @@ public:
         bool operator != (const Index& rhs) const { return !(*this == rhs); }
         bool operator < (const Index& rhs) const;
 
-        const NoteStream& getNoteStream() const;
+        const NoteStream& getStream() const;
         const Bar& getBar(int row = 0) const;
         const Note& getNote() const;
         QList<Bar> getBars(int startRow = -1, int numRows = -1) const;

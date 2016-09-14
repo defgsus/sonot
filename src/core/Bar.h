@@ -68,13 +68,16 @@ public:
         @warning No range checking! */
     void setNote(size_t column, const Note& n);
 
-    void transpose(int8_t noteStep);
+    void insertNote(size_t column, const Note& n);
+    void removeNote(size_t column);
 
     Bar& append(const Note& n);
 
     Bar& operator << (const Note& n) { return append(n); }
     Bar& operator << (const char* name);
     Bar& operator << (const QString& name);
+
+    void transpose(int8_t noteStep);
 
 private:
     std::vector<Note> p_data_;

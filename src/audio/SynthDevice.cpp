@@ -103,7 +103,7 @@ bool SynthDevice::p_fillBuffer()
                 p_index = p_score.index(0,0,0,0);
             }
             if (p_index.isValid())
-                p_notesPlaying.resize(p_index.getNoteStream().numRows());
+                p_notesPlaying.resize(p_index.getStream().numRows());
 
             p_curBarTime = 0.;
         }
@@ -121,7 +121,7 @@ bool SynthDevice::p_fillBuffer()
                           << " , len=" << windowLength);
 
         // send all notes in bar window to synth
-        for (size_t r=0; r<cursor.getNoteStream().numRows(); ++r)
+        for (size_t r=0; r<cursor.getStream().numRows(); ++r)
         {
             const Bar& bar = cursor.getBar(r);
             for (size_t c=0; c<bar.length(); ++c)
@@ -171,7 +171,7 @@ void SynthDevice::setScore(const Score &score)
     p_score = score;
     p_index = p_score.index(0,0,0,0);
     if (p_index.isValid())
-        p_notesPlaying.resize(p_index.getNoteStream().numRows());
+        p_notesPlaying.resize(p_index.getStream().numRows());
     p_curSample = 0;
     p_curBarTime = 0;
 }
