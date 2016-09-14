@@ -295,6 +295,13 @@ const Note& Score::Index::getNote(int r, int c) const
     return score()->noteStream(stream()).bar(bar(), r).note(c);
 }
 
+namespace {
+    size_t limit_to(size_t x, size_t end)
+    {
+        return x < end ? x : end > 0 ? end - 1 : 0;
+    }
+}
+
 bool Score::Index::nextNote()
 {
     if (!isValid())
@@ -364,16 +371,15 @@ bool Score::Index::nextBar()
         {
             ++p_stream;
             p_bar = 0;
-            p_column = 0;
-            p_row = 0;
         }
     }
     else
     {
         ++p_bar;
-        p_column = 0;
-        p_row = 0;
     }
+    p_row = limit_to(p_row, score()->noteStream(stream()).numRows());
+    p_column = limit_to(p_column,
+                score()->noteStream(stream()).bar(bar(), row()).length());
     return true;
 }
 
@@ -389,16 +395,53 @@ bool Score::Index::prevBar()
         {
             --p_stream;
             p_bar = getStream().numBars() - 1;
-            p_column = 0;
-            p_row = 0;
         }
     }
     else
     {
         --p_bar;
-        p_column = 0;
-        p_row = 0;
     }
+    p_row = limit_to(p_row, score()->noteStream(stream()).numRows());
+    p_column = limit_to(p_column,
+                score()->noteStream(stream()).bar(bar(), row()).length());
+    return true;
+}
+
+bool Score::Index::nextBar(size_t count)
+{
+    int r = row(), c = column();
+    size_t k=0;
+    while (k<count && nextBar()) ++k;
+    p_row = limit_to(r, score()->noteStream(stream()).numRows());
+    p_column = limit_to(c,
+                score()->noteStream(stream()).bar(bar(), row()).length());
+    return k == count;
+}
+
+bool Score::Index::prevBar(size_t count)
+{
+    int r = row(), c = column();
+    size_t k=0;
+    while (k<count && prevBar()) ++k;
+    p_row = limit_to(r, score()->noteStream(stream()).numRows());
+    p_column = limit_to(c,
+                score()->noteStream(stream()).bar(bar(), row()).length());
+    return k == count;
+}
+
+bool Score::Index::nextRow()
+{
+    if (!isValid() || row()+1 >= getStream().numRows())
+        return false;
+    ++p_row;
+    return true;
+}
+
+bool Score::Index::prevRow()
+{
+    if (!isValid() || row() < 1)
+        return false;
+    --p_row;
     return true;
 }
 

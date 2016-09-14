@@ -94,10 +94,15 @@ public:
         bool prevNote();
 
         /** Iterates to the next Bar, or returns false if not possible.
-            The column() and row() will be set to zero on success.
+            The column() and row() will be limited on success.
             @note This function never changes the isValid() state. */
         bool nextBar();
         bool prevBar();
+        bool nextBar(size_t count);
+        bool prevBar(size_t count);
+
+        bool nextRow();
+        bool prevRow();
 
     private:
         friend class Score;

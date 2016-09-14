@@ -55,7 +55,7 @@ public:
     double minBarWidth() const { return p_props_.get("min-bar-width").toDouble(); }
     double maxBarWidth() const { return p_props_.get("max-bar-width").toDouble(); }
     double noteSize() const { return p_props_.get("note-size").toDouble(); }
-    int barsPerLine() const { return p_props_.get("bars-per-line").toInt(); }
+    size_t barsPerLine() const { return p_props_.get("bars-per-line").toInt(); }
 
     bool operator == (const ScoreLayout& o) const;
     bool operator != (const ScoreLayout& o) const { return !(*this == o); }

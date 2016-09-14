@@ -512,7 +512,8 @@ void Synth::Private::process(float *output, size_t bufferLength)
                 // advance phase counter
                 v->phase[j] += v->freq_c[j];
                 // get sample
-                s += std::sin(v->phase[j] * 3.14159265 * 2.);
+                s += std::sin(v->phase[j] * 3.14159265 * 2.)
+                     + .3 * std::sin(v->phase[j] * 3.14159265 * 2. * 4);
             }
 
             // put into buffer

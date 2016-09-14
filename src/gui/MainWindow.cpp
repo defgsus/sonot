@@ -55,7 +55,7 @@ struct MainWindow::Private
 
     // debugging
     void playSomething();
-    Score getScore();
+    Score getSomeScore();
     NoteStream getNotes1();
     NoteStream getNotes2();
     NoteStream getNotes3();
@@ -80,9 +80,11 @@ MainWindow::MainWindow(QWidget *parent)
     setGeometry(0,0,720,600);
     p_->createWidgets();
 
-    p_->playSomething();
+    p_->player->play(p_->synth, 1, p_->synth->sampleRate());
 
-    setScore(p_->getScore());
+    //p_->playSomething();
+
+    setScore(p_->getSomeScore());
 }
 
 MainWindow::~MainWindow()
@@ -100,6 +102,11 @@ void MainWindow::Private::createWidgets()
         scoreView = new ScoreView(p);
         scoreView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         lh->addWidget(scoreView);
+        connect(scoreView, &ScoreView::noteEntered, [=](const Note& n)
+        {
+            if (n.isNote())
+                synth->playNote(n.value());
+        });
 
         propsView = new QProps::PropertiesView(p);
         lh->addWidget(propsView);
@@ -134,7 +141,7 @@ void MainWindow::setScore(const Score& s)
     if (!p_->document)
     {
         p_->document = new ScoreDocument();
-        p_->scoreView->setScoreDocument(p_->document);
+        p_->scoreView->setDocument(p_->document);
     }
 
     p_->document->setScore(s);
@@ -172,10 +179,9 @@ void MainWindow::Private::playSomething()
     score.appendNoteStream(stream);
 
     synth->setScore(score);
-    player->play(synth, 1, synth->sampleRate());
 }
 
-Score MainWindow::Private::getScore()
+Score MainWindow::Private::getSomeScore()
 {
     Score score;
     score.setTitle("Space Invaders");

@@ -55,6 +55,8 @@ public slots:
     void setSynthProperties(const QProps::Properties& p)
         { p_synth.setProperties(p); }
 
+    void playNote(int8_t note, double duration = 1.);
+
 protected:
 
     bool p_fillBuffer();
@@ -67,6 +69,7 @@ protected:
     uint64_t p_curSample;
     double p_curBarTime;
     std::vector<int> p_notesPlaying;
+    std::list<int8_t> p_playNotes;
 };
 
 } // namespace Sonot

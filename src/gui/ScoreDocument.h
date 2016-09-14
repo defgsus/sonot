@@ -122,6 +122,7 @@ public:
     /** Returns the page index for a given point in document-space.
         Returns -1 if p is not on a page. */
     int pageIndexForDocumentPosition(const QPointF& p) const;
+    int pageIndexForScoreIndex(const Score::Index& idx) const;
 
     /** Returns the page number for the page index */
     int pageNumberForIndex(int pageIndex) const;

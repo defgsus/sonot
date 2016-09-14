@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "core/Note.h"
 #include "core/Score.h"
+#include "ScoreDocument.h"
 
 class QPainter;
 
@@ -39,13 +40,16 @@ public:
         T_BAR_SLASH
     };
 
-    ScoreItem(const Score::Index& i, const QRectF& rect);
-    ScoreItem(const Score::Index& i, const QLineF& rect);
+    ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
+              const QRectF& rect);
+    ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
+              const QLineF& rect);
 
     // ---- getter ----
 
     Score* score() const { return p_index_.score(); }
     Score::Index index() const { return p_index_; }
+    ScoreDocument::Index docIndex() const { return p_docIndex_; }
     Type type() const { return p_type_; }
 
     const Note& note() const { return p_index_.getNote(); }
@@ -60,6 +64,7 @@ public:
 private:
 
     Score::Index p_index_;
+    ScoreDocument::Index p_docIndex_;
     Type p_type_;
     QRectF p_rect_;
 };

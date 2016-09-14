@@ -24,16 +24,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
-ScoreItem::ScoreItem(const Score::Index& i, const QRectF& rect)
+ScoreItem::ScoreItem(const Score::Index& i,
+                     const ScoreDocument::Index& j, const QRectF& rect)
     : p_index_      (i)
+    , p_docIndex_   (j)
     , p_type_       (T_NOTE)
     , p_rect_       (rect)
 {
 
 }
 
-ScoreItem::ScoreItem(const Score::Index& i, const QLineF& line)
+ScoreItem::ScoreItem(const Score::Index& i, const ScoreDocument::Index& j, const QLineF& line)
     : p_index_      (i)
+    , p_docIndex_   (j)
     , p_type_       (T_BAR_SLASH)
     , p_rect_       (line.x1(), line.y1(),
                      line.x2()-line.x1(), line.y2()-line.y1())

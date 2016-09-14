@@ -23,9 +23,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QWidget>
 
+#include "core/Score.h"
+
 namespace Sonot {
 
-class Score;
+class Note;
 class ScoreDocument;
 class ScoreEditor;
 
@@ -38,14 +40,19 @@ public:
 
     // ----- getter -----
 
+    bool isAssigned() const { return scoreDocument() != nullptr; }
+
     ScoreDocument* scoreDocument() const;
+    ScoreEditor* editor() const;
 
     // ----- setter -----
 
     /** Ownership is not taken */
-    void setScoreDocument(ScoreDocument*);
+    void setDocument(ScoreDocument*);
 
 signals:
+
+    void noteEntered(const Note& n);
 
 public slots:
 
@@ -59,6 +66,9 @@ public slots:
     /** Sets the transformation such that the given page
         is completely visible. */
     void showPage(int pageIndex, double margin_mm = 5.);
+
+    /// Todo
+    void updateCursor(const Score::Index&) { update(); }
 
 protected:
 

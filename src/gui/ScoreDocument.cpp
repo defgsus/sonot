@@ -240,6 +240,14 @@ int ScoreDocument::pageIndexForDocumentPosition(const QPointF& p0) const
     return int(p.ry()) * 2 + int(p.rx()) - 1;
 }
 
+int ScoreDocument::pageIndexForScoreIndex(const Score::Index &idx) const
+{
+    if (!idx.isValid())
+        return -1;
+    auto item = getScoreItem(idx);
+    return item ? item->docIndex().pageIdx : -1;
+}
+
 ScoreDocument::BarItems* ScoreDocument::getBarItems(const Index& idx) const
 {
     auto i = p_->barItemMap.find(idx);
@@ -477,7 +485,8 @@ bool ScoreDocument::Private::createBarItems_Fixed(
                            y + scoreRect.y(),
                            noteSize, noteSize);
                 items->items.push_back(
-                            ScoreItem(scoreIdx.offset(row, col), rect) );
+                            ScoreItem(scoreIdx.offset(row, col),
+                                      items->docIndex, rect) );
                 scoreItemMap.insert(
                             items->items.back().index(),
                             &items->items.back() );
@@ -488,7 +497,9 @@ bool ScoreDocument::Private::createBarItems_Fixed(
         double x = barIdx * barWidth + scoreRect.x(),
                y = lineIdx * lineHeight + scoreRect.y();
         QLineF line(x, y, x, y + slayout.lineHeight(scoreIdx.numRows()));
-        items->items.push_back( ScoreItem(scoreIdx, line) );
+        items->items.push_back( ScoreItem(scoreIdx,
+                                          items->docIndex,
+                                          line) );
 
         // get bounding rect
         if (!items->items.isEmpty())
