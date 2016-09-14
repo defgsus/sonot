@@ -63,6 +63,7 @@ struct ScoreView::Private
         , penScoreRow           (QColor(0,0,0,50))
         , penScoreItem          (QColor(0,0,0))
         , penCursor             (QColor(0,60,100,50))
+        , penPlayCursor         (QColor(0,200,0,40))
     {
         penLayoutFrame.setStyle(Qt::DotLine);
     }
@@ -72,7 +73,7 @@ struct ScoreView::Private
     void connectEditor(ScoreEditor*);
     void onMatrixChanged();
     void setAction(Action);
-    void setCursor(const Score::Index& cursor);
+    void setCursor(const Score::Index& cursor, bool ensureVisible);
     void clearCursor();
 
     // --- drawing ---
@@ -99,7 +100,7 @@ struct ScoreView::Private
         lastMouseDownDoc;
     QTransform lastMouseDownMatrix;
 
-    Score::Index cursor;
+    Score::Index cursor, playCursor;
     QString inputString;
 
     // -- config --
@@ -109,7 +110,8 @@ struct ScoreView::Private
     QPen    penLayoutFrame,
             penScoreRow,
             penScoreItem,
-            penCursor;
+            penCursor,
+            penPlayCursor;
 };
 
 
@@ -148,21 +150,25 @@ void ScoreView::goToPage(int pageIndex, double margin)
 
     auto p = p_->document->pagePosition(pageIndex)
                             - QPointF(margin, margin);
+    moveToPoint(p);
+}
 
+void ScoreView::moveToPoint(const QPointF &p)
+{
     // current matrix without translation
     auto m = p_->matrix;
     m.setMatrix(m.m11(), m.m12(), m.m13(),
                 m.m21(), m.m22(), m.m23(),
                 0, 0, m.m33());
 
-    // transform requested page position to current matrix
-    p = m.map(p);
+    // transform requested position to current matrix
+    auto p2 = m.map(p);
 
     // replace position
     p_->matrix.setMatrix(
                 p_->matrix.m11(), p_->matrix.m12(), p_->matrix.m13(),
                 p_->matrix.m21(), p_->matrix.m22(), p_->matrix.m23(),
-                -p.x(), -p.y(), p_->matrix.m33());
+                -p2.x(), -p2.y(), p_->matrix.m33());
 
     p_->onMatrixChanged();
     update();
@@ -193,7 +199,53 @@ void ScoreView::showPage(int pageIndex, double margin_mm)
     showRect(r, margin_mm);
 }
 
+bool ScoreView::ensureIndexVisible(const Score::Index& idx)
+{
+    if (!isAssigned())
+        return false;
+    auto item = p_->document->getScoreItem(idx);
+    if (!item)
+        return false;
 
+    QRectF view = p_->imatrix.map(QRectF(rect())).boundingRect();
+    QRectF dst = item->boundingBox().adjusted(-5,-5,5,5);
+    dst.moveTo(dst.topLeft()
+               + p_->document->pagePosition(item->docIndex().pageIdx));
+    if (!view.contains(dst))
+    {
+        moveToPoint(dst.topLeft());
+        return true;
+    }
+    return false;
+}
+
+void ScoreView::updateIndex(const Score::Index& idx, double m)
+{
+    if (isAssigned())
+    if (auto item = p_->document->getScoreItem(idx))
+    {
+        QRectF dst = item->boundingBox();
+        dst.moveTo(dst.topLeft()
+               + p_->document->pagePosition(item->docIndex().pageIdx));
+        update(mapFromDocument(dst.adjusted(-m, -m, m, m)));
+    }
+}
+
+void ScoreView::setPlayingIndex(const Score::Index& cur)
+{
+    if (cur == p_->playCursor)
+        return;
+    if (p_->playCursor.isValid())
+        updateIndex(p_->playCursor);
+    p_->playCursor = cur;
+    if (p_->playCursor.isValid())
+        updateIndex(p_->playCursor);
+}
+
+QRect ScoreView::mapFromDocument(const QRectF& r)
+{
+    return p_->matrix.map(r).boundingRect().toRect();
+}
 
 
 
@@ -249,20 +301,27 @@ void ScoreView::Private::setAction(Action a)
     //qDebug() << "ACTION" << action;
 }
 
-void ScoreView::Private::setCursor(const Score::Index& cur)
+void ScoreView::Private::setCursor(const Score::Index& cur, bool ensureVisible)
 {
     if (cur == cursor)
         return;
     if (cursor.isValid())
-        p->updateCursor(cursor);
+        p->updateIndex(cursor);
     cursor = cur;
+    if (ensureVisible)
+    {
+        if (cursor.isValid())
+            if (!p->ensureIndexVisible(cursor))
+                p->updateIndex(cursor);
+        return;
+    }
     if (cursor.isValid())
-        p->updateCursor(cursor);
+        p->updateIndex(cursor);
 }
 
 void ScoreView::Private::clearCursor()
 {
-    setCursor(Score::Index());
+    setCursor(Score::Index(), false);
 }
 
 
@@ -287,7 +346,6 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
 
     if (p_->action == Private::A_ENTER_NOTE && p_->cursor.isValid())
     {
-        qDebug() << "old cursor" << p_->cursor.toString();
         // NAVIGATION
         bool handled = true;
         auto cursor = p_->cursor;
@@ -343,41 +401,77 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         {
             if (cursor != p_->cursor)
             {
-                p_->setCursor(cursor);
+                p_->setCursor(cursor, true);
                 p_->inputString.clear();
-                qDebug() << "new cursor" << p_->cursor.toString();
             }
             return;
         }
 
         // ENTER NOTES
-        if ((e->key() >= Qt::Key_0 && e->key() <= Qt::Key_9)
-          || (e->key() >= Qt::Key_A && e->key() <= Qt::Key_H)
-          || (e->key() == Qt::Key_Backspace)
-          || (e->key() == Qt::Key_X)
-          || (e->key() == '#')
-          )
+        handled = true;
+        switch (e->key())
         {
-            if (e->key() == Qt::Key_Backspace)
-                p_->inputString.chop(1);
-            else
+            case Qt::Key_0:
+            case Qt::Key_1:
+            case Qt::Key_2:
+            case Qt::Key_3:
+            case Qt::Key_4:
+            case Qt::Key_5:
+            case Qt::Key_6:
+            case Qt::Key_7:
+            case Qt::Key_8:
+            case Qt::Key_9:
                 p_->inputString += QChar(e->key());
-            //qDebug() << p_->inputString;
+            break;
+            case Qt::Key_A:
+            case Qt::Key_B:
+            case Qt::Key_C:
+            case Qt::Key_D:
+            case Qt::Key_E:
+            case Qt::Key_F:
+            case Qt::Key_G:
+            case Qt::Key_H:
+            case Qt::Key_I:
+            case Qt::Key_S:
+            case Qt::Key_X:
+            case Qt::Key_NumberSign: // #
+            case Qt::Key_Comma:
+            case Qt::Key_QuoteLeft: // '
+                p_->inputString += QChar(e->key());
+            break;
 
-            auto newVal = p_->inputString.isEmpty()
-                    ? (int8_t)Note::Space
-                    : Note::valueFromString(p_->inputString);
-            if (newVal != Note::Invalid)
-            {
-                Note n = p_->cursor.getNote();
-                n.setValue(newVal);
-                editor()->changeNote(p_->cursor, n);
-                emit noteEntered(n);
-            }
-            else
-                // remove illegal character
+            case Qt::Key_Space:
+                if (p_->inputString.size() < 2)
+                    p_->inputString.clear();
+            case Qt::Key_Backspace:
                 p_->inputString.chop(1);
+            break;
+            case Qt::Key_Delete:
+                p_->inputString.clear();
+            break;
+
+            default: handled = false;
         }
+
+        if (!handled)
+        {
+            e->ignore();
+            return;
+        }
+
+        Note n = p_->cursor.getNote();
+        auto newVal = p_->inputString.isEmpty()
+                        ? (int8_t)Note::Space
+                        : Note::valueFromString(p_->inputString);
+        if (newVal != Note::Invalid && newVal != n.value())
+        {
+            n.setValue(newVal);
+            editor()->changeNote(p_->cursor, n);
+            emit noteEntered(n);
+        }
+        else
+            // remove illegal or unused character
+            p_->inputString.chop(1);
 
         return;
     }
@@ -413,7 +507,7 @@ void ScoreView::mousePressEvent(QMouseEvent* e)
     {
         if (idx.isValid())
         {
-            p_->setCursor(idx);
+            p_->setCursor(idx, false);
             p_->setAction(Private::A_ENTER_NOTE);
             p_->inputString.clear();
             return;
@@ -508,6 +602,13 @@ void ScoreView::paintEvent(QPaintEvent* e)
 
     for (int i=0; i<500; ++i)
         p_->paintPage(&p, e->rect(), i);
+
+    /*
+    p.setBrush(QBrush(Qt::red));
+    QRectF r(0,0,5,5);
+    r.moveTo(p_->document->pagePosition(0));
+    p.drawRect(mapFromDocument(r));
+    */
 }
 
 
@@ -624,6 +725,15 @@ void ScoreView::Private::paintScore(
 
     p->setPen(penScoreItem);
     document->paintScoreItems(*p, pageIndex);
+
+    // play cursor
+    if (playCursor.isValid())
+    if (auto item = document->getScoreItem(playCursor))
+    {
+        p->setPen(penPlayCursor);
+        p->setBrush(Qt::NoBrush);
+        p->drawRect(item->boundingBox());
+    }
 
     // cursor
     if (action == A_ENTER_NOTE && cursor.isValid())

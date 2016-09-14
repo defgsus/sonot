@@ -82,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     p_->player->play(p_->synth, 1, p_->synth->sampleRate());
 
-    //p_->playSomething();
+    p_->playSomething();
 
     setScore(p_->getSomeScore());
 }
@@ -107,6 +107,8 @@ void MainWindow::Private::createWidgets()
             if (n.isNote())
                 synth->playNote(n.value());
         });
+        connect(synth, SIGNAL(indexChanged(Score::Index)),
+                scoreView, SLOT(setPlayingIndex(Score::Index)));
 
         propsView = new QProps::PropertiesView(p);
         lh->addWidget(propsView);
@@ -175,7 +177,7 @@ void MainWindow::Private::playSomething()
 
     Score score;
     NoteStream stream = getNotes3();
-    qDebug().noquote() << stream.toString();
+    //qDebug().noquote() << stream.toString();
     score.appendNoteStream(stream);
 
     synth->setScore(score);
@@ -352,6 +354,13 @@ NoteStream MainWindow::Private::getNotes3()
         stream.appendBar(rows);
     }
 #undef SONOT__BAR
+
+    Bar empty;
+    empty << " " << " " << " " << " ";
+    QList<Bar> rows;
+    rows << empty << empty;
+    for (int i=0; i<320; ++i)
+        stream.appendBar(rows);
 
     return stream;
 }

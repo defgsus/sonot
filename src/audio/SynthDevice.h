@@ -55,7 +55,13 @@ public slots:
     void setSynthProperties(const QProps::Properties& p)
         { p_synth.setProperties(p); }
 
+
+    /** Play a single note as soon as possible */
     void playNote(int8_t note, double duration = 1.);
+
+signals:
+
+    void indexChanged(const Score::Index&);
 
 protected:
 

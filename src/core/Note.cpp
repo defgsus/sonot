@@ -147,6 +147,10 @@ int8_t Note::valueFromString(const QString &s)
         oct = (short)str.at(i).unicode() - short('0');
     }
 
+    // octave subscript?
+    oct += str.count(QChar('\''));
+    oct -= str.count(QChar(','));
+
     val += oct * 12;
 
     return val >= 0 ? val : int8_t(Invalid);

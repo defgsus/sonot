@@ -53,7 +53,11 @@ qint64 SynthDevice::readData(char *data, qint64 maxlen)
     {
         if (p_consumed >= (qint64)p_buffer.size())
         {
-            if (!p_fillBuffer())
+            auto oldIdx = p_index;
+            bool ret = p_fillBuffer();
+            if (p_index != oldIdx)
+                emit indexChanged(p_index);
+            if (!ret)
                 return written;
 
             p_consumed = 0;

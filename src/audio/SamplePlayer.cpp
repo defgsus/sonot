@@ -197,7 +197,8 @@ void SamplePlayer::play(QIODevice* lentDevice,
             case QAudio::SuspendedState: qDebug() << "suspended"; break;
             case QAudio::IdleState:
                 qDebug() << "idle";
-                p_->remove(sample);
+                //p_->remove(sample);
+                sample->audio->start(sample->lentDevice);
             break;
             case QAudio::StoppedState:
                 qDebug() << "stopped";

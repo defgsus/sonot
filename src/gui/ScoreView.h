@@ -45,6 +45,8 @@ public:
     ScoreDocument* scoreDocument() const;
     ScoreEditor* editor() const;
 
+    QRect mapFromDocument(const QRectF& docSpace);
+
     // ----- setter -----
 
     /** Ownership is not taken */
@@ -67,8 +69,17 @@ public slots:
         is completely visible. */
     void showPage(int pageIndex, double margin_mm = 5.);
 
-    /// Todo
-    void updateCursor(const Score::Index&) { update(); }
+    /** Move the view such that p is top-left,
+        leaves scaling in place */
+    void moveToPoint(const QPointF& p);
+
+    /** Ensures the point to be within view.
+        Returns true, if the view has changed */
+    bool ensureIndexVisible(const Score::Index& );
+
+    void updateIndex(const Score::Index&, double margin = 1.);
+
+    void setPlayingIndex(const Score::Index&);
 
 protected:
 

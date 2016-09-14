@@ -118,7 +118,9 @@ void SonotCoreTest::testNoteFromString()
 #define SONOT__COMPARE(str__, N__) \
     QCOMPARE(Note(str__),       Note(Note::N__, 3)); \
     QCOMPARE(Note(str__ "4"),   Note(Note::N__, 4)); \
-    QCOMPARE(Note(str__ "-5"),  Note(Note::N__, 5));
+    QCOMPARE(Note(str__ "-5"),  Note(Note::N__, 5)); \
+    QCOMPARE(Note(str__ ",,"),  Note(Note::N__, 1)); \
+    QCOMPARE(Note(str__ "'''"), Note(Note::N__, 6));
     //QCOMPARE(Note(str__).value(), int8_t(Note::N__ + 3 * 12));
     //qDebug() << Note(str__).toNoteString() << Note(Note::N__, 3).toNoteString();
 

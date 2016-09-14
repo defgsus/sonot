@@ -113,7 +113,7 @@ public:
 
     // ---- helper ----
 
-    /** Top-left position of given page */
+    /** Top-left position of given page in document space */
     QPointF pagePosition(int pageIndex) const;
 
     /** Spacing between displayed pages */
