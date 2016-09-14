@@ -46,6 +46,7 @@ public:
     ScoreEditor* editor() const;
 
     QRect mapFromDocument(const QRectF& docSpace);
+    QRectF mapToDocument(const QRect& widgetSpace);
 
     // ----- setter -----
 

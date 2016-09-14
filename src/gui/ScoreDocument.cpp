@@ -50,6 +50,13 @@ struct ScoreDocument::Private
         delete editor;
     }
 
+    enum ReturnCode
+    {
+        R_ALL_GOOD,
+        R_DATA_FINISHED,
+        R_PAGE_FINISHED
+    };
+
     void initProps();
     void initLayout();
     void initEditor();
@@ -58,7 +65,8 @@ struct ScoreDocument::Private
 
     void createItems();
     bool createBarItems_Fixed(int pageIdx, Score::Index& scoreIdx);
-    bool createBarItems_Fixed(int pageIdx, int lineIdx, Score::Index& scoreIdx);
+    ReturnCode createBarItems_Fixed(
+            int pageIdx, int lineIdx, Score::Index& scoreIdx);
 
     ScoreDocument* p;
 
@@ -225,6 +233,13 @@ QPointF ScoreDocument::pagePosition(int pageIndex) const
                 (pageIndex / 2) * (r.height() + spacing.y()));
 }
 
+QRectF ScoreDocument::pageRect(int pageIdx) const
+{
+    QRectF r = pageRect();
+    r.moveTo(pagePosition(pageIdx));
+    return r;
+}
+
 int ScoreDocument::pageIndexForDocumentPosition(const QPointF& p0) const
 {
     if (p0.x() < 0.)
@@ -302,12 +317,13 @@ Score::Index ScoreDocument::getScoreIndex(
     return getScoreIndex(page, documentPos - pagePosition(page));
 }
 
+/*
 void ScoreDocument::updateScoreIndex(const Score::Index& i)
 {
     QPROPS_ASSERT(i.isValid(), "in ScoreDocument::updateScoreIndex()");
     auto s = getScoreItem(i);
 }
-
+*/
 
 void ScoreDocument::initLayout() { p_->initLayout(); }
 
@@ -395,17 +411,17 @@ void ScoreDocument::setPageLayout(int pageIndex, const PageLayout &p)
 void ScoreDocument::Private::initEditor()
 {
     QObject::connect(editor, &ScoreEditor::scoreReset,
-            [=](Score* s)
+            [=](Score* )
     {
         createItems();
     });
     QObject::connect(editor, &ScoreEditor::streamsChanged,
-            [=](const ScoreEditor::IndexList& idxs)
+            [=](const ScoreEditor::IndexList& )
     {
         createItems();
     });
     QObject::connect(editor, &ScoreEditor::noteValuesChanged,
-            [=](const ScoreEditor::IndexList& idxs)
+            [=](const ScoreEditor::IndexList& )
     {
         createItems();
     });
@@ -427,45 +443,58 @@ void ScoreDocument::Private::createItems()
     /// @todo non-fixed layout
     if (p->scoreLayout(0).isFixedBarWidth())
     {
-        createBarItems_Fixed(0, scoreIdx);
+        int page = 0;
+        while (createBarItems_Fixed(page, scoreIdx))
+        {
+            //qDebug() << scoreIdx.toString();
+            ++page;
+        }
     }
 }
 
 bool ScoreDocument::Private::createBarItems_Fixed(
         int pageIdx, Score::Index& scoreIdx)
 {
-    int line = 0;
-    while (createBarItems_Fixed(pageIdx, line, scoreIdx))
-        ++line;
+    for (int line=0; ; ++line)
+    {
+        ReturnCode ret = createBarItems_Fixed(pageIdx, line, scoreIdx);
+        if (ret == R_DATA_FINISHED)
+            return false;
+        else if (ret == R_PAGE_FINISHED)
+            return true;
+    }
     return false;
 }
 
-bool ScoreDocument::Private::createBarItems_Fixed(
+ScoreDocument::Private::ReturnCode
+ScoreDocument::Private::createBarItems_Fixed(
         int pageIdx, int lineIdx, Score::Index& scoreIdx)
 {
     const ScoreLayout& slayout = p->scoreLayout(pageIdx);
     const PageLayout& playout = p->pageLayout(pageIdx);
+    const QRectF scoreRect = playout.scoreRect();
 
-    double noteSize = slayout.noteSize(),
-           rowSpace = slayout.rowSpacing();
-    size_t numBarsPerLine = slayout.barsPerLine();
+    double lineHeight = slayout.lineHeight(scoreIdx.numRows())
+                      + slayout.lineSpacing();
+
+    // break if page ended
+    if ((lineIdx+1) * lineHeight
+            >= scoreRect.height() - slayout.lineSpacing())
+        return R_PAGE_FINISHED;
+
+    const double
+            noteSize = slayout.noteSize(),
+            rowSpace = slayout.rowSpacing();
+    const size_t numBarsPerLine = slayout.barsPerLine();
     QPROPS_ASSERT(numBarsPerLine > 0, "");
-    QRectF scoreRect = playout.scoreRect();
-    double barWidth = scoreRect.width() / numBarsPerLine;
+    const double barWidth = scoreRect.width() / numBarsPerLine;
 
     for (size_t barIdx = 0; barIdx < numBarsPerLine; ++barIdx)
     {
-        // max num notes in this bar
-        //size_t numNotes = scoreIdx.getNoteStream().numNotes(scoreIdx.bar());
-
-        //auto scoreIdx.getBars();
-
+        // container for one bar block
         auto items = new BarItems;
         items->docIndex = Index(pageIdx, lineIdx, barIdx);
         items->scoreIndex = scoreIdx;
-
-        double lineHeight = slayout.lineHeight(scoreIdx.numRows())
-                          + slayout.lineSpacing();
 
         // create item for each note in this bar block
         for (size_t row=0; row<scoreIdx.numRows(); ++row)
@@ -516,20 +545,21 @@ bool ScoreDocument::Private::createBarItems_Fixed(
         barItemMap.insert(items->docIndex, items);
 
         if (!scoreIdx.nextBar())
-            return false;
+            return R_DATA_FINISHED;
     }
-    return true;
+    return R_ALL_GOOD;
 }
 
-void ScoreDocument::paintScoreItems(QPainter &p, int pageIdx) const
+void ScoreDocument::paintScoreItems(QPainter &p, int pageIdx,
+                                    const QRectF& updateRect) const
 {
     for (auto& sp : p_->barItems)
     {
         BarItems* items = sp.get();
         if (items->docIndex.pageIdx != pageIdx)
-            return;
+            continue;
 
-        //p.drawRect(items->boundingBox);
+        if (updateRect.intersects(items->boundingBox))
         for (ScoreItem& item : items->items)
         {
             item.paint(p);

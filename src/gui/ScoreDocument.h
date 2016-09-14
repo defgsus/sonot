@@ -113,6 +113,9 @@ public:
 
     // ---- helper ----
 
+    /** Rectangle of page in document space */
+    QRectF pageRect(int pageIdx) const;
+
     /** Top-left position of given page in document space */
     QPointF pagePosition(int pageIndex) const;
 
@@ -136,7 +139,7 @@ public:
     Score::Index getScoreIndex(int pageIdx, const QPointF& pagePos) const;
     Score::Index getScoreIndex(const QPointF& documentPos) const;
     ScoreItem* getScoreItem(const Score::Index& i) const;
-    void updateScoreIndex(const Score::Index& i);
+    //void updateScoreIndex(const Score::Index& i);
 
     // ----- settter ------
 
@@ -153,7 +156,8 @@ public:
 
     // ----- render -----
 
-    void paintScoreItems(QPainter& p, int pageIdx) const;
+    void paintScoreItems(QPainter& p, int pageIdx,
+                         const QRectF& updateRect) const;
 
 private:
     QProps::Properties& props();

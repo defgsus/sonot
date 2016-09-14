@@ -81,10 +81,10 @@ struct ScoreView::Private
     bool doShowLayoutBoxes() const { return true; }
 
     void paintBackground(QPainter* p, const QRect& updateRect) const;
-    void paintPage(QPainter* p, const QRect& updateRect, int pageIndex) const;
+    void paintPage(QPainter* p, const QRectF& updateRect, int pageIndex) const;
     void paintPageAnnotation
-            (QPainter* p, const QRect& updateRect, int pageIndex) const;
-    void paintScore(QPainter* p, const QRect& updateRect, int pageIndex) const;
+            (QPainter* p, const QRectF& updateRect, int pageIndex) const;
+    void paintScore(QPainter* p, const QRectF& updateRect, int pageIndex) const;
 
     ScoreView* p;
 
@@ -244,7 +244,12 @@ void ScoreView::setPlayingIndex(const Score::Index& cur)
 
 QRect ScoreView::mapFromDocument(const QRectF& r)
 {
-    return p_->matrix.map(r).boundingRect().toRect();
+    return p_->matrix.mapRect(r).toRect();
+}
+
+QRectF ScoreView::mapToDocument(const QRect& r)
+{
+    return p_->imatrix.mapRect(r);
 }
 
 
@@ -600,8 +605,10 @@ void ScoreView::paintEvent(QPaintEvent* e)
     if (!isAssigned())
         return;
 
-    for (int i=0; i<500; ++i)
-        p_->paintPage(&p, e->rect(), i);
+    QRectF docUpdate = mapToDocument(e->rect());
+
+    for (int i=0; i<100; ++i)
+        p_->paintPage(&p, docUpdate, i);
 
     /*
     p.setBrush(QBrush(Qt::red));
@@ -613,7 +620,7 @@ void ScoreView::paintEvent(QPaintEvent* e)
 
 
 void ScoreView::Private::paintBackground(
-        QPainter *p, const QRect &updateRect) const
+        QPainter* p, const QRect& /*updateRect*/) const
 {
     // widget background
     auto r = this->p->rect();
@@ -622,24 +629,25 @@ void ScoreView::Private::paintBackground(
 }
 
 void ScoreView::Private::paintPage(
-        QPainter *p, const QRect& updateRect, int pageIndex) const
+        QPainter *p, const QRectF& updateRect, int pageIndex) const
 {
-    auto mat = matrix;
+    {
+        QRectF pr = document->pageRect(pageIndex);
+        if (!pr.intersects(updateRect))
+            return;
+    }
+
     auto pageLayout = document->pageLayout(pageIndex);
     auto pagePos = document->pagePosition(pageIndex);
 
+    auto mat = matrix;
     mat.translate(pagePos.x(), pagePos.y());
-
-    {
-        auto r = mat.mapRect( pageLayout.pageRect() );
-        if (!QRectF(this->p->rect()).intersects(r))
-            return;
-    }
 
     p->save();
     p->setTransform(mat);
 
     // page packground
+    //QBrush b(QColor(rand()&0xff,rand()&0xff,rand()&0xff));
     p->fillRect(pageLayout.pageRect(), brushPageBackground);
 
     // content borders / margins
@@ -651,14 +659,20 @@ void ScoreView::Private::paintPage(
         p->drawRect(pageLayout.scoreRect());
     }
 
-    paintPageAnnotation(p, updateRect, pageIndex);
-    paintScore(p, updateRect, pageIndex);
+    // page-local update rect
+    QRectF uRect = updateRect;
+    uRect.moveTo(updateRect.x()-pagePos.x(),
+                 updateRect.y()-pagePos.y());
+
+    paintPageAnnotation(p, uRect, pageIndex);
+    paintScore(p, uRect, pageIndex);
 
     p->restore();
 }
 
 void ScoreView::Private::paintPageAnnotation(
-        QPainter* p, const QRect& /*updateRect*/, int pageIndex) const
+        QPainter* p, const QRectF& /*updateRect*/,
+        int pageIndex) const
 {
     PageAnnotation anno = document->pageAnnotation(pageIndex);
 
@@ -700,7 +714,7 @@ void ScoreView::Private::paintPageAnnotation(
 }
 
 void ScoreView::Private::paintScore(
-        QPainter* p, const QRect& /*updateRect*/, int pageIndex) const
+        QPainter* p, const QRectF& updateRect, int pageIndex) const
 {
     auto pageLayout = document->pageLayout(pageIndex);
     auto scoreLayout = document->scoreLayout(pageIndex);
@@ -723,12 +737,16 @@ void ScoreView::Private::paintScore(
     }
     */
 
+    //p->setBrush(QBrush(QColor(rand()&0xff,rand()&0xff,rand()&0xff)));
+    //p->drawRect(updateRect);
+
     p->setPen(penScoreItem);
-    document->paintScoreItems(*p, pageIndex);
+    document->paintScoreItems(*p, pageIndex, updateRect);
 
     // play cursor
     if (playCursor.isValid())
     if (auto item = document->getScoreItem(playCursor))
+    if (item->docIndex().pageIdx == pageIndex)
     {
         p->setPen(penPlayCursor);
         p->setBrush(Qt::NoBrush);
@@ -738,6 +756,7 @@ void ScoreView::Private::paintScore(
     // cursor
     if (action == A_ENTER_NOTE && cursor.isValid())
     if (auto item = document->getScoreItem(cursor))
+    if (item->docIndex().pageIdx == pageIndex)
     {
         p->setPen(penCursor);
         p->setBrush(Qt::NoBrush);
