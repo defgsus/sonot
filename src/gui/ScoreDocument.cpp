@@ -419,16 +419,55 @@ void ScoreDocument::Private::initEditor()
     {
         createItems();
     });
-    QObject::connect(editor, &ScoreEditor::streamsChanged,
-            [=](const ScoreEditor::IndexList& )
-    {
-        createItems();
-    });
+
     QObject::connect(editor, &ScoreEditor::noteValuesChanged,
             [=](const ScoreEditor::IndexList& )
     {
         createItems();
     });
+    QObject::connect(editor, &ScoreEditor::barsChanged,
+            [=](const ScoreEditor::IndexList& )
+    {
+        createItems();
+    });
+    QObject::connect(editor, &ScoreEditor::streamsChanged,
+            [=](const ScoreEditor::IndexList& )
+    {
+        createItems();
+    });
+
+    QObject::connect(editor, &ScoreEditor::notesAboutToBeDeleted,
+            [=](const ScoreEditor::IndexList& )
+    {
+        createItems();
+    });
+    QObject::connect(editor, &ScoreEditor::barsAboutToBeDeleted,
+            [=](const ScoreEditor::IndexList& )
+    {
+        createItems();
+    });
+    QObject::connect(editor, &ScoreEditor::streamsAboutToBeDeleted,
+            [=](const ScoreEditor::IndexList& )
+    {
+        createItems();
+    });
+
+    QObject::connect(editor, &ScoreEditor::notesDeleted,
+            [=](const ScoreEditor::IndexList& )
+    {
+        createItems();
+    });
+    QObject::connect(editor, &ScoreEditor::barsDeleted,
+            [=](const ScoreEditor::IndexList& )
+    {
+        createItems();
+    });
+    QObject::connect(editor, &ScoreEditor::streamsDeleted,
+            [=](const ScoreEditor::IndexList& )
+    {
+        createItems();
+    });
+
 }
 
 

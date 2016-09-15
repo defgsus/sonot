@@ -414,6 +414,19 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             return;
         }
 
+        // INSERT/DELETE
+        if (e->key() == Qt::Key_Insert)
+        {
+            editor()->insertNote(p_->cursor, Note(Note::Space));
+            return;
+        }
+        if (e->key() == Qt::Key_Delete)
+        {
+            editor()->deleteNote(p_->cursor);
+            return;
+        }
+
+
         // ENTER NOTES
         handled = true;
         switch (e->key())

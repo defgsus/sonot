@@ -48,7 +48,7 @@ ScoreLayout::ScoreLayout()
                  5., .1);
     p_props_.set("line-spacing", tr("line spacing"),
                  tr("The vertical distance between lines of score"),
-                 10., 1.);
+                 7., 1.);
     p_props_.set("min-bar-width", tr("bar width (minimum)"),
                  tr("The minimum width of a bar"),
                  24., 1.);
