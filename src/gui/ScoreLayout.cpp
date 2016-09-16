@@ -37,7 +37,7 @@ ScoreLayout::ScoreLayout()
     p_props_.set("bars-per-line", tr("bars per line"),
                  tr("The factor of the number of bars that should go "
                     "on one line"),
-                 8);
+                 4);
     p_props_.setMin("bars-per-line", 1);
 
     p_props_.set("note-spacing", tr("note spacing"),

@@ -56,12 +56,17 @@ void ScoreItem::paint(QPainter& p)
         p.setFont(f);
         p.drawText(p_rect_, Qt::AlignCenter | Qt::TextDontClip, t);
         //p.drawRect(p_rect_);
+
+        //p.drawLine(p_rect_.center().x(), p_rect_.top(),
+        //           p_rect_.center().x(), p_rect_.bottom());
     }
     else
     {
         p.drawLine(p_rect_.x(), p_rect_.y(),
                    p_rect_.bottomRight().x(), p_rect_.bottomRight().y());
     }
+
+
 }
 
 } // namespace Sonot

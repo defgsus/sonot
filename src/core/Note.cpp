@@ -218,6 +218,13 @@ QString Note::toSpanishString() const
     return n;
 }
 
+QString Note::toShortAlphaString() const
+{
+    QString s = to3String().remove("-");
+    if (s.endsWith("3"))
+        s.chop(1);
+    return s;
+}
 
 Note& Note::setOctave(int8_t o)
 {
