@@ -96,11 +96,11 @@ MainWindow::MainWindow(QWidget *parent)
     p_->createWidgets();
     p_->createMenu();
 
+    // put synthStream into play
     p_->player->play(p_->synthStream, 1, p_->synthStream->sampleRate());
 
-    //p_->playSomething();
-
-    setScore(p_->getSomeScore());
+    //setScore(p_->getSomeScore());
+    setScore(p_->createNewScore());
 }
 
 MainWindow::~MainWindow()
@@ -295,12 +295,7 @@ bool MainWindow::Private::saveScore(const Score& s, const QString& fn)
 Score MainWindow::Private::createNewScore()
 {
     NoteStream n;
-    QList<Bar> rows;
-    Bar b;
-    b << " " << " " << " " << " ";
-    rows << b << b;
-    for (int i=0; i<8; ++i)
-        n.appendBar(rows);
+    n.appendBar(n.defaultBarRows());
 
     Score s;
     s.appendNoteStream(n);

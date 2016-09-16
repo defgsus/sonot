@@ -637,17 +637,17 @@ void ScoreDocument::Private::initEditor()
     QObject::connect(editor, &ScoreEditor::notesAboutToBeDeleted,
             [=](const ScoreEditor::IndexList& )
     {
-        createItems();
+
     });
     QObject::connect(editor, &ScoreEditor::barsAboutToBeDeleted,
             [=](const ScoreEditor::IndexList& )
     {
-        createItems();
+
     });
     QObject::connect(editor, &ScoreEditor::streamsAboutToBeDeleted,
             [=](const ScoreEditor::IndexList& )
     {
-        createItems();
+
     });
 
     QObject::connect(editor, &ScoreEditor::notesDeleted,
@@ -765,13 +765,24 @@ ScoreDocument::Private::createBarItems_Fixed(
             }
         }
 
-        // bar-slash item
+        // leading bar-slash item
         double x = barIdx * barWidth + scoreRect.x(),
                y = lineIdx * lineHeight + scoreRect.y();
         QLineF line(x, y, x, y + slayout.lineHeight(scoreIdx.numRows()));
         items->items.push_back( ScoreItem(scoreIdx,
                                           items->docIndex,
                                           line) );
+
+        if (barIdx + 1 == numBarsPerLine)
+        {
+            // trailing bar-slash item
+            double x = scoreRect.right(),
+                   y = lineIdx * lineHeight + scoreRect.y();
+            QLineF line(x, y, x, y + slayout.lineHeight(scoreIdx.numRows()));
+            items->items.push_back( ScoreItem(scoreIdx,
+                                              items->docIndex,
+                                              line) );
+        }
 
         // get bounding rect
         if (!items->items.isEmpty())
@@ -788,7 +799,17 @@ ScoreDocument::Private::createBarItems_Fixed(
         barItemMap.insert(items->docIndex, items);
 
         if (!scoreIdx.nextBar())
+        {
+            // trailing bar-slash item
+            double x = (barIdx+1) * barWidth + scoreRect.x(),
+                   y = lineIdx * lineHeight + scoreRect.y();
+            QLineF line(x, y, x, y + slayout.lineHeight(scoreIdx.numRows()));
+            items->items.push_back( ScoreItem(scoreIdx,
+                                              items->docIndex,
+                                              line) );
             return R_DATA_FINISHED;
+        }
+
     }
     return R_ALL_GOOD;
 }

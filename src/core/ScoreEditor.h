@@ -43,7 +43,8 @@ public:
 
     void setScore(const Score& s);
     void insertNote(const Score::Index&, const Note& n);
-    void insertBars(const Score::Index&, const QList<Bar>& rows);
+    void insertBars(const Score::Index&, const QList<Bar>& rows,
+                    bool insertAfterIndex = false);
     void changeNote(const Score::Index&, const Note& n);
     void changeBar(const Score::Index&, const Bar& b);
     void deleteNote(const Score::Index&);

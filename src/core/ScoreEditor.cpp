@@ -85,13 +85,14 @@ void ScoreEditor::insertNote(const Score::Index& idx, const Note& n)
     }
 }
 
-void ScoreEditor::insertBars(const Score::Index& idx, const QList<Bar>& rows)
+void ScoreEditor::insertBars(
+        const Score::Index& idx, const QList<Bar>& rows, bool after)
 {
     SONOT__CHECK_INDEX(idx);
     if (NoteStream* stream = p_->getStream(idx))
     {
         //size_t rows = stream->numRows();
-        stream->insertBar(idx.bar(), rows);
+        stream->insertBar(idx.bar() + (after ? 1 : 0), rows);
         //if (stream->numRows() != rows)
         emit streamsChanged(IndexList() << idx);
     }

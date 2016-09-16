@@ -412,8 +412,16 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         }
         if (e->key() == Qt::Key_Delete)
         {
-            editor()->deleteNote(p_->cursor);
+            if (p_->cursor.getBar().length() > 1)
+                editor()->deleteNote(p_->cursor);
             return;
+        }
+        if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Return)
+        {
+            size_t len = p_->cursor.getStream().numNotes(p_->cursor.bar());
+            editor()->insertBars(p_->cursor,
+                                 p_->cursor.getStream().defaultBarRows(len),
+                                 true);
         }
 
 
@@ -543,10 +551,9 @@ void ScoreView::mouseReleaseEvent(QMouseEvent* )
     if (!isAssigned())
         return;
 
-    if (p_->action != Private::A_ENTER_NOTE)
-    {
-        p_->setAction(Private::A_NOTHING);
-    }
+    p_->setAction( p_->cursor.isValid()
+            ? Private::A_ENTER_NOTE
+            : Private::A_NOTHING );
 }
 
 void ScoreView::mouseMoveEvent(QMouseEvent* e)
@@ -646,15 +653,22 @@ void ScoreView::Private::paintPage(
     auto pageLayout = document->pageLayout(pageIndex);
     auto pagePos = document->pagePosition(pageIndex);
 
+    // page-local matrix
     auto mat = matrix;
     mat.translate(pagePos.x(), pagePos.y());
 
     p->save();
     p->setTransform(mat);
 
+    // page-local update rect
+    QRectF uRect = updateRect;
+    uRect.moveTo(updateRect.x()-pagePos.x(),
+                 updateRect.y()-pagePos.y());
+
     // page packground
     //QBrush b(QColor(rand()&0xff,rand()&0xff,rand()&0xff));
-    p->fillRect(pageLayout.pageRect(), brushPageBackground);
+    p->fillRect((pageLayout.pageRect() & uRect.adjusted(-1,-1,1,1)),
+                brushPageBackground);
 
     // content borders / margins
     if (doShowLayoutBoxes())
@@ -664,11 +678,6 @@ void ScoreView::Private::paintPage(
         p->drawRect(pageLayout.contentRect());
         p->drawRect(pageLayout.scoreRect());
     }
-
-    // page-local update rect
-    QRectF uRect = updateRect;
-    uRect.moveTo(updateRect.x()-pagePos.x(),
-                 updateRect.y()-pagePos.y());
 
     paintPageAnnotation(p, uRect, pageIndex);
     paintScore(p, uRect, pageIndex);

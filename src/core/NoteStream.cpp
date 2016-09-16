@@ -39,6 +39,20 @@ bool NoteStream::operator == (const NoteStream& rhs) const
     return p_data_ == rhs.p_data_;
 }
 
+Bar NoteStream::defaultBar(size_t len) const
+{
+    return Bar(std::max(size_t(1), len));
+}
+
+QList<Bar> NoteStream::defaultBarRows(size_t len) const
+{
+    size_t c = std::max(size_t(1), numRows());
+    QList<Bar> rows;
+    for (size_t i=0; i<c; ++i)
+        rows << defaultBar(len);
+    return rows;
+}
+
 size_t NoteStream::numNotes() const
 {
     size_t n = 0;
@@ -163,7 +177,7 @@ void NoteStream::insertBar(size_t idx, const QList<Bar>& barList)
         for (size_t i=1; i<numRows(); ++i)
             bars.push_back( defaultBar() );
     }
-    else
+    else if (bars.size() > numRows())
         // otherwise resize data
         setNumRows(bars.size());
 
