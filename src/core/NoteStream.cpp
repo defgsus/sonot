@@ -97,19 +97,29 @@ Bar& NoteStream::bar(size_t idx, size_t row)
 
 const Note& NoteStream::note(size_t idx, size_t row, size_t column) const
 {
-    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
-    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::bar()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::note()");
+    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::note()");
     const Bar& b = bar(idx, row);
-    QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::bar()");
+    QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::note()");
     return b.note(column);
+}
+
+QList<Bar> NoteStream::getRows(size_t idx) const
+{
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::getRows()");
+
+    QList<Bar> rows;
+    for (size_t i=0; i<numRows(); ++i)
+        rows << bar(idx, i);
+    return rows;
 }
 
 void NoteStream::setNote(size_t idx, size_t row, size_t column, const Note& n)
 {
-    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
-    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::bar()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::setNote()");
+    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::setNote()");
     Bar& b = bar(idx, row);
-    QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::bar()");
+    QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::setNote()");
     b.setNote(column, n);
 }
 
@@ -187,7 +197,36 @@ void NoteStream::insertBar(size_t idx, const QList<Bar>& barList)
         p_data_.push_back(bars);
 }
 
+void NoteStream::insertRow(size_t row)
+{
+    for (std::vector<Bar>& barBlock : p_data_)
+    {
+        size_t len = 1;
+        if (!barBlock.empty())
+        {
+            len = barBlock.front().length();
+            for (auto& b : barBlock)
+                len = std::max(len, b.length());
+        }
+        Bar bar = defaultBar(len);
 
+        if (row < barBlock.size())
+            barBlock.insert(barBlock.begin() + row, bar);
+        else
+            barBlock.push_back(bar);
+    }
+}
+
+void NoteStream::removeRow(size_t row)
+{
+    if (row >= numRows())
+        return;
+
+    for (std::vector<Bar>& barBlock : p_data_)
+    {
+        barBlock.erase(barBlock.begin() + row);
+    }
+}
 
 QString NoteStream::toTabString() const
 {

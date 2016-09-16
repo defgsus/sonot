@@ -84,6 +84,7 @@ public:
         const Note& getNote(int row, int column) const;
 
         Index topLeft() const { return score()->index(stream(), bar(), 0, 0); }
+        Index left() const { return score()->index(stream(), bar(), row(), 0); }
         Index offset(int row_, int column_) const
             { return score()->index(stream(), bar(),
                                     row()+row_, column()+column_); }

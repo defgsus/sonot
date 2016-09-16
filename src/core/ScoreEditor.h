@@ -42,14 +42,17 @@ public:
     // --- editing ---
 
     void setScore(const Score& s);
-    void insertNote(const Score::Index&, const Note& n);
-    void insertBars(const Score::Index&, const QList<Bar>& rows,
+
+    bool insertNote(const Score::Index&, const Note& n);
+    bool insertBars(const Score::Index&, const QList<Bar>& rows,
                     bool insertAfterIndex = false);
-    void changeNote(const Score::Index&, const Note& n);
-    void changeBar(const Score::Index&, const Bar& b);
-    void deleteNote(const Score::Index&);
-    void deleteBar(const Score::Index&);
-    void deleteStream(const Score::Index&);
+    bool insertRow(const Score::Index&, bool insertAfterIndex = false);
+    bool changeNote(const Score::Index&, const Note& n);
+    bool changeBar(const Score::Index&, const Bar& b);
+    bool deleteNote(const Score::Index&);
+    bool deleteBar(const Score::Index&);
+    bool deleteRow(const Score::Index&);
+    bool deleteStream(const Score::Index&);
 
 signals:
 

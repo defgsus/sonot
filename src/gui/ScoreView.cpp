@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <algorithm>
 
 #include <QDebug>
+#include <QAction>
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QWheelEvent>
@@ -124,7 +125,8 @@ ScoreView::ScoreView(QWidget *parent)
     : QWidget       (parent)
     , p_            (new Private(this))
 {
-    grabKeyboard();
+    //grabKeyboard();
+    setFocusPolicy(Qt::StrongFocus);
 
     p_->matrix.scale(2., 2.);
 }
@@ -184,7 +186,7 @@ void ScoreView::showRect(const QRectF& dst, double bo)
     QRectF src = QRectF(rect());
     double dx = src.width() / std::max(1., 2.*bo+dst.width()),
            dy = src.height() / std::max(1., 2.*bo+dst.height());
-    dx = std::min(dx, dy);
+    dx = std::max(dx, dy);
     QTransform m;
     m.scale(dx, dx);
     m.translate(-dst.x() + bo, -dst.y() + bo);
@@ -268,6 +270,155 @@ QRectF ScoreView::mapToDocument(const QRect& r)
 
 
 
+// ##################### EDIT ACTIONS #############################
+
+QList<QAction*> ScoreView::createEditActions()
+{
+    auto par = this;
+    QAction* a;
+    QList<QAction*> list;
+
+    list << (a = new QAction(tr("insert bar"), par));
+    a->setShortcut(Qt::Key_Enter);
+    connect(a, &QAction::triggered, [=](){ editInsertBar(false); });
+
+    list << (a = new QAction(tr("insert row"), par));
+    a->setShortcut(Qt::ALT + Qt::Key_R);
+    connect(a, &QAction::triggered, [=](){ editInsertRow(false); });
+
+    list << (a = new QAction(tr("insert note"), par));
+    a->setShortcut(Qt::ALT + Qt::Key_N);
+    connect(a, &QAction::triggered, [=](){ editInsertNote(); });
+
+    list << (a = new QAction(tr("duplicate bar"), par));
+    a->setShortcut(Qt::ALT + Qt::Key_D);
+    connect(a, &QAction::triggered, [=](){ editDuplicateBar(); });
+
+    list << (a = new QAction(tr("delete bar"), par));
+    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_B);
+    connect(a, &QAction::triggered, [=](){ editDeleteBar(); });
+
+    list << (a = new QAction(tr("delete row"), par));
+    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_R);
+    connect(a, &QAction::triggered, [=](){ editDeleteRow(); });
+
+    list << (a = new QAction(tr("delete note"), par));
+    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_N);
+    connect(a, &QAction::triggered, [=](){ editDeleteNote(); });
+
+    return list;
+}
+
+void ScoreView::editInsertBar(bool after)
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    size_t len = p_->cursor.getStream().numNotes(p_->cursor.bar());
+    if (editor()->insertBars(p_->cursor,
+                             p_->cursor.getStream().defaultBarRows(len),
+                             after))
+    {
+        auto c = p_->cursor.left();
+        if (after)
+            c.nextBar();
+        if (c.isValid())
+            p_->setCursor(c, true);
+    }
+}
+
+void ScoreView::editDeleteBar()
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    if (p_->cursor.getStream().numBars() <= 1)
+        return;
+
+    auto c = p_->cursor;
+    if (!c.nextBar())
+        c.prevBar();
+
+    if (editor()->deleteBar(p_->cursor))
+        p_->setCursor(c, true);
+}
+
+void ScoreView::editInsertRow(bool after)
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    editor()->insertRow(p_->cursor, after);
+}
+
+void ScoreView::editDuplicateBar()
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    auto rows = p_->cursor.getStream().getRows(p_->cursor.bar());
+    if (editor()->insertBars(p_->cursor, rows, true))
+    {
+        auto c = p_->cursor.left();
+        c.nextBar();
+        if (c.isValid())
+            p_->setCursor(c, true);
+    }
+}
+
+void ScoreView::editDeleteRow()
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    auto c = p_->cursor;
+    if (!c.nextRow())
+        c.prevRow();
+    if (editor()->deleteRow(p_->cursor))
+        p_->setCursor(c, true);
+}
+
+void ScoreView::editInsertNote(const Note& n)
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    editor()->insertNote(p_->cursor, n);
+}
+
+void ScoreView::editDeleteNote()
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    if (p_->cursor.getBar().length() <= 1)
+        return;
+
+    auto c = p_->cursor;
+    if (!c.nextNote())
+        c.prevNote();
+
+    if (editor()->deleteNote(p_->cursor)
+            && !p_->cursor.isValid())
+        p_->setCursor(c, true);
+}
+
+void ScoreView::editTransposeUp(int steps)
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+    Note n = p_->cursor.getNote();
+    if (n.isNote())
+    {
+        n.setValue( std::max(0,std::min(127, (int)n.value() + steps)) );
+        editor()->changeNote(p_->cursor, n);
+    }
+}
+
+void ScoreView::editTransposeDown(int steps)
+{
+    editTransposeUp(-steps);
+}
 
 // ######################### EVENTS #########################
 
@@ -351,6 +502,19 @@ void ScoreView::Private::onMatrixChanged()
     imatrix = matrix.inverted();
 }
 
+void ScoreView::focusInEvent(QFocusEvent*)
+{
+    qDebug() << "enter";
+    //grabKeyboard();
+}
+
+void ScoreView::focusOutEvent(QFocusEvent*)
+{
+    qDebug() << "leave";
+    //releaseKeyboard();
+}
+
+
 void ScoreView::keyPressEvent(QKeyEvent* e)
 {
     if (!isAssigned())
@@ -404,24 +568,32 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             return;
         }
 
-        // INSERT/DELETE
-        if (e->key() == Qt::Key_Insert || e->key() == '.')
+        // INSERT/DELETE / CHANGE
+        handled = true;
+        switch (e->key())
         {
-            editor()->insertNote(p_->cursor, Note(Note::Space));
-            return;
+            case Qt::Key_Insert:
+            case '.':
+                editInsertNote();
+            break;
+            case Qt::Key_Delete:
+                editDeleteNote();
+            break;
+            case Qt::Key_Enter:
+            case Qt::Key_Return:
+                editInsertBar(true);
+            break;
+            case '+':
+                editTransposeUp();
+            break;
+            case '-':
+                editTransposeDown();
+            break;
+            default: handled = false;
         }
-        if (e->key() == Qt::Key_Delete)
+        if (handled)
         {
-            if (p_->cursor.getBar().length() > 1)
-                editor()->deleteNote(p_->cursor);
             return;
-        }
-        if (e->key() == Qt::Key_Return || e->key() == Qt::Key_Return)
-        {
-            size_t len = p_->cursor.getStream().numNotes(p_->cursor.bar());
-            editor()->insertBars(p_->cursor,
-                                 p_->cursor.getStream().defaultBarRows(len),
-                                 true);
         }
 
 
@@ -429,7 +601,6 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         handled = true;
         switch (e->key())
         {
-            case Qt::Key_0:
             case Qt::Key_1:
             case Qt::Key_2:
             case Qt::Key_3:
@@ -437,9 +608,13 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             case Qt::Key_5:
             case Qt::Key_6:
             case Qt::Key_7:
+                p_->inputString += QChar(e->key());
+            break;
+            case Qt::Key_0:
             case Qt::Key_8:
             case Qt::Key_9:
-                p_->inputString += QChar(e->key());
+                if (!p_->inputString.isEmpty())
+                    p_->inputString += QChar(e->key());
             break;
             case Qt::Key_A:
             case Qt::Key_B:
@@ -449,17 +624,20 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             case Qt::Key_F:
             case Qt::Key_G:
             case Qt::Key_H:
+                p_->inputString += QChar(e->key());
+            break;
             case Qt::Key_I:
             case Qt::Key_S:
             case Qt::Key_X:
-            case Qt::Key_NumberSign: // #
-            case Qt::Key_Comma:
-            case Qt::Key_QuoteLeft: // '
-                p_->inputString += QChar(e->key());
+            case Qt::Key_NumberSign:  // #
+            case Qt::Key_Comma:       // ,
+            case Qt::Key_QuoteLeft:   // '
+                if (!p_->inputString.isEmpty())
+                    p_->inputString += QChar(e->key());
             break;
 
             case Qt::Key_Space:
-                if (p_->inputString.size() < 2)
+                //if (p_->inputString.size() < 2)
                     p_->inputString.clear();
             case Qt::Key_Backspace:
                 p_->inputString.chop(1);

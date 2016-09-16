@@ -211,9 +211,9 @@ QString Note::toSpanishString() const
         case Ais: n = "4b"; break;
         case B:   n = "4";  break;
     }
-    if (octave() > 3)
+    if (oct > 3)
         n += QString("'").repeated(oct-3);
-    else if (octave() < 3)
+    else if (oct < 3)
         n += QString(",").repeated(3-oct);
     return n;
 }

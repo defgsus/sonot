@@ -82,6 +82,8 @@ struct MainWindow::Private
 
     SamplePlayer* player;
     SynthDevice* synthStream;
+
+    QMenu* menuEdit;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -200,6 +202,9 @@ void MainWindow::Private::createMenu()
         if (!fn.isEmpty())
             saveScore(*document->score(), fn);
     });
+
+    menu = menuEdit = p->menuBar()->addMenu(tr("Edit"));
+    menu->addActions( scoreView->createEditActions() );
 
     menu = p->menuBar()->addMenu(tr("Playback"));
 

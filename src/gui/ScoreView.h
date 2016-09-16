@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QWidget>
 
 #include "core/Score.h"
+#include "core/Note.h"
 
 namespace Sonot {
 
@@ -48,6 +49,8 @@ public:
 
     QRect mapFromDocument(const QRectF& docSpace);
     QRectF mapToDocument(const QRect& widgetSpace);
+
+    QList<QAction*> createEditActions();
 
     // ----- setter -----
 
@@ -83,8 +86,24 @@ public slots:
 
     void setPlayingIndex(const Score::Index&);
 
+
+    void editInsertBar(bool after = false);
+    void editInsertNote(const Note& n = Note(Note::Space));
+    void editInsertRow(bool after = false);
+    void editDuplicateBar();
+    void editDeleteBar();
+    void editDeleteNote();
+    void editDeleteRow();
+    void editTransposeUp(int steps = 1);
+    void editTransposeDown(int steps = 1);
+
+
 protected:
 
+    void focusInEvent(QFocusEvent*) override;
+    void focusOutEvent(QFocusEvent*) override;
+    //void enterEvent(QEvent*) override;
+    //void leaveEvent(QEvent*) override;
     void keyPressEvent(QKeyEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;

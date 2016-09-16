@@ -73,6 +73,9 @@ public:
     /** Returns Note from Bar */
     const Note& note(size_t barIdx, size_t row, size_t column) const;
 
+    /** Returns a copy of the bars at barIdx */
+    QList<Bar> getRows(size_t barIdx) const;
+
     /** Returns a multi-line ascii string representing the data */
     QString toTabString() const;
 
@@ -107,6 +110,10 @@ public:
 
     void insertBar(size_t idx, const QList<Bar>& rows);
     void appendBar(const QList<Bar>& rows) { insertBar(numBars(), rows); }
+
+    /** Inserts a row of Bars before the given row. */
+    void insertRow(size_t row);
+    void removeRow(size_t row);
 
 private:
     std::vector<std::vector<Bar>> p_data_;
