@@ -50,22 +50,34 @@ public:
 
     struct Index
     {
-        int pageIdx, lineIdx, barIdx;
+        /** Creates invalid document index */
+        Index() : p_pageIdx(-1), p_lineIdx(-1), p_barIdx(-1) { }
 
-        Index (int page = 0, int line = 0, int bar = 0)
-            : pageIdx(page), lineIdx(line), barIdx(bar) { }
+        int pageIdx() const { return p_pageIdx; }
+        int lineIdx() const { return p_lineIdx; }
+        int barIdx() const { return p_barIdx; }
+
+        bool isValid() const
+            { return p_pageIdx >= 0 && p_lineIdx >= 0 && p_barIdx >= 0; }
 
         bool operator == (const Index& o) const
-            { return barIdx == o.barIdx && lineIdx == o.lineIdx
-                    && pageIdx == o.pageIdx; }
+            { return p_barIdx == o.p_barIdx && p_lineIdx == o.p_lineIdx
+                    && p_pageIdx == o.p_pageIdx; }
+
         bool operator < (const Index& o) const
         {
-            return pageIdx == o.pageIdx
-                     ? lineIdx == o.lineIdx
-                         ? barIdx < o.barIdx
-                         : lineIdx < o.lineIdx
-                     : pageIdx < o.pageIdx;
+            return p_pageIdx == o.p_pageIdx
+                     ? p_lineIdx == o.p_lineIdx
+                         ? p_barIdx < o.p_barIdx
+                         : p_lineIdx < o.p_lineIdx
+                     : p_pageIdx < o.p_pageIdx;
         }
+
+    private:
+        friend class ScoreDocument;
+        Index (int page, int line, int bar)
+            : p_pageIdx(page), p_lineIdx(line), p_barIdx(bar) { }
+        int p_pageIdx, p_lineIdx, p_barIdx;
     };
 
     struct BarItems
@@ -74,6 +86,14 @@ public:
         Index docIndex;
         Score::Index scoreIndex;
         QRectF boundingBox;
+    };
+
+    /** Display order of pages */
+    enum PageOrdering
+    {
+        PO_HORIZONTAL,
+        PO_VERTICAL,
+        PO_TWO_SIDED
     };
 
     // --- ctor ---
@@ -99,6 +119,7 @@ public:
 
     size_t numPages() const;
 
+    PageOrdering pageOrdering() const;
     QRectF pageRect() const;
     const PageLayout& pageLayout(const QString& id) const;
     const ScoreLayout& scoreLayout(const QString& id) const;
@@ -129,6 +150,8 @@ public:
     int pageIndexForDocumentPosition(const QPointF& p) const;
     int pageIndexForScoreIndex(const Score::Index& idx) const;
 
+    Index docIndexForScoreIndex(const Score::Index& idx) const;
+
     /** Returns the page number for the page index */
     int pageNumberForIndex(int pageIndex) const;
 
@@ -141,7 +164,27 @@ public:
     Score::Index getScoreIndex(int pageIdx, const QPointF& pagePos) const;
     Score::Index getScoreIndex(const QPointF& documentPos) const;
     ScoreItem* getScoreItem(const Score::Index& i) const;
+    ScoreItem* getClosestScoreItem(int pageIdx, const QPointF& pagePos) const;
     //void updateScoreIndex(const Score::Index& i);
+
+    /** Returns the score index for the next row,
+        finding the "visually appropriate" position.
+        Returns invalid index if not possible */
+    Score::Index goToNextRow(const Score::Index& idx) const;
+    /** Returns the score index for the previous row,
+        finding the "visually appropriate" position.
+        Returns invalid index if not possible */
+    Score::Index goToPrevRow(const Score::Index& idx) const;
+
+    /** Returns score index for the first note in the current
+        line of score or the start of the page if already at
+        first pos */
+    Score::Index goToStart(const Score::Index& idx) const;
+
+    /** Returns score index for the last note in the current
+        line of score or the end of the page if already at
+        last pos */
+    Score::Index goToEnd(const Score::Index& idx) const;
 
     // ----- settter ------
 

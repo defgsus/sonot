@@ -77,6 +77,9 @@ struct ScoreView::Private
     void setCursor(const Score::Index& cursor, bool ensureVisible);
     void clearCursor();
 
+    // --- helper ---
+
+
     // --- drawing ---
 
     bool doShowLayoutBoxes() const { return true; }
@@ -205,17 +208,26 @@ bool ScoreView::ensureIndexVisible(const Score::Index& idx)
 {
     if (!isAssigned())
         return false;
+
     auto item = p_->document->getScoreItem(idx);
     if (!item)
         return false;
 
-    QRectF view = p_->imatrix.map(QRectF(rect())).boundingRect();
+    // current view in doc-space
+    QRectF view = mapToDocument(rect());
+    // item in doc-space
     QRectF dst = item->boundingBox().adjusted(-5,-5,5,5);
     dst.moveTo(dst.topLeft()
-               + p_->document->pagePosition(item->docIndex().pageIdx));
+               + p_->document->pagePosition(item->docIndex().pageIdx()));
+
     if (!view.contains(dst))
     {
-        moveToPoint(dst.topLeft());
+        QPointF d = dst.topLeft();
+        if (d.x() >= view.left() && d.x() <= view.right() - dst.width())
+            d.setX(view.x());
+        if (d.y() >= view.top() && d.y() <= view.bottom() - dst.height())
+            d.setY(view.y());
+        moveToPoint(d);
         return true;
     }
     return false;
@@ -228,7 +240,7 @@ void ScoreView::updateIndex(const Score::Index& idx, double m)
     {
         QRectF dst = item->boundingBox();
         dst.moveTo(dst.topLeft()
-               + p_->document->pagePosition(item->docIndex().pageIdx));
+               + p_->document->pagePosition(item->docIndex().pageIdx()));
         update(mapFromDocument(dst.adjusted(-m, -m, m, m)));
     }
 }
@@ -253,6 +265,7 @@ QRectF ScoreView::mapToDocument(const QRect& r)
 {
     return p_->imatrix.mapRect(r);
 }
+
 
 
 
@@ -372,41 +385,18 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             break;
             case Qt::Key_Tab: cursor.nextBar(); break;
             case Qt::Key_Up:
-                if (!cursor.prevRow())
-                {
-                    const ScoreLayout& l = p_->document->scoreLayout(
-                            p_->document->pageIndexForScoreIndex(cursor));
-                    if (l.isFixedBarWidth())
-                    {
-                        if (cursor.bar() >= l.barsPerLine())
-                        {
-                            if (cursor.prevBar(l.barsPerLine()))
-                                // go to bottom row
-                                while (cursor.nextRow());
-                        }
-                    }
-                    else QPROPS_PROG_ERROR("Non-fixed layout no implemented");
-                }
-            break;
+                cursor = p_->document->goToPrevRow(cursor); break;
             case Qt::Key_Down:
-                if (!cursor.nextRow())
-                {
-                    const ScoreLayout& l = p_->document->scoreLayout(
-                            p_->document->pageIndexForScoreIndex(cursor));
-                    if (l.isFixedBarWidth())
-                    {
-                        if (cursor.nextBar(l.barsPerLine()))
-                            // go to top row
-                            while (cursor.prevRow());
-                    }
-                    else QPROPS_PROG_ERROR("Non-fixed layout no implemented");
-                }
-            break;
+                cursor = p_->document->goToNextRow(cursor); break;
+            case Qt::Key_Home:
+                cursor = p_->document->goToStart(cursor); break;
+            case Qt::Key_End:
+                cursor = p_->document->goToEnd(cursor); break;
             default: handled = false;
         }
         if (handled)
         {
-            if (cursor != p_->cursor)
+            if (cursor.isValid() && cursor != p_->cursor)
             {
                 p_->setCursor(cursor, true);
                 p_->inputString.clear();
@@ -762,7 +752,7 @@ void ScoreView::Private::paintScore(
     // play cursor
     if (playCursor.isValid())
     if (auto item = document->getScoreItem(playCursor))
-    if (item->docIndex().pageIdx == pageIndex)
+    if (item->docIndex().pageIdx() == pageIndex)
     {
         p->setPen(penPlayCursor);
         p->setBrush(Qt::NoBrush);
@@ -772,7 +762,7 @@ void ScoreView::Private::paintScore(
     // cursor
     if (action == A_ENTER_NOTE && cursor.isValid())
     if (auto item = document->getScoreItem(cursor))
-    if (item->docIndex().pageIdx == pageIndex)
+    if (item->docIndex().pageIdx() == pageIndex)
     {
         p->setPen(penCursor);
         p->setBrush(Qt::NoBrush);

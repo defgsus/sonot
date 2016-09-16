@@ -115,9 +115,25 @@ ScoreDocument::~ScoreDocument()
 
 void ScoreDocument::Private::initProps()
 {
+    QProps::Properties::NamedValues pageOrder;
+    pageOrder.set("horizontal", tr("horizontal"),
+                  tr("All pages are display beneath each other"),
+                  (int)PO_HORIZONTAL);
+    pageOrder.set("vertical", tr("vertical"),
+                  tr("All pages are display one upon the other"),
+                  (int)PO_VERTICAL);
+    pageOrder.set("two-sided", tr("two sides"),
+                  tr("Pages are display like in a book"),
+                  (int)PO_TWO_SIDED);
+
     props.set("page-spacing", tr("page spacing"),
               tr("Spacing between displayed pages"),
               QPointF(2, 10));
+    props.setMin("page-spacing", QPointF(0,0));
+
+    props.set("page-order", tr("page ordering"),
+              tr("The display order of pages"),
+              pageOrder, (int)PO_VERTICAL);
 }
 
 const QProps::Properties& ScoreDocument::props() const { return p_->props; }
@@ -195,6 +211,11 @@ void ScoreDocument::setScore(const Score& s)
 
 size_t ScoreDocument::numPages() const { return p_->numPages; }
 
+ScoreDocument::PageOrdering ScoreDocument::pageOrdering() const
+{
+    return (PageOrdering)p_->props.get("page-order").toInt();
+}
+
 QRectF ScoreDocument::pageRect() const
 {
     return p_->pageLayout["title"].pageRect();
@@ -231,10 +252,22 @@ QPointF ScoreDocument::pagePosition(int pageIndex) const
 {
     auto r = pageRect();
     auto spacing = pageSpacing();
-    ++pageIndex;
-    return QPointF(
+    switch (pageOrdering())
+    {
+        case PO_HORIZONTAL:
+            return QPointF(pageIndex * (r.width() + spacing.x()), 0);
+        break;
+        default:
+        case PO_VERTICAL:
+            return QPointF(0, pageIndex * (r.height() + spacing.y()));
+        break;
+        case PO_TWO_SIDED:
+            ++pageIndex;
+            return QPointF(
                 (pageIndex % 2) * (r.width() + spacing.x()),
                 (pageIndex / 2) * (r.height() + spacing.y()));
+        break;
+    }
 }
 
 QRectF ScoreDocument::pageRect(int pageIdx) const
@@ -253,10 +286,25 @@ int ScoreDocument::pageIndexForDocumentPosition(const QPointF& p0) const
     p -= r.topLeft();
     p.rx() /= (r.width() + spacing.x());
     p.ry() /= (r.height() + spacing.y());
-    if (p.rx() >= 2. || p.ry() < 0.)
-        return -1;
-
-    return int(p.ry()) * 2 + int(p.rx()) - 1;
+    switch (pageOrdering())
+    {
+        case PO_HORIZONTAL:
+            if (r.y() < 0. || r.y() > 1.)
+                return -1;
+            return int(r.x());
+        break;
+        default:
+        case PO_VERTICAL:
+            if (r.x() < 0. || r.x() > 1.)
+                return -1;
+            return int(r.y());
+        break;
+        case PO_TWO_SIDED:
+            if (p.x() >= 2. || p.y() < 0.)
+                return -1;
+            return int(p.y()) * 2 + int(p.x()) - 1;
+        break;
+    }
 }
 
 int ScoreDocument::pageIndexForScoreIndex(const Score::Index &idx) const
@@ -264,8 +312,18 @@ int ScoreDocument::pageIndexForScoreIndex(const Score::Index &idx) const
     if (!idx.isValid())
         return -1;
     auto item = getScoreItem(idx);
-    return item ? item->docIndex().pageIdx : -1;
+    return item ? item->docIndex().pageIdx() : -1;
 }
+
+ScoreDocument::Index ScoreDocument::docIndexForScoreIndex(
+        const Score::Index &idx) const
+{
+    if (!idx.isValid())
+        return Index();
+    auto item = getScoreItem(idx);
+    return item ? item->docIndex() : Index();
+}
+
 
 ScoreDocument::BarItems* ScoreDocument::getBarItems(const Index& idx) const
 {
@@ -286,7 +344,7 @@ ScoreDocument::BarItems* ScoreDocument::getBarItems(
     for (auto& sp : p_->barItems)
     {
         BarItems* items = sp.get();
-        if (items->docIndex.pageIdx == pageIdx
+        if (items->docIndex.p_pageIdx == pageIdx
          && items->boundingBox.contains(pagePos))
         {
             return items;
@@ -301,12 +359,12 @@ Score::Index ScoreDocument::getScoreIndex(
     for (auto& sp : p_->barItems)
     {
         BarItems* items = sp.get();
-        if (items->docIndex.pageIdx == pageIdx
+        if (items->docIndex.p_pageIdx == pageIdx
          && items->boundingBox.contains(pagePos))
         {
             for (const ScoreItem& i : items->items)
                 if (i.boundingBox().contains(pagePos))
-                    return i.index();
+                    return i.scoreIndex();
         }
     }
     return Score::Index();
@@ -328,6 +386,146 @@ void ScoreDocument::updateScoreIndex(const Score::Index& i)
     auto s = getScoreItem(i);
 }
 */
+
+Score::Index ScoreDocument::goToPrevRow(const Score::Index &idx) const
+{
+    // item for index
+    auto item = getScoreItem(idx);
+    if (!item)
+        return Score::Index();
+    // position of this item
+    QPointF p = item->boundingBox().center();
+    // score layout that applies to this page
+    auto slayout = scoreLayout(item->docIndex().pageIdx());
+
+    // go to prev row or line position
+    if (idx.row() > 0)
+        p.ry() -= slayout.rowSpacing();
+    else
+        p.ry() -= slayout.rowSpacing() + slayout.lineSpacing();
+
+    // find closest item
+    auto newItem = getClosestScoreItem(item->docIndex().pageIdx(), p);
+    if (newItem && newItem->scoreIndex() != idx)
+        return newItem->scoreIndex();
+
+    // check prev page, transform point to prev page's layout
+    auto playout = pageLayout(item->docIndex().pageIdx());
+    auto playout2 = pageLayout(item->docIndex().pageIdx() - 1);
+    p.setX( p.x() - playout.scoreRect().x() + playout2.scoreRect().x() );
+    p.setY( playout2.scoreRect().bottom() );
+
+    newItem = getClosestScoreItem(item->docIndex().pageIdx()-1, p);
+    if (newItem)
+        return newItem->scoreIndex();
+
+    return Score::Index();
+}
+
+Score::Index ScoreDocument::goToNextRow(const Score::Index &idx) const
+{
+    // item for index
+    auto item = getScoreItem(idx);
+    if (!item)
+        return Score::Index();
+    // position of this item
+    QPointF p = item->boundingBox().center();
+    // score layout that applies to this page
+    auto slayout = scoreLayout(item->docIndex().pageIdx());
+
+    // go to next row or line position
+    if (idx.row() + 1 < idx.numRows())
+        p.ry() += slayout.rowSpacing();
+    else
+        p.ry() += slayout.rowSpacing() + slayout.lineSpacing();
+
+    // find closest item
+    auto newItem = getClosestScoreItem(item->docIndex().pageIdx(), p);
+    if (newItem && newItem->scoreIndex() != idx)
+        return newItem->scoreIndex();
+
+    // check next page, transform point to next page's layout
+    auto playout = pageLayout(item->docIndex().pageIdx());
+    auto playout2 = pageLayout(item->docIndex().pageIdx() + 1);
+    p.setX( p.x() - playout.scoreRect().x() + playout2.scoreRect().x() );
+    p.setY( playout2.scoreRect().top() );
+
+    newItem = getClosestScoreItem(item->docIndex().pageIdx()+1, p);
+    if (newItem)
+        return newItem->scoreIndex();
+
+    return Score::Index();
+}
+
+Score::Index ScoreDocument::goToStart(const Score::Index &idx) const
+{
+    // item for index
+    auto item = getScoreItem(idx);
+    if (!item)
+        return Score::Index();
+    // position of this item
+    QPointF p = item->boundingBox().center();
+    // page layout that applies to this page
+    auto playout = pageLayout(item->docIndex().pageIdx());
+    // move to line start
+    p.setX(playout.scoreRect().left());
+    auto newItem = getClosestScoreItem(item->docIndex().pageIdx(), p);
+    if (newItem && newItem->scoreIndex() != idx)
+        return newItem->scoreIndex();
+    // move to page start
+    p = playout.scoreRect().topLeft();
+    newItem = getClosestScoreItem(item->docIndex().pageIdx(), p);
+    if (newItem)
+        return newItem->scoreIndex();
+    return Score::Index();
+}
+
+Score::Index ScoreDocument::goToEnd(const Score::Index &idx) const
+{
+    // item for index
+    auto item = getScoreItem(idx);
+    if (!item)
+        return Score::Index();
+    // position of this item
+    QPointF p = item->boundingBox().center();
+    // page layout that applies to this page
+    auto playout = pageLayout(item->docIndex().pageIdx());
+    // move to line end
+    p.setX(playout.scoreRect().right());
+    auto newItem = getClosestScoreItem(item->docIndex().pageIdx(), p);
+    if (newItem && newItem->scoreIndex() != idx)
+        return newItem->scoreIndex();
+    // move to page end
+    p = playout.scoreRect().bottomRight();
+    newItem = getClosestScoreItem(item->docIndex().pageIdx(), p);
+    if (newItem)
+        return newItem->scoreIndex();
+    return Score::Index();
+}
+
+ScoreItem* ScoreDocument::getClosestScoreItem(
+        int pageIdx, const QPointF &pagePos) const
+{
+    ScoreItem* best = nullptr;
+    double bestDist = 0.;
+    for (auto& sp : p_->barItems)
+    {
+        BarItems* items = sp.get();
+        if (items->docIndex.p_pageIdx != pageIdx)
+            continue;
+
+        for (ScoreItem& item : items->items)
+        {
+            QPointF p = item.boundingBox().center();
+            double dist = (p-pagePos).manhattanLength();
+            if (best == nullptr || dist < bestDist)
+                best = &item, bestDist = dist;
+        }
+    }
+    return best;
+}
+
+
 
 void ScoreDocument::initLayout() { p_->initLayout(); }
 
@@ -562,7 +760,7 @@ ScoreDocument::Private::createBarItems_Fixed(
                             ScoreItem(scoreIdx.offset(row, col),
                                       items->docIndex, rect) );
                 scoreItemMap.insert(
-                            items->items.back().index(),
+                            items->items.back().scoreIndex(),
                             &items->items.back() );
             }
         }
@@ -601,7 +799,7 @@ void ScoreDocument::paintScoreItems(QPainter &p, int pageIdx,
     for (auto& sp : p_->barItems)
     {
         BarItems* items = sp.get();
-        if (items->docIndex.pageIdx != pageIdx)
+        if (items->docIndex.p_pageIdx != pageIdx)
             continue;
 
         if (updateRect.intersects(items->boundingBox))

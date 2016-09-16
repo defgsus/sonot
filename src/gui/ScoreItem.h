@@ -48,7 +48,7 @@ public:
     // ---- getter ----
 
     Score* score() const { return p_index_.score(); }
-    Score::Index index() const { return p_index_; }
+    Score::Index scoreIndex() const { return p_index_; }
     ScoreDocument::Index docIndex() const { return p_docIndex_; }
     Type type() const { return p_type_; }
 
