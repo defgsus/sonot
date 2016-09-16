@@ -45,6 +45,8 @@ public:
 
     const Bar defaultBar() const { return Bar(1); }
 
+    bool isEmpty() const { return p_data_.empty(); }
+
     /** Number of Bars in this collection */
     size_t numBars() const { return p_data_.size(); }
 
@@ -64,7 +66,10 @@ public:
     const Note& note(size_t barIdx, size_t row, size_t column) const;
 
     /** Returns a multi-line ascii string representing the data */
-    QString toString() const;
+    QString toTabString() const;
+
+    /** Returns multi-line info about sizes */
+    QString toInfoString() const;
 
     bool operator == (const NoteStream& rhs) const;
     bool operator != (const NoteStream& rhs) const { return !(*this == rhs); }

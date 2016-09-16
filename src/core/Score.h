@@ -65,6 +65,10 @@ public:
         bool isValid() const;
         bool isValid(int stream, int barIdx, int row, int column) const;
 
+        /** Returns true if the index points to an empty Stream or Bar.
+            Getter functions are not allowed to use! */
+        bool isInserter() const;
+
         /** Returns the number of rows in current NoteStream */
         size_t numRows() const;
 
@@ -88,24 +92,26 @@ public:
 
         // --- iterators ---
 
-        /** Iterates to the next Note, or returns false if not possible.
-            @note This function never changes the isValid() state. */
-        bool nextNote();
-        bool prevNote();
+        bool nextStream();
+        bool prevStream();
 
         /** Iterates to the next Bar, or returns false if not possible.
             The column() and row() will be limited on success.
             @note This function never changes the isValid() state. */
         bool nextBar();
         bool prevBar();
-        bool nextBar(size_t count);
-        bool prevBar(size_t count);
 
         bool nextRow();
         bool prevRow();
 
+        /** Iterates to the next Note, or returns false if not possible.
+            @note This function never changes the isValid() state. */
+        bool nextNote();
+        bool prevNote();
+
     private:
         friend class Score;
+        //void p_limit_();
         Score* p_score;
         size_t p_stream, p_bar, p_row, p_column;
     };

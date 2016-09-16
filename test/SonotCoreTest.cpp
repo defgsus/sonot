@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/NoteStream.h"
 #include "core/Score.h"
 #include "QProps/Properties.h"
+#include "QProps/error.h"
 
 using namespace Sonot;
 
@@ -42,6 +43,7 @@ private slots:
 
     void testNoteFromString();
     void testResize();
+    void testRandomCursor();
     void testKeepDataOnResize();
     void testJsonBar();
     void testJsonStream();
@@ -182,6 +184,70 @@ void SonotCoreTest::testResize()
     QCOMPARE(bar.length(), size_t(3));
 }
 
+/** Generates random score (WITH EMPTY STREAMS/BARS!!)
+    and verifies that Score::Index iterators always
+    lead to valid positions. */
+void SonotCoreTest::testRandomCursor()
+{
+    for (int iter=0; iter<500; ++iter)
+    {
+        Score s;
+        for (int i=0; i<5 + rand()%20; ++i)
+        {
+            NoteStream n;
+            int jc = i == 0 ? 4 : (rand()%20);
+            for (int j=0; j<jc; ++j)
+            {
+                QList<Bar> rows;
+                int kc = i == 0 ? 4 : (rand()%10);
+                for (int k=0; k<kc; ++k)
+                    rows << createRandomBar(i == 0 ? 4 : (rand()%17));
+                n.appendBar(rows);
+            }
+            //qDebug().noquote() << ("\n" + n.toInfoString());
+            s.appendNoteStream(n);
+        }
+
+        auto c = s.index(0,0,0,0), cprev = c;
+        QVERIFY(c.isValid());
+
+        for (int i=0; i<1000; ++i)
+        {
+            QString cmd;
+            try
+            {
+                cprev = c;
+                switch (rand()%8)
+                {
+                    case 0: c.nextBar(); cmd = "nextBar"; break;
+                    case 1: c.prevBar(); cmd = "prevBar"; break;
+                    case 2: c.nextNote(); cmd = "nextNote"; break;
+                    case 3: c.prevNote(); cmd = "prevNote"; break;
+                    case 4: c.nextRow(); cmd = "nextRow"; break;
+                    case 5: c.prevRow(); cmd = "prevRow"; break;
+                    case 6: c.nextStream(); cmd = "nextStream"; break;
+                    case 7: c.prevStream(); cmd = "prevStream"; break;
+                }
+            }
+            catch (const QProps::Exception& e)
+            {
+                qDebug().noquote() << "EXCEPTION" << e.what();
+            }
+            // test validity of cursor after each step
+            if (!c.isValid())
+                qDebug().noquote()
+                    << "random cursor movement" << cmd << "failed: "
+                    << "from" << cprev.toString()
+                    << "to" << c.toString()
+                    << (QString("\nstream %1\n").arg(cprev.stream())
+                        + s.noteStream(cprev.stream()).toInfoString())
+                    << (QString("\nstream %1\n").arg(c.stream())
+                        + s.noteStream(c.stream()).toInfoString());
+            QVERIFY(c.isValid());
+        }
+    }
+}
+
 void SonotCoreTest::testKeepDataOnResize()
 {
     Bar bar1(2), bar2(5);
@@ -264,30 +330,39 @@ Score SonotCoreTest::createScoreForIndexTest()
 void SonotCoreTest::testScoreIndexPrevNote()
 {
     Score score = createScoreForIndexTest();
+    Score::Index idx;
+    try
+    {
+        idx = score.index(1,3,0,2);
+        QVERIFY(idx.isValid());
+        int cnt = 1;
+        while (idx.prevNote()) ++cnt;
+        QVERIFY(idx.isValid());
+        QCOMPARE(idx, score.index(0, 0, 0, 0));
+        QCOMPARE(cnt, 30);
 
-    Score::Index idx = score.index(1,3,0,2);
-    QVERIFY(idx.isValid());
-    int cnt = 1;
-    while (idx.prevNote()) ++cnt;
-    QVERIFY(idx.isValid());
-    QCOMPARE(idx, score.index(0, 0, 0, 0));
-    QCOMPARE(cnt, 30);
+        idx = score.index(1, 3, 1, 2);
+        QVERIFY(idx.isValid());
+        cnt = 1;
+        while (idx.prevNote()) ++cnt;
+        QVERIFY(idx.isValid());
+        QCOMPARE(idx, score.index(0,0,1,0));
+        QCOMPARE(cnt, 29);
 
-    idx = score.index(1, 3, 1, 2);
-    QVERIFY(idx.isValid());
-    cnt = 1;
-    while (idx.prevNote()) ++cnt;
-    QVERIFY(idx.isValid());
-    QCOMPARE(idx, score.index(0,0,1,0));
-    QCOMPARE(cnt, 29);
-
-    idx = score.index(1, 3, 2, 0);
-    QVERIFY(idx.isValid());
-    cnt = 1;
-    while (idx.prevNote()) ++cnt;
-    QVERIFY(idx.isValid());
-    QCOMPARE(idx, score.index(0,0,2,0));
-    QCOMPARE(cnt, 21);
+        idx = score.index(1, 3, 2, 0);
+        QVERIFY(idx.isValid());
+        cnt = 1;
+        while (idx.prevNote()) ++cnt;
+        QVERIFY(idx.isValid());
+        QCOMPARE(idx, score.index(0,0,2,0));
+        QCOMPARE(cnt, 21);
+    }
+    catch (const QProps::Exception& e)
+    {
+        qDebug().noquote() << "idx = " << idx.toString()
+                           << (QString("\n") + e.what());
+        QFAIL("idx got invalid");
+    }
 }
 
 void SonotCoreTest::testScoreIndexNextNote()

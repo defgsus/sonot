@@ -175,7 +175,7 @@ void NoteStream::insertBar(size_t idx, const QList<Bar>& barList)
 
 
 
-QString NoteStream::toString() const
+QString NoteStream::toTabString() const
 {
     size_t w = numNotes() + (numBars() + 1) + 1,
            h = numRows();
@@ -208,6 +208,37 @@ QString NoteStream::toString() const
         x += blength;
     }
 
+    return s;
+}
+
+QString NoteStream::toInfoString() const
+{
+    if (numRows() < 1)
+        return QString();
+
+    QVector<QString> rows(numRows());
+    for (QString& r : rows)
+        r = "|";
+    for (size_t b=0; b<numBars(); ++b)
+    {
+        // info per bar-block
+        int ma = 0;
+        for (size_t r=0; r<numRows(); ++r)
+        {
+            rows[r] += QString::number(bar(b, r).length());
+            ma = std::max(ma, rows[r].length());
+        }
+        // padding
+        for (size_t r=0; r<numRows(); ++r)
+        {
+            rows[r] += QString(" ").repeated(ma - rows[r].length());
+            rows[r] += "|";
+        }
+    }
+
+    QString s = rows[0];
+    for (int i=1; i<rows.size(); ++i)
+        s += "\n" + rows[i];
     return s;
 }
 

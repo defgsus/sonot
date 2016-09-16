@@ -41,6 +41,8 @@ public:
 
     // --- getter ---
 
+    bool isEmpty() const { return p_data_.empty(); }
+
     /** Number of Notes */
     size_t length() const { return p_data_.size(); }
 
