@@ -587,6 +587,13 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
                 if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
                     emit noteEntered(p_->cursor.getNote());
             break;
+            case '>':
+                p_->curOctave++;
+            break;
+            case '<':
+                p_->curOctave--;
+            break;
+
             default: handled = false;
         }
         if (handled)
@@ -598,6 +605,7 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
 
         // ENTER NOTES
         handled = true;
+        QString noteStr;
         switch (e->key())
         {
             case Qt::Key_1:
@@ -607,16 +615,6 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             case Qt::Key_5:
             case Qt::Key_6:
             case Qt::Key_7:
-                //if (!p_->inputString.isEmpty())
-                //    p_->curOctave = e->key() - Qt::Key_0;
-                p_->inputString += QChar(e->key());
-            break;
-            case Qt::Key_0:
-            case Qt::Key_8:
-            case Qt::Key_9:
-                if (!p_->inputString.isEmpty())
-                    p_->inputString += QChar(e->key());
-            break;
             case Qt::Key_A:
             case Qt::Key_B:
             case Qt::Key_C:
@@ -625,26 +623,15 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             case Qt::Key_F:
             case Qt::Key_G:
             case Qt::Key_H:
-            case Qt::Key_P:
-                p_->inputString += QChar(e->key());
+                noteStr = QChar(e->key());
+                noteStr += QString("'").repeated(p_->curOctave-3);
+                noteStr += QString(",").repeated(3-p_->curOctave);
             break;
-            case Qt::Key_I:
-            case Qt::Key_S:
-            case Qt::Key_X:
-            case Qt::Key_NumberSign:  // #
-            case Qt::Key_Comma:       // ,
-            case Qt::Key_QuoteLeft:   // '
-                if (!p_->inputString.isEmpty())
-                    p_->inputString += QChar(e->key());
+            case Qt::Key_P:
+                noteStr = QChar(e->key());
             break;
 
             case Qt::Key_Space:
-                p_->inputString.clear();
-            case Qt::Key_Backspace:
-                p_->inputString.chop(1);
-            break;
-            case Qt::Key_Delete:
-                p_->inputString.clear();
             break;
 
             default: handled = false;
@@ -657,19 +644,12 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         }
 
         Note n = p_->cursor.getNote();
-        auto newVal = p_->inputString.isEmpty()
+        auto newVal = noteStr.isEmpty()
                         ? (int8_t)Note::Space
-                        : Note::valueFromString(p_->inputString);
+                        : Note::valueFromString(noteStr);
         if (newVal != Note::Invalid && newVal != n.value())
         {
             n.setValue(newVal);
-            bool hasOct = n.isNote()
-                 && p_->inputString.size() > 1
-                 && p_->inputString.at(p_->inputString.size()-1).isDigit();
-            if (!hasOct)
-                n.setOctave(p_->curOctave);
-            else
-                p_->curOctave = n.octave();
             editor()->changeNote(p_->cursor, n);
             emit noteEntered(n);
         }
