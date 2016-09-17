@@ -66,12 +66,12 @@ struct MainWindow::Private
     void createMenu();
 
     bool isSaveToDiscard();
-    void setChanged(bool c);
+    bool setChanged(bool c);
     void updateWindowTitle();
     void updateActions();
 
-    bool loadScore(Score& s, const QString& fn);
-    bool saveScore(const Score& s, const QString& fn);
+    bool loadScore(const QString& fn);
+    bool saveScore(const QString& fn);
     Score createNewScore();
 
     void setEditProperties(const QString& s);
@@ -202,10 +202,9 @@ void MainWindow::Private::createMenu()
     {
         if (!isSaveToDiscard())
             return;
-        Score s;
         QString fn = p->getScoreFilename(false);
-        if (!fn.isEmpty() && loadScore(s, fn))
-            p->setScore(s);
+        if (!fn.isEmpty())
+            loadScore(fn);
     });
 
     a = actSaveScore = menu->addAction(tr("Save Score"));
@@ -214,7 +213,7 @@ void MainWindow::Private::createMenu()
     a->connect(a, &QAction::triggered, [=]()
     {
         if (!curFilename.isEmpty())
-            saveScore(*document->score(), curFilename);
+            saveScore(curFilename);
     });
 
     a = menu->addAction(tr("Save Score as"));
@@ -223,7 +222,7 @@ void MainWindow::Private::createMenu()
     {
         QString fn = p->getScoreFilename(true);
         if (!fn.isEmpty())
-            saveScore(*document->score(), fn);
+            saveScore(fn);
     });
 
     menu = menuEdit = p->menuBar()->addMenu(tr("Edit"));
@@ -278,6 +277,8 @@ void MainWindow::Private::createMenu()
     SONOT__CREATE_PROP(tr("Hidden"), "hidden");
     a->setChecked(true);
     SONOT__CREATE_PROP(tr("Synth"), "synth");
+    SONOT__CREATE_PROP(tr("Score"), "score");
+    SONOT__CREATE_PROP(tr("Document"), "document");
     SONOT__CREATE_PROP(tr("Page layout (title)"), "page-layout-title");
     SONOT__CREATE_PROP(tr("Page layout (left)"), "page-layout-left");
     SONOT__CREATE_PROP(tr("Page layout (right)"), "page-layout-right");
@@ -295,6 +296,10 @@ void MainWindow::Private::setEditProperties(const QString &s)
     {
         propsView->setProperties(synthStream->synth().props());
     }
+    else if (curPropId.startsWith("document"))
+    {
+        propsView->setProperties(document->props());
+    }
     else if (curPropId.startsWith("page-layout-"))
     {
         QString sub = curPropId.mid(12);
@@ -304,6 +309,10 @@ void MainWindow::Private::setEditProperties(const QString &s)
     {
         QString sub = curPropId.mid(13);
         propsView->setProperties(document->scoreLayout(sub).props());
+    }
+    else if (curPropId.startsWith("score"))
+    {
+        propsView->setProperties(document->score()->props());
     }
     else
         propsView->clear();
@@ -317,13 +326,16 @@ void MainWindow::Private::applyProperties()
     {
         synthStream->setSynthProperties(propsView->properties());
     }
+    else if (curPropId.startsWith("document"))
+    {
+        document->setProperties(propsView->properties());
+    }
     else if (curPropId.startsWith("page-layout-"))
     {
         QString sub = curPropId.mid(12);
         auto l = document->pageLayout(sub);
         l.setMargins(propsView->properties());
         document->setPageLayout(sub, l);
-        scoreView->update();
     }
     else if (curPropId.startsWith("score-layout-"))
     {
@@ -331,7 +343,10 @@ void MainWindow::Private::applyProperties()
         auto l = document->scoreLayout(sub);
         l.setProperties(propsView->properties());
         document->setScoreLayout(sub, l);
-        scoreView->update();
+    }
+    else if (curPropId.startsWith("score"))
+    {
+        document->setScoreProperties(propsView->properties());
     }
     /*
     PageAnnotation anno = scoreView->scoreDocument().pageAnnotation(0);
@@ -374,10 +389,10 @@ bool MainWindow::Private::isSaveToDiscard()
     QString fn = p->getScoreFilename(true);
     if (fn.isEmpty())
         return false;
-    return saveScore(*document->score(), fn);
+    return saveScore(fn);
 }
 
-void MainWindow::Private::setChanged(bool c)
+bool MainWindow::Private::setChanged(bool c)
 {
     bool dif = c != isChanged;
     isChanged = c;
@@ -386,6 +401,7 @@ void MainWindow::Private::setChanged(bool c)
         updateWindowTitle();
         updateActions();
     }
+    return dif;
 }
 
 void MainWindow::Private::updateWindowTitle()
@@ -406,16 +422,18 @@ void MainWindow::Private::updateActions()
 }
 
 
-bool MainWindow::Private::loadScore(Score& s, const QString& fn)
+bool MainWindow::Private::loadScore(const QString& fn)
 {
     try
     {
-        s.loadJsonFile(fn);
+        document->loadJsonFile(fn);
         curFilename = fn;
-        setChanged(false);
+        if (!setChanged(false))
+            updateWindowTitle();
+        setEditProperties(curPropId);
         return true;
     }
-    catch (const QProps::Exception& e)
+    catch (QProps::Exception e)
     {
         QMessageBox::critical(p, tr("load score"),
                               tr("Could not load score from\n%1\n%2")
@@ -424,16 +442,17 @@ bool MainWindow::Private::loadScore(Score& s, const QString& fn)
     return false;
 }
 
-bool MainWindow::Private::saveScore(const Score& s, const QString& fn)
+bool MainWindow::Private::saveScore(const QString& fn)
 {
     try
     {
-        s.saveJsonFile(fn);
+        document->saveJsonFile(fn);
         curFilename = fn;
-        setChanged(false);
+        if (!setChanged(false))
+            updateWindowTitle();
         return true;
     }
-    catch (const QProps::Exception& e)
+    catch (QProps::Exception e)
     {
         QMessageBox::critical(p, tr("save score"),
                               tr("Could not save score to\n%1\n%2")

@@ -69,6 +69,8 @@ struct ScoreDocument::Private
     ReturnCode createBarItems_Fixed(
             int pageIdx, int lineIdx, Score::Index& scoreIdx);
 
+    void emitRefresh() { if (editor) emit editor->refresh(); }
+
     ScoreDocument* p;
 
     ScoreEditor* editor;
@@ -128,17 +130,30 @@ void ScoreDocument::Private::initProps()
 
     props.set("page-spacing", tr("page spacing"),
               tr("Spacing between displayed pages"),
-              QPointF(2, 10));
+              QPointF(2, 8));
     props.setMin("page-spacing", QPointF(0,0));
 
     props.set("page-order", tr("page ordering"),
               tr("The display order of pages"),
-              pageOrder, (int)PO_VERTICAL);
+              pageOrder, (int)PO_HORIZONTAL);
 }
 
 const QProps::Properties& ScoreDocument::props() const { return p_->props; }
-QProps::Properties& ScoreDocument::props() { return p_->props; }
-void ScoreDocument::setProperties(const QProps::Properties &p) { p_->props = p; }
+void ScoreDocument::setProperties(const QProps::Properties &p)
+{
+    p_->props = p;
+    p_->createItems();
+    p_->emitRefresh();
+}
+
+void ScoreDocument::setScoreProperties(const QProps::Properties &p)
+{
+    if (auto s=p_->score())
+    {
+        s->setProperties(p);
+        p_->emitRefresh();
+    }
+}
 
 ScoreEditor* ScoreDocument::editor() const { return p_->editor; }
 
@@ -161,41 +176,47 @@ bool ScoreDocument::operator == (const ScoreDocument& o) const
             ;
 }
 
-
+/** Attaches "document" object to Score json */
 QJsonObject ScoreDocument::toJson() const
 {
-    QProps::JsonInterfaceHelper json("ScoreDocument");
-    QJsonObject o;
-    //if (p_->score())
-    //    o.insert("score", p_->score()->toJson());
+    //QProps::JsonInterfaceHelper json("ScoreDocument");
+    QJsonObject o, jscore = p_->score()->toJson();
+
     o.insert("score-layout", p_->scoreLayout.toJson());
     o.insert("page-layout", p_->pageLayout.toJson());
     o.insert("annotation", p_->pageAnnotation.toJson());
     o.insert("props", p_->props.toJson());
-    return o;
+    jscore.insert("document", o);
+
+    return jscore;
 }
 
-void ScoreDocument::fromJson(const QJsonObject& o)
+void ScoreDocument::fromJson(const QJsonObject& jscore)
 {
     QProps::JsonInterfaceHelper json("ScoreDocument");
     ScoreDocument tmp;
-    tmp.p_->scoreLayout.fromJson( json.expectChildObject(o, "score-layout") );
-    tmp.p_->pageLayout.fromJson( json.expectChildObject(o, "page-layout") );
-    tmp.p_->pageAnnotation.fromJson(
-                json.expectChildObject(o, "annotation") );
-    tmp.p_->props = p_->props;
-    tmp.p_->props.fromJson( json.expectChildObject(o, "props") );
+    Score tmpScore;
 
-    /*if (o.contains("score"))
+    tmpScore.fromJson(jscore);
+    if (jscore.contains("document"))
     {
-        Score score;
-        score.fromJson( json.expectChildObject(o, "score") );
-    }*/
+        QJsonObject o = json.expectChildObject(jscore, "document");
+        tmp.p_->scoreLayout.fromJson(
+                    json.expectChildObject(o, "score-layout") );
+        tmp.p_->pageLayout.fromJson(
+                    json.expectChildObject(o, "page-layout") );
+        tmp.p_->pageAnnotation.fromJson(
+                    json.expectChildObject(o, "annotation") );
+        tmp.p_->props.fromJson(
+                    json.expectChildObject(o, "props") );
 
-    p_->scoreLayout = tmp.p_->scoreLayout;
-    p_->pageLayout = tmp.p_->pageLayout;
-    p_->pageAnnotation = tmp.p_->pageAnnotation;
-    p_->props = tmp.p_->props;
+        p_->scoreLayout = tmp.p_->scoreLayout;
+        p_->pageLayout = tmp.p_->pageLayout;
+        p_->pageAnnotation = tmp.p_->pageAnnotation;
+        p_->props = tmp.p_->props;
+    }
+
+    setScore(tmpScore);
 }
 
 
@@ -539,7 +560,7 @@ void ScoreDocument::Private::initLayout()
         PageLayout l;
         auto props = l.margins();
         // title page
-        props.set("score-top", 20.);
+        props.set("score-top", 30.);
         l.setMargins(props);
         pageLayout.insert("title", l);
         // left page
@@ -578,9 +599,18 @@ void ScoreDocument::Private::initLayout()
                 ti.setText("#title");
                 ti.setFontFlags(TextItem::F_ITALIC);
                 page.textItems().push_back(ti);
+
+                ti = TextItem();
+                ti.setBoundingBox(QRectF(0,0,100,25));
+                ti.setBoxAlignment(Qt::AlignHCenter | Qt::AlignTop);
+                ti.setTextAlignment(Qt::AlignHCenter | Qt::AlignBottom);
+                ti.setText("#author");
+                ti.setFontFlags(TextItem::F_BOLD);
+                ti.setFontSize(4.);
+                page.textItems().push_back(ti);
             }
 
-            if (!titlePage)
+            //if (!titlePage)
             {
                 ti = TextItem();
                 ti.setBoundingBox(QRectF(0,0,100,10));
@@ -600,7 +630,7 @@ void ScoreDocument::Private::initLayout()
                 ti.setTextAlignment(Qt::AlignBottom |
                                     (leftPage ? Qt::AlignLeft : Qt::AlignRight));
                 ti.setText("#page");
-                ti.setFontSize(5.);
+                ti.setFontSize(4.);
                 page.textItems().push_back(ti);
             }
 
@@ -630,12 +660,14 @@ void ScoreDocument::setPageAnnotation(const QString& id, const PageAnnotation &p
 {
     p_->pageAnnotation.insert(id, p);
     p_->createItems();
+    p_->emitRefresh();
 }
 
 void ScoreDocument::setPageLayout(const QString& id, const PageLayout &p)
 {
     p_->pageLayout.insert(id, p);
     p_->createItems();
+    p_->emitRefresh();
 }
 
 
@@ -643,6 +675,7 @@ void ScoreDocument::setScoreLayout(const QString& id, const ScoreLayout &p)
 {
     p_->scoreLayout.insert(id, p);
     p_->createItems();
+    p_->emitRefresh();
 }
 
 

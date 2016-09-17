@@ -163,18 +163,19 @@ public:
     void clearProperties();
     void clearScore();
 
-    QProps::Properties& props();
 
     void setNoteStream(size_t idx, const NoteStream&);
     void appendNoteStream(const NoteStream&);
     void insertNoteStream(size_t idx, const NoteStream&);
     void removeNoteStream(size_t idx);
 
-    void setTitle(const QString& s) { props().set("title", s); }
-    void setAuthor(const QString& s) { props().set("author", s); }
-    void setCopyright(const QString& s) { props().set("copyright", s); }
+    void setProperties(const QProps::Properties& p);
+    void setTitle(const QString& s) { propsw().set("title", s); }
+    void setAuthor(const QString& s) { propsw().set("author", s); }
+    void setCopyright(const QString& s) { propsw().set("copyright", s); }
 
 private:
+    QProps::Properties& propsw();
     struct Private;
     Private* p_;
 };

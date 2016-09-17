@@ -224,7 +224,7 @@ void Synth::Private::createProperties()
 {
     props.set("number-voices", tr("number voices"),
               tr("The number of polyphonic voices"),
-              24);
+              36);
     props.setRange("number-voices", 0, 1024);
 
     props.set("voice-policy", tr("voice reuse policy"),
@@ -241,7 +241,7 @@ void Synth::Private::createProperties()
     props.set("number-unisono-voices", tr("unisono voices"),
               tr("The number of unisono voices that will be played "
                  "for one note"),
-              1);
+              3);
     props.setRange("number-unisono-voices", 1, 512);
 
     props.set("real-unisono", tr("real unisono voices"),
@@ -251,7 +251,7 @@ void Synth::Private::createProperties()
 
     props.set("unisono-note-step", tr("unisono note step"),
               tr("Note to be added/subtracted for each unisono voice"),
-              0);
+              12);
 
     props.set("unisono-detune", tr("uinsono-detune"),
               tr("The amount of random detuning for each individual "
@@ -273,7 +273,7 @@ void Synth::Private::createProperties()
 
     props.set("decay", tr("decay"),
               tr("Decay time of envelope in seconds"),
-              1., 0., 10000., 0.01);
+              1.5, 0., 10000., 0.01);
 
     props.set("sustain", tr("sustain"),
               tr("Sustain level of envelope"),

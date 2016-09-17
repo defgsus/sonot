@@ -37,10 +37,12 @@ struct Score::Private
         : p         (p)
         , props     ("score")
     {
-        props.set("title", tr("title"), tr("Title of the score"), QString());
-        props.set("author", tr("author"), tr("Authot of the music"), QString());
+        props.set("title", tr("title"),
+                  tr("Title of the collection"), QString());
+        props.set("author", tr("author"),
+                  tr("Author of the collection"), QString());
         props.set("copyright", tr("copyright"),
-                tr("Copyright information"), QString());
+                tr("Copyleft/right information"), QString());
     }
 
     Score* p;
@@ -80,7 +82,12 @@ bool Score::operator == (const Score& rhs) const
 }
 
 const QProps::Properties& Score::props() const { return p_->props;}
-QProps::Properties& Score::props() { return p_->props;}
+QProps::Properties& Score::propsw() { return p_->props;}
+
+void Score::setProperties(const QProps::Properties& p)
+{
+    p_->props = p;
+}
 
 QJsonObject Score::toJson() const
 {

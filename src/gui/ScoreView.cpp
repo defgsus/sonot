@@ -58,13 +58,14 @@ struct ScoreView::Private
         , document              (nullptr)
         , matrix                ()
         , action                (A_NOTHING)
+        , curOctave             (3)
         , brushBackground       (QColor(155,155,155))
         , brushPageBackground   (QColor(255,255,240))
         , penLayoutFrame        (QColor(0,50,50,30))
         , penScoreRow           (QColor(0,0,0,50))
         , penScoreItem          (QColor(0,0,0))
         , penCursor             (QColor(0,60,100,50))
-        , penPlayCursor         (QColor(0,200,0,40))
+        , penPlayCursor         (QColor(0,160,0,60))
     {
         penScoreItem.setWidthF(.5);
         penLayoutFrame.setStyle(Qt::DotLine);
@@ -107,6 +108,7 @@ struct ScoreView::Private
 
     Score::Index cursor, playCursor;
     QString inputString;
+    int curOctave;
 
     // -- config --
 
@@ -186,7 +188,7 @@ void ScoreView::showRect(const QRectF& dst, double bo)
     QRectF src = QRectF(rect());
     double dx = src.width() / std::max(1., 2.*bo+dst.width()),
            dy = src.height() / std::max(1., 2.*bo+dst.height());
-    dx = std::max(dx, dy);
+    dx = std::min(dx, dy);
     QTransform m;
     m.scale(dx, dx);
     m.translate(-dst.x() + bo, -dst.y() + bo);
@@ -430,7 +432,11 @@ void ScoreView::Private::connectEditor(ScoreEditor* editor)
         setAction(cursor.isValid()
                       ? Private::A_ENTER_NOTE
                       : Private::A_NOTHING);
-        p->showPage(0);
+        p->goToPage(0);
+    });
+    connect(editor, &ScoreEditor::refresh, [=]()
+    {
+        p->update();
     });
     connect(editor, &ScoreEditor::barsChanged, [=]()
     {
@@ -601,6 +607,8 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             case Qt::Key_5:
             case Qt::Key_6:
             case Qt::Key_7:
+                //if (!p_->inputString.isEmpty())
+                //    p_->curOctave = e->key() - Qt::Key_0;
                 p_->inputString += QChar(e->key());
             break;
             case Qt::Key_0:
@@ -631,8 +639,7 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             break;
 
             case Qt::Key_Space:
-                //if (p_->inputString.size() < 2)
-                    p_->inputString.clear();
+                p_->inputString.clear();
             case Qt::Key_Backspace:
                 p_->inputString.chop(1);
             break;
@@ -656,6 +663,13 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         if (newVal != Note::Invalid && newVal != n.value())
         {
             n.setValue(newVal);
+            bool hasOct = n.isNote()
+                 && p_->inputString.size() > 1
+                 && p_->inputString.at(p_->inputString.size()-1).isDigit();
+            if (!hasOct)
+                n.setOctave(p_->curOctave);
+            else
+                p_->curOctave = n.octave();
             editor()->changeNote(p_->cursor, n);
             emit noteEntered(n);
         }

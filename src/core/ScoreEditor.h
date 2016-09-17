@@ -59,9 +59,10 @@ signals:
     /** When a new score was assigned */
     void scoreReset(Score*);
 
-    /** Emitted for every change that would require saving.
-        ScoreDocument also emits this */
+    /** Emitted for every change that would require saving. */
     void documentChanged();
+    /** Request to redraw the view, used by ScoreDocument */
+    void refresh();
 
     void streamsChanged(const IndexList&);
     void barsChanged(const IndexList&);

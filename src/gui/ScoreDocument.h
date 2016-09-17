@@ -199,9 +199,8 @@ public:
     void setScoreLayout(int pageIdx, const ScoreLayout& p);
     void setScoreLayout(const QString&, const ScoreLayout& p);
 
-    void setPageSpacing(const QPointF& f) { props().set("page-spacing", f); }
     void setProperties(const QProps::Properties& p);
-
+    void setScoreProperties(const QProps::Properties& p);
 
     // ----- render -----
 
@@ -209,7 +208,6 @@ public:
                          const QRectF& updateRect) const;
 
 private:
-    QProps::Properties& props();
     struct Private;
     Private* p_;
 };
