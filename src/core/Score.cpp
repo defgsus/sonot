@@ -343,6 +343,7 @@ Score::Index Score::Index::limitRight() const
             }
         }
     }
+    return x;
 }
 
 bool Score::Index::nextStream()

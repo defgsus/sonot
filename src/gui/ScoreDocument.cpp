@@ -529,6 +529,7 @@ ScoreItem* ScoreDocument::getClosestScoreItem(
 
 void ScoreDocument::initLayout() { p_->initLayout(); }
 
+/** @todo This is to be templated */
 void ScoreDocument::Private::initLayout()
 {
     // PageLayout
@@ -536,10 +537,22 @@ void ScoreDocument::Private::initLayout()
         pageLayout.clear();
 
         PageLayout l;
-        l.init(false);
+        auto props = l.margins();
+        // title page
+        props.set("score-top", 20.);
+        l.setMargins(props);
         pageLayout.insert("title", l);
+        // left page
+        props.setDefault();
+        props.set("left", 30.);
+        props.set("right", 20.);
+        l.setMargins(props);
         pageLayout.insert("left", l);
-        l.init(true);
+        // right page
+        props.setDefault();
+        props.set("left", 20.);
+        props.set("right", 30.);
+        l.setMargins(props);
         pageLayout.insert("right", l);
     }
 
@@ -600,15 +613,38 @@ void ScoreDocument::Private::initLayout()
 
 void ScoreDocument::setPageAnnotation(int pageIndex, const PageAnnotation &p)
 {
-    const QString id = layoutKeyForIndex(pageIndex);
-    p_->pageAnnotation.insert(id, p);
+    setPageAnnotation( layoutKeyForIndex(pageIndex), p);
 }
 
 void ScoreDocument::setPageLayout(int pageIndex, const PageLayout &p)
 {
-    const QString id = layoutKeyForIndex(pageIndex);
-    p_->pageLayout.insert(id, p);
+    setPageLayout( layoutKeyForIndex(pageIndex), p);
 }
+
+void ScoreDocument::setScoreLayout(int pageIndex, const ScoreLayout &p)
+{
+    setScoreLayout( layoutKeyForIndex(pageIndex), p);
+}
+
+void ScoreDocument::setPageAnnotation(const QString& id, const PageAnnotation &p)
+{
+    p_->pageAnnotation.insert(id, p);
+    p_->createItems();
+}
+
+void ScoreDocument::setPageLayout(const QString& id, const PageLayout &p)
+{
+    p_->pageLayout.insert(id, p);
+    p_->createItems();
+}
+
+
+void ScoreDocument::setScoreLayout(const QString& id, const ScoreLayout &p)
+{
+    p_->scoreLayout.insert(id, p);
+    p_->createItems();
+}
+
 
 void ScoreDocument::Private::initEditor()
 {
@@ -721,8 +757,8 @@ ScoreDocument::Private::createBarItems_Fixed(
                       + slayout.lineSpacing();
 
     // break if page ended
-    if ((lineIdx+1) * lineHeight
-            >= scoreRect.height() - slayout.lineSpacing())
+    if ((lineIdx+1) * lineHeight - slayout.lineSpacing()
+            >= scoreRect.height() )
         return R_PAGE_FINISHED;
 
     const double

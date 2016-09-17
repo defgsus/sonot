@@ -40,6 +40,8 @@ public:
     /** Returns read access to the current properties */
     const Properties& properties() const;
 
+    bool isEmpty() const;
+
 signals:
 
     /** Emitted when the user has changed a property value */

@@ -89,6 +89,7 @@ bool ScoreEditor::insertNote(
         {
             bar->insertNote(idx.column(), n);
             emit barsChanged(IndexList() << idx);
+            emit documentChanged();
             return true;
         }
     }
@@ -112,6 +113,7 @@ bool ScoreEditor::insertNote(
         if (changed)
         {
             emit barsChanged(IndexList() << idx);
+            emit documentChanged();
             return true;
         }
     }
@@ -128,6 +130,7 @@ bool ScoreEditor::insertBars(
         stream->insertBar(idx.bar() + (after ? 1 : 0), rows);
         //if (stream->numRows() != rows)
         emit streamsChanged(IndexList() << idx);
+        emit documentChanged();
         return true;
     }
     return false;
@@ -140,6 +143,7 @@ bool ScoreEditor::insertRow(const Score::Index& idx, bool after)
     {
         stream->insertRow(idx.row() + (after ? 1 : 0));
         emit streamsChanged(IndexList() << idx);
+        emit documentChanged();
         return true;
     }
     return false;
@@ -153,6 +157,7 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
     {
         stream->removeRow(idx.row());
         emit streamsChanged(IndexList() << idx);
+        emit documentChanged();
         return true;
     }
     return false;
@@ -165,6 +170,7 @@ bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
     {
         bar->setNote(idx.column(), n);
         emit noteValuesChanged(IndexList() << idx);
+        emit documentChanged();
         return true;
     }
     return false;
@@ -177,6 +183,7 @@ bool ScoreEditor::changeBar(const Score::Index& idx, const Bar& b)
     {
         *bar = b;
         emit barsChanged(IndexList() << idx);
+        emit documentChanged();
         return true;
     }
     return false;
@@ -192,6 +199,7 @@ bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
         {
             list << idx;
             emit notesAboutToBeDeleted(list);
+            emit documentChanged();
             bar->removeNote(idx.column());
         }
         else
@@ -212,6 +220,7 @@ bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
         }
 
         emit notesDeleted(list);
+        emit documentChanged();
         return true;
     }
     return false;
@@ -227,6 +236,7 @@ bool ScoreEditor::deleteBar(const Score::Index& idx)
         stream->removeBar(idx.bar());
         emit barsDeleted(list);
         emit streamsChanged(list);
+        emit documentChanged();
         return true;
     }
     return false;
@@ -241,6 +251,7 @@ bool ScoreEditor::deleteStream(const Score::Index& idx)
         emit streamsAboutToBeDeleted(list);
         score()->removeNoteStream(idx.stream());
         emit streamsDeleted(list);
+        emit documentChanged();
         return true;
     }
     return false;

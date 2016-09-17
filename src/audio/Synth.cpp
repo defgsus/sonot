@@ -716,6 +716,8 @@ SynthVoice * Synth::noteOn(int note, double velocity,
     }
 
     const size_t numUnison = std::min(numberVoices(), unisonVoices());
+    if (numUnison)
+        velocity /= numUnison;
 
     // generate inidivdual voices for each unisono voice
     SynthVoice * lastv = voice;

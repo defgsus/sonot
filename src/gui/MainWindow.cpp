@@ -23,6 +23,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QMenu>
 #include <QMenuBar>
 #include <QAction>
+#include <QActionGroup>
+#include <QCloseEvent>
 #include <QFileDialog>
 #include <QMessageBox>
 
@@ -33,6 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "ScoreView.h"
 #include "ScoreDocument.h"
 #include "ScoreLayout.h"
+#include "PageLayout.h"
 #include "PageLayout.h"
 #include "TextItem.h"
 #include "audio/SamplePlayer.h"
@@ -48,6 +51,7 @@ struct MainWindow::Private
     Private(MainWindow*w)
         : p         (w)
         , document  (nullptr)
+        , isChanged (false)
         , player    (nullptr)
         , synthStream(nullptr)
     { }
@@ -61,10 +65,17 @@ struct MainWindow::Private
     void createObjects();
     void createMenu();
 
+    bool isSaveToDiscard();
+    void setChanged(bool c);
+    void updateWindowTitle();
+    void updateActions();
+
     bool loadScore(Score& s, const QString& fn);
     bool saveScore(const Score& s, const QString& fn);
     Score createNewScore();
 
+    void setEditProperties(const QString& s);
+    void applyProperties();
 
     // debugging
     void playSomething();
@@ -80,10 +91,14 @@ struct MainWindow::Private
     ScoreDocument* document;
     QProps::PropertiesView* propsView;
 
+    QString curPropId, curFilename;
+    bool isChanged;
+
     SamplePlayer* player;
     SynthDevice* synthStream;
 
     QMenu* menuEdit;
+    QAction* actSaveScore;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -134,23 +149,10 @@ void MainWindow::Private::createWidgets()
         propsView->setVisible(false);
         lh->addWidget(propsView);
 
-        propsView->setProperties(
-            //scoreView->scoreDocument().scoreLayout(0).props()
-            //scoreView->scoreDocument().pageLayout(0).marginsEven()
-            //scoreView->scoreDocument().pageAnnotation(0).
-            //scoreView->scoreDocument().pageAnnotation(0).textItems()[0].props()
-            synthStream->synth().props()
-            //TextItem().props()
-            );
         connect(propsView, &QProps::PropertiesView::propertyChanged, [=]()
         {
-            /*
-            PageAnnotation anno = scoreView->scoreDocument().pageAnnotation(0);
-            anno.textItems()[0].setProperties(propsView->properties());
-            scoreView->scoreDocument().setPageAnnotation(0, anno);
-            scoreView->update();
-            */
-            synthStream->setSynthProperties(propsView->properties());
+            applyProperties();
+            setChanged(true);
         });
 }
 
@@ -161,6 +163,11 @@ void MainWindow::Private::createObjects()
     synthStream = new SynthDevice(p);
 
     document = new ScoreDocument();
+    connect(document->editor(), &ScoreEditor::documentChanged,
+            [=]()
+    {
+        setChanged(true);
+    });
     connect(document->editor(), &ScoreEditor::scoreReset,
             [=](Score* s)
     {
@@ -179,8 +186,13 @@ void MainWindow::Private::createMenu()
     menu = p->menuBar()->addMenu(tr("File"));
 
     a = menu->addAction(tr("New"));
+    a->setShortcut(Qt::CTRL + Qt::Key_N);
     a->connect(a, &QAction::triggered, [=]()
     {
+        if (!isSaveToDiscard())
+            return;
+        curFilename.clear();
+        setChanged(false);
         p->setScore(createNewScore());
     });
 
@@ -188,10 +200,21 @@ void MainWindow::Private::createMenu()
     a->setShortcut(Qt::CTRL + Qt::Key_L);
     a->connect(a, &QAction::triggered, [=]()
     {
+        if (!isSaveToDiscard())
+            return;
         Score s;
         QString fn = p->getScoreFilename(false);
         if (!fn.isEmpty() && loadScore(s, fn))
             p->setScore(s);
+    });
+
+    a = actSaveScore = menu->addAction(tr("Save Score"));
+    a->setShortcut(Qt::CTRL + Qt::Key_S);
+    a->setEnabled(false);
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        if (!curFilename.isEmpty())
+            saveScore(*document->score(), curFilename);
     });
 
     a = menu->addAction(tr("Save Score as"));
@@ -242,17 +265,80 @@ void MainWindow::Private::createMenu()
     });
 
 
-    menu = p->menuBar()->addMenu(tr("View"));
+    menu = p->menuBar()->addMenu(tr("Options"));
 
-    a = menu->addAction(tr("Properties"));
-    a->setShortcut(Qt::ALT + Qt::Key_P);
-    a->setCheckable(true);
-    a->setChecked(false);
-    a->connect(a, &QAction::triggered, [=]()
+    auto group = new QActionGroup(menu);
+#define SONOT__CREATE_PROP(text__, id__) \
+    a = menu->addAction(text__); \
+    a->setCheckable(true); \
+    a->connect(a, &QAction::triggered, [=](bool e) { \
+        if (e) setEditProperties(id__); }); \
+    group->addAction(a);
+
+    SONOT__CREATE_PROP(tr("Hidden"), "hidden");
+    a->setChecked(true);
+    SONOT__CREATE_PROP(tr("Synth"), "synth");
+    SONOT__CREATE_PROP(tr("Page layout (title)"), "page-layout-title");
+    SONOT__CREATE_PROP(tr("Page layout (left)"), "page-layout-left");
+    SONOT__CREATE_PROP(tr("Page layout (right)"), "page-layout-right");
+    SONOT__CREATE_PROP(tr("Score layout (title)"), "score-layout-title");
+    SONOT__CREATE_PROP(tr("Score layout (left)"), "score-layout-left");
+    SONOT__CREATE_PROP(tr("Score layout (right)"), "score-layout-right");
+#undef SONOT__CREATE_PROP
+
+}
+
+void MainWindow::Private::setEditProperties(const QString &s)
+{
+    curPropId = s;
+    if (curPropId.startsWith("synth"))
     {
-        propsView->setVisible(a->isChecked());
-    });
+        propsView->setProperties(synthStream->synth().props());
+    }
+    else if (curPropId.startsWith("page-layout-"))
+    {
+        QString sub = curPropId.mid(12);
+        propsView->setProperties(document->pageLayout(sub).margins());
+    }
+    else if (curPropId.startsWith("score-layout-"))
+    {
+        QString sub = curPropId.mid(13);
+        propsView->setProperties(document->scoreLayout(sub).props());
+    }
+    else
+        propsView->clear();
 
+    propsView->setVisible(!propsView->isEmpty());
+}
+
+void MainWindow::Private::applyProperties()
+{
+    if (curPropId.startsWith("synth"))
+    {
+        synthStream->setSynthProperties(propsView->properties());
+    }
+    else if (curPropId.startsWith("page-layout-"))
+    {
+        QString sub = curPropId.mid(12);
+        auto l = document->pageLayout(sub);
+        l.setMargins(propsView->properties());
+        document->setPageLayout(sub, l);
+        scoreView->update();
+    }
+    else if (curPropId.startsWith("score-layout-"))
+    {
+        QString sub = curPropId.mid(13);
+        auto l = document->scoreLayout(sub);
+        l.setProperties(propsView->properties());
+        document->setScoreLayout(sub, l);
+        scoreView->update();
+    }
+    /*
+    PageAnnotation anno = scoreView->scoreDocument().pageAnnotation(0);
+    anno.textItems()[0].setProperties(propsView->properties());
+    scoreView->scoreDocument().setPageAnnotation(0, anno);
+    scoreView->update();
+    */
 }
 
 void MainWindow::showEvent(QShowEvent*)
@@ -260,16 +346,73 @@ void MainWindow::showEvent(QShowEvent*)
     p_->scoreView->showPage(0);
 }
 
+void MainWindow::closeEvent(QCloseEvent* e)
+{
+    if (!p_->isSaveToDiscard())
+        e->ignore();
+}
+
 void MainWindow::setScore(const Score& s)
 {
     p_->document->setScore(s);
 }
+
+
+bool MainWindow::Private::isSaveToDiscard()
+{
+    if (!isChanged)
+        return true;
+
+    int ret = QMessageBox::question(p, tr("unsaved changes"),
+                tr("The current changes will be lost in time,\n"
+                   "like tears in the rain.\n"),
+                tr("Save as"), tr("Throw away"), tr("Cancel"));
+    if (ret == 1)
+        return true;
+    if (ret == 2)
+        return false;
+    QString fn = p->getScoreFilename(true);
+    if (fn.isEmpty())
+        return false;
+    return saveScore(*document->score(), fn);
+}
+
+void MainWindow::Private::setChanged(bool c)
+{
+    bool dif = c != isChanged;
+    isChanged = c;
+    if (dif)
+    {
+        updateWindowTitle();
+        updateActions();
+    }
+}
+
+void MainWindow::Private::updateWindowTitle()
+{
+    QString t = curFilename.isEmpty()
+            ? QString("no-name")
+            : QFileInfo(curFilename).fileName();
+    if (isChanged)
+        t.prepend("*");
+    if (t != p->windowTitle())
+        p->setWindowTitle(t);
+}
+
+void MainWindow::Private::updateActions()
+{
+    actSaveScore->setEnabled(
+                !curFilename.isEmpty() && isChanged );
+}
+
 
 bool MainWindow::Private::loadScore(Score& s, const QString& fn)
 {
     try
     {
         s.loadJsonFile(fn);
+        curFilename = fn;
+        setChanged(false);
         return true;
     }
     catch (const QProps::Exception& e)
@@ -286,6 +429,8 @@ bool MainWindow::Private::saveScore(const Score& s, const QString& fn)
     try
     {
         s.saveJsonFile(fn);
+        curFilename = fn;
+        setChanged(false);
         return true;
     }
     catch (const QProps::Exception& e)

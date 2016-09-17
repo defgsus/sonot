@@ -231,6 +231,7 @@ public:
 
     // ---------------- getter ------------------
 
+    bool isEmpty() const { return p_map_.isEmpty(); }
     bool isExplicitJsonTypes() const { return p_explicitJsonTypes_; }
 
     /** Returns the Property for the given id, or an invalid Property */
@@ -396,6 +397,12 @@ public:
         { setStep(id, QVariant::fromValue(v)); }
     /** @} */
 
+    /** Revert the value to it's default value */
+    void setDefault(const QString& id);
+
+    /** Revert all values to their default value */
+    void setDefault();
+
     /** Copy all values from @p other.
         This creates or overwrites values for each value
         contained in @p other. */
@@ -457,6 +464,7 @@ void Properties::set(
         const T& defaultValue)
 {
     set(id, defaultValue);
+    setDefault(id, defaultValue);
     setName(id, name);
     setTip(id, statusTip);
 }
@@ -467,6 +475,7 @@ void Properties::set(
         const T& defaultValue, const T& step)
 {
     set(id, defaultValue);
+    setDefault(id, defaultValue);
     setName(id, name);
     setTip(id, statusTip);
     setStep(id, step);
@@ -478,6 +487,7 @@ void Properties::set(
         const T& defaultValue, const T& minimum, const T& maximum)
 {
     set(id, defaultValue);
+    setDefault(id, defaultValue);
     setName(id, name);
     setTip(id, statusTip);
     setRange(id, minimum, maximum);
@@ -489,6 +499,7 @@ void Properties::set(
         const T& defaultValue, const T& minimum, const T& maximum, const T& step)
 {
     set(id, defaultValue);
+    setDefault(id, defaultValue);
     setName(id, name);
     setTip(id, statusTip);
     setRange(id, minimum, maximum);
@@ -501,6 +512,7 @@ void Properties::set(
         const NamedValues& names, const T& v)
 {
     set(id, v);
+    setDefault(id, v);
     setName(id, name);
     setTip(id, statusTip);
     setNamedValues(id, names);

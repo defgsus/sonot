@@ -39,7 +39,7 @@ PageLayout::PageLayout()
     p_margins_.set(
                 "right", tr("right margin"),
                 tr("distance to right page border"),
-                30., 1.);
+                20., 1.);
     p_margins_.set(
                 "top", tr("top margin"),
                 tr("distance to top page border"),
@@ -60,7 +60,7 @@ PageLayout::PageLayout()
     p_margins_.set(
                 "score-top", tr("top score margin"),
                 tr("distance of score to top content border"),
-                20., 1.);
+                5., 1.);
     p_margins_.set(
                 "score-bottom", tr("bottom score margin"),
                 tr("distance of score to bottom content border"),
@@ -89,22 +89,6 @@ void PageLayout::fromJson(const QJsonObject& o)
     tmp.p_margins_.fromJson(json.expectChildObject(o, "margins"));
 
     *this = tmp;
-}
-
-void PageLayout::init(bool odd)
-{
-    if (odd)
-    {
-        p_margins_.set("left",   odd ? 20. : 30.);
-        p_margins_.set("right",  odd ? 30. : 20.);
-        p_margins_.set("top",    20.);
-        p_margins_.set("bottom", 30.);
-
-        p_margins_.set("score-left",   5.);
-        p_margins_.set("score-right",  5.);
-        p_margins_.set("score-top",    5.);
-        p_margins_.set("score-bottom", 5.);
-    }
 }
 
 QRectF PageLayout::contentRect() const

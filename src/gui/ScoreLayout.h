@@ -47,7 +47,7 @@ public:
     const QProps::Properties& props() const { return p_props_; }
 
     bool isFixedBarWidth() const
-                    { return p_props_.get("fixed-bar-width").toBool(); }
+                    { return p_props_.get("fixed-number-bars").toBool(); }
 
     double noteSpacing() const { return p_props_.get("note-spacing").toDouble(); }
     double rowSpacing() const { return p_props_.get("row-spacing").toDouble(); }
@@ -68,7 +68,7 @@ public:
 
     // --- setter ---
 
-    void setProperties(QProps::Properties& p) { p_props_ = p; }
+    void setProperties(const QProps::Properties& p) { p_props_ = p; }
 
 private:
     QProps::Properties p_props_;

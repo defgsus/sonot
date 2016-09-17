@@ -31,7 +31,7 @@ namespace Sonot {
 ScoreLayout::ScoreLayout()
     : p_props_      ("score-layout")
 {
-    p_props_.set("fixed-bar-width", tr("fixed bar width"),
+    p_props_.set("fixed-number-bars", tr("fixed number bars"),
                  tr("Puts the same amount of bars on every line"),
                  true);
     p_props_.set("bars-per-line", tr("bars per line"),
@@ -48,7 +48,7 @@ ScoreLayout::ScoreLayout()
                  5., .1);
     p_props_.set("line-spacing", tr("line spacing"),
                  tr("The vertical distance between lines of score"),
-                 7., 1.);
+                 6., 1.);
     p_props_.set("min-bar-width", tr("bar width (minimum)"),
                  tr("The minimum width of a bar"),
                  24., 1.);

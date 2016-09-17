@@ -532,6 +532,21 @@ bool Properties::change(const QString &id, const QVariant & v)
     return true;
 }
 
+void Properties::setDefault(const QString &id)
+{
+    auto i = p_map_.find(id);
+    if (i != p_map_.end())
+        i.value().p_val_ = i.value().p_def_;
+}
+
+void Properties::setDefault()
+{
+    for (auto i = p_map_.begin(); i!=p_map_.end(); ++i)
+    {
+        i.value().p_val_ = i.value().p_def_;
+    }
+}
+
 void Properties::unify(const Properties &other)
 {
     for (auto i = other.p_map_.begin(); i != other.p_map_.end(); ++i)

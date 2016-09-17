@@ -193,7 +193,11 @@ public:
     void setScore(const Score&);
 
     void setPageAnnotation(int pageIdx, const PageAnnotation& p);
+    void setPageAnnotation(const QString&, const PageAnnotation& p);
     void setPageLayout(int pageIdx, const PageLayout& p);
+    void setPageLayout(const QString&, const PageLayout& p);
+    void setScoreLayout(int pageIdx, const ScoreLayout& p);
+    void setScoreLayout(const QString&, const ScoreLayout& p);
 
     void setPageSpacing(const QPointF& f) { props().set("page-spacing", f); }
     void setProperties(const QProps::Properties& p);

@@ -63,6 +63,7 @@ PropertiesView::~PropertiesView()
 }
 
 const Properties& PropertiesView::properties() const { return p_->props; }
+bool PropertiesView::isEmpty() const { return p_->props.isEmpty(); }
 
 void PropertiesView::setProperties(const Properties & p)
 {

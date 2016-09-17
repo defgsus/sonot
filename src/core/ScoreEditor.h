@@ -56,7 +56,12 @@ public:
 
 signals:
 
+    /** When a new score was assigned */
     void scoreReset(Score*);
+
+    /** Emitted for every change that would require saving.
+        ScoreDocument also emits this */
+    void documentChanged();
 
     void streamsChanged(const IndexList&);
     void barsChanged(const IndexList&);

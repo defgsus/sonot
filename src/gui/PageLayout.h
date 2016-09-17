@@ -40,8 +40,6 @@ class PageLayout : public QProps::JsonInterface
 public:
     PageLayout();
 
-    void init(bool oddOrEven);
-
     // --- io ---
 
     QJsonObject toJson() const override;

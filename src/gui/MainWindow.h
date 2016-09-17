@@ -43,6 +43,7 @@ public slots:
 
 protected:
     void showEvent(QShowEvent*) override;
+    void closeEvent(QCloseEvent*) override;
 private:
     struct Private;
     Private* p_;
