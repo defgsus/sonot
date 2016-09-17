@@ -85,9 +85,12 @@ public:
 
         Index topLeft() const { return score()->index(stream(), bar(), 0, 0); }
         Index left() const { return score()->index(stream(), bar(), row(), 0); }
+        Index top() const { return score()->index(stream(), bar(), 0, column()); }
         Index offset(int row_, int column_) const
             { return score()->index(stream(), bar(),
                                     row()+row_, column()+column_); }
+        /** Clamp to valid right stream/row/bar/note */
+        Index limitRight() const;
 
         QString toString() const;
 

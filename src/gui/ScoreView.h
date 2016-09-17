@@ -100,10 +100,6 @@ public slots:
 
 protected:
 
-    void focusInEvent(QFocusEvent*) override;
-    void focusOutEvent(QFocusEvent*) override;
-    //void enterEvent(QEvent*) override;
-    //void leaveEvent(QEvent*) override;
     void keyPressEvent(QKeyEvent*) override;
     void mousePressEvent(QMouseEvent*) override;
     void mouseReleaseEvent(QMouseEvent*) override;

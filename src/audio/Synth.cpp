@@ -644,7 +644,7 @@ void Synth::Private::process(float ** outputs, size_t bufferLength)
 Synth::Synth()
     : p_    (new Private(this))
 {
-    p_->setNumVoices(numberVoices());
+    setProperties(p_->props);
 }
 
 Synth::~Synth()
@@ -661,6 +661,7 @@ void Synth::setProperties(const QProps::Properties& p)
     p_->props = p;
     p_->noteFreq.setBaseFrequency( baseFreq() );
     p_->noteFreq.setNotesPerOctave( notesPerOctave() );
+    p_->voicePolicy = (VoicePolicy)p_->props.get("voice-policy").toInt();
     if (numberVoices() != p_->voices.size())
         p_->setNumVoices(numberVoices());
 }

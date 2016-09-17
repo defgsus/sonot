@@ -316,9 +316,32 @@ const Note& Score::Index::getNote(int r, int c) const
 }
 
 namespace {
-    size_t limit_to(size_t x, size_t end)
+    size_t get_limit(size_t x, size_t end)
     {
         return x < end ? x : end > 0 ? end - 1 : 0;
+    }
+}
+
+Score::Index Score::Index::limitRight() const
+{
+    Index x = *this;
+    if (!x.p_score)
+        return x;
+
+    x.p_stream = get_limit(x.p_stream, p_score->numNoteStreams());
+    if (x.p_stream < p_score->numNoteStreams())
+    {
+        auto& s = p_score->noteStream(x.p_stream);
+        x.p_row = get_limit(x.p_row, s.numRows());
+        if (x.p_row < s.numRows())
+        {
+            x.p_bar = get_limit(x.p_bar, s.numBars());
+            if (x.p_bar < s.numBars())
+            {
+                auto& b = s.bar(x.p_bar, x.p_row);
+                x.p_column = get_limit(x.p_column, b.length());
+            }
+        }
     }
 }
 
@@ -331,7 +354,7 @@ bool Score::Index::nextStream()
     if (nextStream.isEmpty())
         return false;
 
-    size_t row = limit_to(p_row, nextStream.numRows());
+    size_t row = get_limit(p_row, nextStream.numRows());
     if (nextStream.bar(0, row).isEmpty())
         return false;
 
@@ -352,7 +375,7 @@ bool Score::Index::prevStream()
     if (nextStream.isEmpty())
         return false;
 
-    size_t row = limit_to(p_row, nextStream.numRows());
+    size_t row = get_limit(p_row, nextStream.numRows());
     if (nextStream.bar(nextStream.numBars()-1, row).isEmpty())
         return false;
 
@@ -373,7 +396,7 @@ bool Score::Index::nextBar()
         return nextStream();
 
     auto& st = p_score->noteStream(p_stream);
-    size_t row = limit_to(p_row, st.numRows());
+    size_t row = get_limit(p_row, st.numRows());
     if (st.bar(p_bar+1, row).isEmpty())
         return false;
 
@@ -392,7 +415,7 @@ bool Score::Index::prevBar()
         return prevStream();
 
     auto& st = p_score->noteStream(p_stream);
-    size_t row = limit_to(p_row, st.numRows());
+    size_t row = get_limit(p_row, st.numRows());
     if (st.bar(p_bar-1, row).isEmpty())
         return false;
 
@@ -446,7 +469,7 @@ bool Score::Index::nextRow()
         return false;
 
     ++p_row;
-    p_column = limit_to(p_column, st.bar(bar(), row()).length());
+    p_column = get_limit(p_column, st.bar(bar(), row()).length());
     return true;
 }
 
@@ -460,7 +483,7 @@ bool Score::Index::prevRow()
         return false;
 
     --p_row;
-    p_column = limit_to(p_column, st.bar(bar(), row()).length());
+    p_column = get_limit(p_column, st.bar(bar(), row()).length());
     return true;
 }
 

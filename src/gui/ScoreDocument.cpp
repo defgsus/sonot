@@ -289,15 +289,15 @@ int ScoreDocument::pageIndexForDocumentPosition(const QPointF& p0) const
     switch (pageOrdering())
     {
         case PO_HORIZONTAL:
-            if (r.y() < 0. || r.y() > 1.)
+            if (p.y() < 0. || p.y() > 1.)
                 return -1;
-            return int(r.x());
+            return int(p.x());
         break;
         default:
         case PO_VERTICAL:
-            if (r.x() < 0. || r.x() > 1.)
+            if (p.x() < 0. || p.x() > 1.)
                 return -1;
-            return int(r.y());
+            return int(p.y());
         break;
         case PO_TWO_SIDED:
             if (p.x() >= 2. || p.y() < 0.)

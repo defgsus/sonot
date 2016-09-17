@@ -383,7 +383,7 @@ void ScoreView::editInsertNote(const Note& n)
     if (!isAssigned() || !p_->cursor.isValid())
         return;
 
-    editor()->insertNote(p_->cursor, n);
+    editor()->insertNote(p_->cursor, n, true);
 }
 
 void ScoreView::editDeleteNote()
@@ -398,7 +398,7 @@ void ScoreView::editDeleteNote()
     if (!c.nextNote())
         c.prevNote();
 
-    if (editor()->deleteNote(p_->cursor)
+    if (editor()->deleteNote(p_->cursor, true)
             && !p_->cursor.isValid())
         p_->setCursor(c, true);
 }
@@ -502,18 +502,6 @@ void ScoreView::Private::onMatrixChanged()
     imatrix = matrix.inverted();
 }
 
-void ScoreView::focusInEvent(QFocusEvent*)
-{
-    qDebug() << "enter";
-    //grabKeyboard();
-}
-
-void ScoreView::focusOutEvent(QFocusEvent*)
-{
-    qDebug() << "leave";
-    //releaseKeyboard();
-}
-
 
 void ScoreView::keyPressEvent(QKeyEvent* e)
 {
@@ -585,14 +573,19 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             break;
             case '+':
                 editTransposeUp();
+                if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
+                    emit noteEntered(p_->cursor.getNote());
             break;
             case '-':
                 editTransposeDown();
+                if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
+                    emit noteEntered(p_->cursor.getNote());
             break;
             default: handled = false;
         }
         if (handled)
         {
+            p_->inputString.clear();
             return;
         }
 
@@ -624,6 +617,7 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             case Qt::Key_F:
             case Qt::Key_G:
             case Qt::Key_H:
+            case Qt::Key_P:
                 p_->inputString += QChar(e->key());
             break;
             case Qt::Key_I:

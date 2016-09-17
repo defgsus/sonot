@@ -43,13 +43,13 @@ public:
 
     void setScore(const Score& s);
 
-    bool insertNote(const Score::Index&, const Note& n);
+    bool insertNote(const Score::Index&, const Note& n, bool allRows);
     bool insertBars(const Score::Index&, const QList<Bar>& rows,
                     bool insertAfterIndex = false);
     bool insertRow(const Score::Index&, bool insertAfterIndex = false);
     bool changeNote(const Score::Index&, const Note& n);
     bool changeBar(const Score::Index&, const Bar& b);
-    bool deleteNote(const Score::Index&);
+    bool deleteNote(const Score::Index&, bool allRows);
     bool deleteBar(const Score::Index&);
     bool deleteRow(const Score::Index&);
     bool deleteStream(const Score::Index&);

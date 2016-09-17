@@ -79,14 +79,41 @@ void ScoreEditor::setScore(const Score& s)
     emit scoreReset(p_->score_);
 }
 
-bool ScoreEditor::insertNote(const Score::Index& idx, const Note& n)
+bool ScoreEditor::insertNote(
+        const Score::Index& idx, const Note& n, bool allRows)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (Bar* bar = p_->getBar(idx))
+    if (!allRows)
     {
-        bar->insertNote(idx.column(), n);
-        emit barsChanged(IndexList() << idx);
-        return true;
+        if (Bar* bar = p_->getBar(idx))
+        {
+            bar->insertNote(idx.column(), n);
+            emit barsChanged(IndexList() << idx);
+            return true;
+        }
+    }
+    else
+    {
+        bool changed = false;
+        NoteStream* s = p_->getStream(idx);
+        for (size_t i=0; i<s->numRows(); ++i)
+        {
+            auto x = score()->index(idx.stream(),
+                                    idx.bar(),
+                                    i,
+                                    idx.column());
+            x = x.limitRight();
+            if (Bar* bar = p_->getBar(x))
+            {
+                bar->insertNote(idx.column(), n);
+                changed = true;
+            }
+        }
+        if (changed)
+        {
+            emit barsChanged(IndexList() << idx);
+            return true;
+        }
     }
     return false;
 }
@@ -155,14 +182,35 @@ bool ScoreEditor::changeBar(const Score::Index& idx, const Bar& b)
     return false;
 }
 
-bool ScoreEditor::deleteNote(const Score::Index& idx)
+bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
 {
     SONOT__CHECK_INDEX(idx, false);
     if (Bar* bar = p_->getBar(idx))
     {
-        IndexList list; list << idx;
-        emit notesAboutToBeDeleted(list);
-        bar->removeNote(idx.column());
+        IndexList list;
+        if (!allRows)
+        {
+            list << idx;
+            emit notesAboutToBeDeleted(list);
+            bar->removeNote(idx.column());
+        }
+        else
+        {
+            for (size_t i=0; i<idx.getStream().numRows(); ++i)
+            {
+                auto x = score()->index(idx.stream(), idx.bar(),
+                                        i, idx.column());
+                if (p_->getBar(x))
+                    list << x;
+            }
+            emit notesAboutToBeDeleted(list);
+            for (auto& x : list)
+            if (Bar* b = p_->getBar(x))
+            {
+                b->removeNote(x.column());
+            }
+        }
+
         emit notesDeleted(list);
         return true;
     }
