@@ -41,6 +41,13 @@ NoteStream::NoteStream()
     p_props_.set("title", tr("title"),
                  tr("The title of this part"),
                  QString());
+    p_props_.set("source", tr("source"),
+                 tr("Narrow description of the source, like page number"),
+                 QString());
+
+    p_props_.set("transcriber", tr("transcriber"),
+                 tr("The one who did the typing"),
+                 QString());
 }
 
 bool NoteStream::operator == (const NoteStream& rhs) const
