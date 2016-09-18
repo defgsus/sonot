@@ -469,7 +469,7 @@ bool MainWindow::Private::saveScore(const QString& fn)
 Score MainWindow::Private::createNewScore()
 {
     NoteStream n;
-    n.appendBar(n.defaultBarRows());
+    n.appendBar(n.createDefaultBarRows());
 
     Score s;
     s.appendNoteStream(n);
@@ -487,6 +487,8 @@ QString MainWindow::getScoreFilename(bool forSave)
     else
         fn = QFileDialog::getOpenFileName(this, tr("load score"),
                                  dir, filter, &filter);
+    if (!fn.isEmpty() && !fn.endsWith(".sonot.json"))
+        fn.append( ".sonot.json" );
     return fn;
 }
 

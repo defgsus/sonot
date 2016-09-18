@@ -47,6 +47,8 @@ public:
     bool insertBars(const Score::Index&, const QList<Bar>& rows,
                     bool insertAfterIndex = false);
     bool insertRow(const Score::Index&, bool insertAfterIndex = false);
+    bool insertStream(const Score::Index&, const NoteStream& s,
+                      bool insertAfterIndex = false);
     bool changeNote(const Score::Index&, const Note& n);
     bool changeBar(const Score::Index&, const Bar& b);
     bool deleteNote(const Score::Index&, bool allRows);

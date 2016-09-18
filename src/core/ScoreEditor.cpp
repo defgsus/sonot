@@ -149,6 +149,25 @@ bool ScoreEditor::insertRow(const Score::Index& idx, bool after)
     return false;
 }
 
+bool ScoreEditor::insertStream(
+        const Score::Index& idx, const NoteStream& s, bool after)
+{
+    SONOT__CHECK_INDEX(idx, false);
+    if (idx.stream() < score()->numNoteStreams())
+    {
+        size_t iidx = idx.stream() + (after ? 1 : 0);
+        score()->insertNoteStream(iidx, s);
+
+        IndexList list;
+        for (size_t i = iidx; i < score()->numNoteStreams(); ++i)
+            list << score()->index(i, 0,0,0);
+        emit streamsChanged(list);
+        emit documentChanged();
+        return true;
+    }
+    return false;
+}
+
 
 bool ScoreEditor::deleteRow(const Score::Index& idx)
 {

@@ -55,7 +55,8 @@ struct ScoreDocument::Private
     {
         R_ALL_GOOD,
         R_DATA_FINISHED,
-        R_PAGE_FINISHED
+        R_PAGE_FINISHED,
+        R_LINE_FINISHED
     };
 
     void initProps();
@@ -67,7 +68,7 @@ struct ScoreDocument::Private
     void createItems();
     bool createBarItems_Fixed(int pageIdx, Score::Index& scoreIdx);
     ReturnCode createBarItems_Fixed(
-            int pageIdx, int lineIdx, Score::Index& scoreIdx);
+            int pageIdx, int lineIdx, Score::Index& scoreIdx, QPointF& pagePos);
 
     void emitRefresh() { if (editor) emit editor->refresh(); }
 
@@ -767,9 +768,10 @@ void ScoreDocument::Private::createItems()
 bool ScoreDocument::Private::createBarItems_Fixed(
         int pageIdx, Score::Index& scoreIdx)
 {
+    QPointF pagePos;
     for (int line=0; ; ++line)
     {
-        ReturnCode ret = createBarItems_Fixed(pageIdx, line, scoreIdx);
+        ReturnCode ret = createBarItems_Fixed(pageIdx, line, scoreIdx, pagePos);
         if (ret == R_DATA_FINISHED)
             return false;
         else if (ret == R_PAGE_FINISHED)
@@ -780,18 +782,18 @@ bool ScoreDocument::Private::createBarItems_Fixed(
 
 ScoreDocument::Private::ReturnCode
 ScoreDocument::Private::createBarItems_Fixed(
-        int pageIdx, int lineIdx, Score::Index& scoreIdx)
+        int pageIdx, int lineIdx,
+        Score::Index& scoreIdx, QPointF& pagePos)
 {
     const ScoreLayout& slayout = p->scoreLayout(pageIdx);
     const PageLayout& playout = p->pageLayout(pageIdx);
     const QRectF scoreRect = playout.scoreRect();
 
-    double lineHeight = slayout.lineHeight(scoreIdx.numRows())
-                      + slayout.lineSpacing();
+    const double lineHeight = slayout.lineHeight(scoreIdx.numRows()),
+                 lineHeightFull = lineHeight + slayout.lineSpacing();
 
-    // break if page ended
-    if ((lineIdx+1) * lineHeight - slayout.lineSpacing()
-            >= scoreRect.height() )
+    // break if page ends
+    if (pagePos.y() + lineHeight >= scoreRect.height() )
         return R_PAGE_FINISHED;
 
     const double
@@ -811,7 +813,7 @@ ScoreDocument::Private::createBarItems_Fixed(
         // create item for each note in this bar block
         for (size_t row=0; row<scoreIdx.numRows(); ++row)
         {
-            double y = lineIdx * lineHeight + rowSpace * row;
+            double y = pagePos.y() + rowSpace * row;
 
             const Bar& b = scoreIdx.getBar(row);
             for (size_t col=0; col<b.length(); ++col)
@@ -836,7 +838,7 @@ ScoreDocument::Private::createBarItems_Fixed(
 
         // leading bar-slash item
         double x = barIdx * barWidth + scoreRect.x(),
-               y = lineIdx * lineHeight + scoreRect.y();
+               y = pagePos.y() + scoreRect.y();
         QLineF line(x, y, x, y + slayout.lineHeight(scoreIdx.numRows()));
         items->items.push_back( ScoreItem(scoreIdx,
                                           items->docIndex,
@@ -844,10 +846,10 @@ ScoreDocument::Private::createBarItems_Fixed(
 
         if (barIdx + 1 == numBarsPerLine)
         {
-            // trailing bar-slash item
+            // end-of-line bar-slash item
             double x = scoreRect.right(),
-                   y = lineIdx * lineHeight + scoreRect.y();
-            QLineF line(x, y, x, y + slayout.lineHeight(scoreIdx.numRows()));
+                   y = pagePos.y() + scoreRect.y();
+            QLineF line(x, y, x, y + lineHeight);
             items->items.push_back( ScoreItem(scoreIdx,
                                               items->docIndex,
                                               line) );
@@ -867,19 +869,36 @@ ScoreDocument::Private::createBarItems_Fixed(
 
         barItemMap.insert(items->docIndex, items);
 
-        if (!scoreIdx.nextBar())
+        // forward index and check for stream change
+        size_t curStream = scoreIdx.stream();
+        bool finish = !scoreIdx.nextBar(),
+             newStream = (scoreIdx.stream() != curStream);
+        if (finish || newStream)
         {
             // trailing bar-slash item
             double x = (barIdx+1) * barWidth + scoreRect.x(),
-                   y = lineIdx * lineHeight + scoreRect.y();
-            QLineF line(x, y, x, y + slayout.lineHeight(scoreIdx.numRows()));
+                   y = pagePos.y() + scoreRect.y();
+            QLineF line(x, y, x, y + lineHeight);
             items->items.push_back( ScoreItem(scoreIdx,
                                               items->docIndex,
                                               line) );
-            return R_DATA_FINISHED;
+            if (newStream)
+            {
+                line.translate(-2, 0.);
+                items->items.push_back( ScoreItem(scoreIdx,
+                                                  items->docIndex,
+                                                  line) );
+            }
+            // next line
+            pagePos.ry() += lineHeightFull;
+
+            return newStream ? R_LINE_FINISHED : R_DATA_FINISHED;
         }
 
     }
+    // next line
+    pagePos.ry() += lineHeightFull;
+
     return R_ALL_GOOD;
 }
 

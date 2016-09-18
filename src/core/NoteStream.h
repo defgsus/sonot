@@ -41,17 +41,21 @@ public:
     QJsonObject toJson() const override;
     void fromJson(const QJsonObject&) override;
 
-    // --- getter ---
+    // --- factory ---
 
     /** Default empty bar for this stream.
         If @p len == 0, the default length will be used. */
-    Bar defaultBar(size_t len = 0) const;
+    Bar createDefaultBar(size_t len = 0) const;
 
     /** Default empty bar block for this stream.
         If @p len == 0, the default length will be used.
         The number of rows will be equal
         to the number of rows in this stream, or at least 1. */
-    QList<Bar> defaultBarRows(size_t len = 0) const;
+    QList<Bar> createDefaultBarRows(size_t len = 0) const;
+
+    NoteStream createDefaultStream(size_t numBars = 0, size_t barLen = 0) const;
+
+    // --- getter ---
 
     bool isEmpty() const { return p_data_.empty(); }
 

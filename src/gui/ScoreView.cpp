@@ -138,6 +138,8 @@ ScoreView::~ScoreView()
     delete p_;
 }
 
+const Score* ScoreView::score() const
+    { return p_->document ? p_->document->score() : nullptr; }
 ScoreDocument* ScoreView::scoreDocument() const { return p_->document; }
 ScoreEditor* ScoreView::editor() const { return p_->document->editor(); }
 const Score::Index& ScoreView::currentIndex() const { return p_->cursor; }
@@ -280,6 +282,14 @@ QList<QAction*> ScoreView::createEditActions()
     QAction* a;
     QList<QAction*> list;
 
+    list << (a = new QAction(tr("insert new piece"), par));
+    //a->setShortcut(Qt::Key_Enter);
+    connect(a, &QAction::triggered, [=](){ editInsertStream(false); });
+
+    list << (a = new QAction(tr("insert new piece (after)"), par));
+    //a->setShortcut(Qt::Key_Enter);
+    connect(a, &QAction::triggered, [=](){ editInsertStream(true); });
+
     list << (a = new QAction(tr("insert bar"), par));
     a->setShortcut(Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertBar(false); });
@@ -311,6 +321,25 @@ QList<QAction*> ScoreView::createEditActions()
     return list;
 }
 
+void ScoreView::editInsertStream(bool after)
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    if (editor()->insertStream(
+                p_->cursor, p_->cursor.getStream().createDefaultStream(),
+                after))
+    {
+        if (after)
+        {
+            auto c = score()->index(p_->cursor.stream() + 1, 0,0,0);
+            if (c.isValid())
+                p_->setCursor(c, true);
+        }
+    }
+
+}
+
 void ScoreView::editInsertBar(bool after)
 {
     if (!isAssigned() || !p_->cursor.isValid())
@@ -318,7 +347,7 @@ void ScoreView::editInsertBar(bool after)
 
     size_t len = p_->cursor.getStream().numNotes(p_->cursor.bar());
     if (editor()->insertBars(p_->cursor,
-                             p_->cursor.getStream().defaultBarRows(len),
+                             p_->cursor.getStream().createDefaultBarRows(len),
                              after))
     {
         auto c = p_->cursor.left();
@@ -341,7 +370,8 @@ void ScoreView::editDeleteBar()
     if (!c.nextBar())
         c.prevBar();
 
-    if (editor()->deleteBar(p_->cursor))
+    if (editor()->deleteBar(p_->cursor)
+            && !p_->cursor.isValid())
         p_->setCursor(c, true);
 }
 
@@ -373,10 +403,14 @@ void ScoreView::editDeleteRow()
     if (!isAssigned() || !p_->cursor.isValid())
         return;
 
+    if (p_->cursor.getStream().numRows() <= 1)
+        return;
+
     auto c = p_->cursor;
     if (!c.nextRow())
         c.prevRow();
-    if (editor()->deleteRow(p_->cursor))
+    if (editor()->deleteRow(p_->cursor)
+            && !p_->cursor.isValid())
         p_->setCursor(c, true);
 }
 
@@ -428,11 +462,11 @@ void ScoreView::Private::connectEditor(ScoreEditor* editor)
 {
     connect(editor, &ScoreEditor::scoreReset, [=]()
     {
-        setCursor(document->score()->index(0,0,0,0), true);
+        setCursor(document->score()->index(0,0,0,0), false);
         setAction(cursor.isValid()
                       ? Private::A_ENTER_NOTE
                       : Private::A_NOTHING);
-        //p->goToPage(0);
+        p->goToPage(0);
     });
     connect(editor, &ScoreEditor::refresh, [=]()
     {

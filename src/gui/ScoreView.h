@@ -43,6 +43,7 @@ public:
 
     bool isAssigned() const { return scoreDocument() != nullptr; }
 
+    const Score* score() const;
     ScoreDocument* scoreDocument() const;
     ScoreEditor* editor() const;
     const Score::Index& currentIndex() const;
@@ -88,6 +89,7 @@ public slots:
     void setPlayingIndex(const Score::Index&);
 
 
+    void editInsertStream(bool after = false);
     void editInsertBar(bool after = false);
     void editInsertNote(const Note& n = Note(Note::Space));
     void editInsertRow(bool after = false);
