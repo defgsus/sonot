@@ -71,6 +71,7 @@ struct ScoreDocument::Private
             int pageIdx, int lineIdx, Score::Index& scoreIdx, QPointF& pagePos);
 
     void emitRefresh() { if (editor) emit editor->refresh(); }
+    void emitDocumentChanged() { if (editor) emit editor->documentChanged(); }
 
     ScoreDocument* p;
 
@@ -144,6 +145,7 @@ void ScoreDocument::setProperties(const QProps::Properties &p)
 {
     p_->props = p;
     p_->createItems();
+    p_->emitDocumentChanged();
     p_->emitRefresh();
 }
 
@@ -152,6 +154,7 @@ void ScoreDocument::setScoreProperties(const QProps::Properties &p)
     if (auto s=p_->score())
     {
         s->setProperties(p);
+        p_->emitDocumentChanged();
         p_->emitRefresh();
     }
 }
@@ -661,6 +664,7 @@ void ScoreDocument::setPageAnnotation(const QString& id, const PageAnnotation &p
 {
     p_->pageAnnotation.insert(id, p);
     p_->createItems();
+    p_->emitDocumentChanged();
     p_->emitRefresh();
 }
 
@@ -668,6 +672,7 @@ void ScoreDocument::setPageLayout(const QString& id, const PageLayout &p)
 {
     p_->pageLayout.insert(id, p);
     p_->createItems();
+    p_->emitDocumentChanged();
     p_->emitRefresh();
 }
 
@@ -676,6 +681,7 @@ void ScoreDocument::setScoreLayout(const QString& id, const ScoreLayout &p)
 {
     p_->scoreLayout.insert(id, p);
     p_->createItems();
+    p_->emitDocumentChanged();
     p_->emitRefresh();
 }
 
@@ -882,13 +888,10 @@ ScoreDocument::Private::createBarItems_Fixed(
             items->items.push_back( ScoreItem(scoreIdx,
                                               items->docIndex,
                                               line) );
-            if (newStream)
-            {
-                line.translate(-2, 0.);
-                items->items.push_back( ScoreItem(scoreIdx,
-                                                  items->docIndex,
-                                                  line) );
-            }
+            line.translate(-1, 0.);
+            items->items.push_back( ScoreItem(scoreIdx,
+                                              items->docIndex,
+                                              line) );
             // next line
             pagePos.ry() += lineHeightFull;
 

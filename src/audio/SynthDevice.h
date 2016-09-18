@@ -35,6 +35,7 @@ class SynthDevice : public QIODevice
     Q_OBJECT
 public:
     SynthDevice(QObject* parent = nullptr);
+    ~SynthDevice();
 
     bool isSequential() const override { return true; }
 
@@ -42,24 +43,22 @@ public:
     qint64 writeData(const char*, qint64 ) override { return 0; }
 
 
-    const Synth& synth() const { return p_synth; }
-    const Score* score() const { return p_score; }
+    const Synth& synth() const;
+    const Score* score() const;
 
-    size_t sampleRate() const { return p_synth.sampleRate(); }
-    size_t bufferSize() const { return p_buffer.size() / sizeof(float); }
+    size_t sampleRate() const;
+    size_t bufferSize() const;
 
-    double currentSecond() const { return p_curSample * sampleRate(); }
+    double currentSecond() const;
 
 public slots:
 
     void setScore(const Score* score);
-    void setIndex(const Score::Index&);
+    void setIndex(const Score::Index& index);
 
-    void setPlaying(bool e) { p_playing = e; }
+    void setPlaying(bool e);
 
-    void setSynthProperties(const QProps::Properties& p)
-        { p_synth.setProperties(p); }
-
+    void setSynthProperties(const QProps::Properties& p);
 
     /** Play a single note as soon as possible */
     void playNote(int8_t note, double duration = 1.);
@@ -69,19 +68,8 @@ signals:
     void indexChanged(const Score::Index&);
 
 protected:
-
-    bool p_fillBuffer();
-
-    std::vector<char> p_buffer;
-    qint64 p_consumed;
-    Synth p_synth;
-    bool p_playing;
-    const Score* p_score;
-    Score::Index p_index;
-    uint64_t p_curSample;
-    double p_curBarTime;
-    std::vector<int> p_notesPlaying;
-    std::list<int8_t> p_playNotes;
+    struct Private;
+    Private* p_;
 };
 
 } // namespace Sonot

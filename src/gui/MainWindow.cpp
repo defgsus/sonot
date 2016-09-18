@@ -139,7 +139,7 @@ void MainWindow::Private::createWidgets()
         connect(scoreView, &ScoreView::noteEntered, [=](const Note& n)
         {
             if (n.isNote())
-                synthStream->playNote(n.value());
+                synthStream->playNote(n.value(), .4);
         });
         connect(scoreView, &ScoreView::statusChanged, [=](const QString& s)
         {
@@ -157,7 +157,6 @@ void MainWindow::Private::createWidgets()
         connect(propsView, &QProps::PropertiesView::propertyChanged, [=]()
         {
             applyProperties();
-            setChanged(true);
         });
 }
 

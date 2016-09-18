@@ -49,7 +49,8 @@ class SynthVoice::Private
           fenvAmt   (0),
           lifetime	(0),
           nextUnison(0),
-          data      (0)
+          userData  (0),
+          userIndex (-1)
 
     { }
 
@@ -77,7 +78,8 @@ class SynthVoice::Private
 
     SynthVoice * nextUnison;
 
-    void * data;
+    void * userData;
+    int64_t userIndex;
 };
 
 
@@ -110,9 +112,10 @@ double SynthVoice::sustain() const { return p_->env.sustain(); }
 double SynthVoice::release() const { return p_->env.release(); }
 const EnvelopeGenerator<double>& SynthVoice::envelope() const { return p_->env; }
 SynthVoice * SynthVoice::nextUnisonVoice() const { return p_->nextUnison; }
-void * SynthVoice::userData() const { return p_->data; }
+void * SynthVoice::userData() const { return p_->userData; }
+int64_t SynthVoice::userIndex() const { return p_->userIndex; }
 
-void SynthVoice::setUserData(void *data) { p_->data = data; }
+void SynthVoice::setUserData(void *data) { p_->userData = data; }
 
 
 
@@ -166,10 +169,11 @@ public:
         }
     }
 
-    SynthVoice * noteOn(
-            size_t startSample, double freq, int note, double velocity,
-            size_t numCombinedUnison, void *userData);
+    SynthVoice * noteOn(size_t startSample, double freq, int note, double velocity,
+            size_t numCombinedUnison, void *userData, int64_t userIndex);
     void noteOff(size_t stopSample, int note);
+    void noteOffByIndex(size_t stopSample, int64_t idx);
+    void notesOff(size_t stopSample);
     void panic();
     /** Mono output */
     void process(float * output, size_t bufferLength);
@@ -273,22 +277,22 @@ void Synth::Private::createProperties()
 
     props.set("decay", tr("decay"),
               tr("Decay time of envelope in seconds"),
-              1.5, 0., 10000., 0.01);
+              .3, 0., 10000., 0.01);
 
     props.set("sustain", tr("sustain"),
               tr("Sustain level of envelope"),
-              0.0);
+              0.3);
     props.setStep("sustain", 0.01);
 
     props.set("release", tr("release"),
               tr("Release time of envelope in seconds"),
-              1., 0., 10000., 0.01);
+              .6, 0., 10000., 0.01);
 }
 
 
 SynthVoice * Synth::Private::noteOn(
         size_t startSample, double freq, int note, double velocity,
-        size_t numCombinedUnison, void * userData)
+        size_t numCombinedUnison, void * userData, int64_t userIndex)
 {
     if (voices.empty())
         return 0;
@@ -430,7 +434,8 @@ SynthVoice * Synth::Private::noteOn(
     v->env.setDecay(p->decay());
     v->env.setSustain(p->sustain());
     v->env.setRelease(p->release());
-    v->data = userData;
+    v->userData = userData;
+    v->userIndex = userIndex;
     v->nextUnison = nullptr;
 
     return *i;
@@ -448,12 +453,32 @@ void Synth::Private::noteOff(size_t stopSample, int note)
     }
 }
 
+void Synth::Private::noteOffByIndex(size_t stopSample, int64_t idx)
+{
+    for (SynthVoice* i : voices)
+    if (i->p_->userIndex == idx
+        && (i->p_->active || (i->p_->cued && i->p_->startSample <= stopSample))
+        )
+    {
+        i->p_->cuedForStop = true;
+        i->p_->stopSample = stopSample;
+    }
+}
+
+void Synth::Private::notesOff(size_t stopSample)
+{
+    for (SynthVoice* i : voices)
+    if (i->p_->active || (i->p_->cued && i->p_->startSample <= stopSample))
+    {
+        i->p_->cuedForStop = true;
+        i->p_->stopSample = stopSample;
+    }
+}
+
 void Synth::Private::panic()
 {
     for (auto i : voices)
-    {
         i->p_->active = i->p_->cued = false;
-    }
 }
 
 void Synth::Private::process(float *output, size_t bufferLength)
@@ -672,7 +697,7 @@ void Synth::setVoiceEndedCallback(std::function<void (SynthVoice *)> func) { p_-
 
 
 SynthVoice * Synth::noteOn(int note, double velocity,
-                           size_t startSample, void * userData)
+                           size_t startSample, int64_t userIndex, void * userData)
 {
     SONOT_DEBUG_SYNTH("Synth::noteOn(" << note << ", " << velocity << ", "
              << startSample << ", " << userData << ")");
@@ -681,7 +706,7 @@ SynthVoice * Synth::noteOn(int note, double velocity,
 
     SynthVoice * voice = p_->noteOn(startSample, freq, note, velocity,
                                     combinedUnison() ? unisonVoices() : 1,
-                                    userData);
+                                    userData, userIndex);
     if (!voice)
     {
         SONOT_DEBUG_SYNTH("Synth::noteOn() failed");
@@ -736,7 +761,7 @@ SynthVoice * Synth::noteOn(int note, double velocity,
                              * maxdetune * 2. - maxdetune;
 
         SynthVoice * v = p_->noteOn(startSample, freq + detune,
-                                    note, velocity, 1, userData);
+                                    note, velocity, 1, userData, userIndex);
         if (v)
         {
             lastv->p_->nextUnison = v;
@@ -757,6 +782,16 @@ SynthVoice * Synth::noteOn(int note, double velocity,
 void Synth::noteOff(int note, size_t stopSample)
 {
     p_->noteOff(stopSample, note);
+}
+
+void Synth::noteOffByIndex(int64_t idx, size_t stopSample)
+{
+    p_->noteOffByIndex(stopSample, idx);
+}
+
+void Synth::notesOff(size_t stopSample)
+{
+    p_->notesOff(stopSample);
 }
 
 void Synth::panic() { p_->panic(); }

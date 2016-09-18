@@ -32,18 +32,55 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace Sonot {
 
 
+struct SynthDevice::Private
+{
+    Private(SynthDevice* p)
+        : p             (p)
+        , buffer        (1024)
+        , consumed      (0)
+        , synth         ()
+        , playing       (false)
+        , score         (nullptr)
+        , index         ()
+        , curSample     (0)
+        , curBarTime    (0.)
+    {
+
+    }
+
+    bool fillBuffer();
+
+    struct PlayNote
+    {
+        int8_t note;
+        int64_t idx;
+        double duration, started;
+    };
+
+    SynthDevice* p;
+
+    std::vector<char> buffer;
+    qint64 consumed;
+    Synth synth;
+    bool playing;
+    const Score* score;
+    Score::Index index;
+    uint64_t curSample;
+    double curBarTime;
+    std::list<PlayNote> playNotes;
+};
+
+
 SynthDevice::SynthDevice(QObject* parent)
     : QIODevice (parent)
-    , p_buffer  (1024)
-    , p_consumed(0)
-    , p_synth   ()
-    , p_playing (false)
-    , p_score   (nullptr)
-    , p_index   (p_score->index(0,0,0,0))
-    , p_curSample(0)
-    , p_curBarTime(0.)
+    , p_        (new Private(this))
 {
 
+}
+
+SynthDevice::~SynthDevice()
+{
+    delete p_;
 }
 
 
@@ -53,23 +90,23 @@ qint64 SynthDevice::readData(char *data, qint64 maxlen)
 
     while (written < maxlen)
     {
-        if (p_consumed >= (qint64)p_buffer.size())
+        if (p_->consumed >= (qint64)p_->buffer.size())
         {
-            auto oldIdx = p_index;
-            bool ret = p_fillBuffer();
-            if (p_index != oldIdx)
-                emit indexChanged(p_index);
+            auto oldIdx = p_->index;
+            bool ret = p_->fillBuffer();
+            if (p_->index != oldIdx)
+                emit indexChanged(p_->index);
             if (!ret)
                 return written;
 
-            p_consumed = 0;
+            p_->consumed = 0;
         }
 
-        while (written < maxlen && p_buffer.size() - p_consumed > 0)
+        while (written < maxlen && p_->buffer.size() - p_->consumed > 0)
         {
-            *data = p_buffer[p_consumed];
+            *data = p_->buffer[p_->consumed];
             ++data;
-            ++p_consumed;
+            ++p_->consumed;
             ++written;
         }
     }
@@ -77,39 +114,58 @@ qint64 SynthDevice::readData(char *data, qint64 maxlen)
     return written;
 }
 
+const Synth& SynthDevice::synth() const { return p_->synth; }
+const Score* SynthDevice::score() const { return p_->score; }
+
+size_t SynthDevice::sampleRate() const { return p_->synth.sampleRate(); }
+size_t SynthDevice::bufferSize() const
+    { return p_->buffer.size() / sizeof(float); }
+double SynthDevice::currentSecond() const
+    { return double(p_->curSample) / std::max(size_t(1), sampleRate()); }
+
 
 void SynthDevice::setScore(const Score* score)
 {
-    p_score = score;
-    p_index = p_score->index(p_index.stream(), p_index.bar(),
-                             p_index.row(), p_index.column());
-    if (p_index.isValid())
-        p_notesPlaying.resize(p_index.getStream().numRows());
-    p_curSample = 0;
-    p_curBarTime = 0;
+    p_->score = score;
+    p_->index = p_->score->index(p_->index.stream(), p_->index.bar(),
+                             p_->index.row(), p_->index.column());
+    p_->synth.notesOff();
+    p_->curSample = 0;
+    p_->curBarTime = 0;
 }
 
 void SynthDevice::setIndex(const Score::Index& idx)
 {
-    p_index = idx;
-    p_curBarTime = 0;
+    p_->index = idx;
+    p_->curBarTime = 0;
+}
+
+void SynthDevice::setPlaying(bool e) { p_->playing = e; }
+
+void SynthDevice::setSynthProperties(const QProps::Properties& p)
+{
+    p_->synth.setProperties(p);
 }
 
 
-void SynthDevice::playNote(int8_t note, double /*duration*/)
+void SynthDevice::playNote(int8_t note, double duration)
 {
-    p_playNotes.push_back( note );
+    Private::PlayNote n;
+    n.note = note;
+    n.started = -1.;
+    n.duration = duration;
+    p_->playNotes.push_back( n );
 }
 
-bool SynthDevice::p_fillBuffer()
+bool SynthDevice::Private::fillBuffer()
 {
-    if (p_playing && p_score && p_index.isValid() && p_index.score() == p_score)
+    // length of dsp buffer in samples
+    double bufferLength = (double)p->bufferSize() / p->sampleRate();
+
+    if (playing && score && index.isValid() && index.score() == score)
     {
-        //double curTime = currentSecond();
         // time per bar
         double barLength = 1.15;
-        // length of dsp buffer in samples
-        double bufferLength = (double)bufferSize() / sampleRate();
         // time in dsp block
         double procTime = 0.;
 
@@ -119,35 +175,33 @@ bool SynthDevice::p_fillBuffer()
         {
             SONOT_DEBUG_SYNTH("while(procTime < bufferLength) "
                               << "procTime" << procTime
-                              << ", curBarTime" << p_curBarTime
+                              << ", curBarTime" << curBarTime
                               << ", bufferLength" << bufferLength
                               << ", barLength" << barLength);
 
             // get next bar
-            if (p_curBarTime >= barLength)
+            if (curBarTime >= barLength)
             {
                 SONOT_DEBUG_SYNTH("next bar");
                 // start again
-                if (!p_index.nextBar())
+                if (!index.nextBar())
                 {
-                    p_index = p_score->index(0,0,0,0);
+                    index = score->index(0,0,0,0);
                 }
-                if (p_index.isValid())
-                    p_notesPlaying.resize(p_index.getStream().numRows());
 
-                p_curBarTime = 0.;
+                curBarTime = 0.;
             }
 
-            Score::Index cursor = p_index.topLeft();
+            Score::Index cursor = index.topLeft();
             if (!cursor.isValid())
                 break;
 
             double windowLength = std::min(bufferLength - procTime,
-                                           barLength - p_curBarTime);
+                                           barLength - curBarTime);
 
             SONOT_DEBUG_SYNTH("processing bar window "
-                              << p_curBarTime << " to "
-                              << (p_curBarTime + windowLength)
+                              << curBarTime << " to "
+                              << (curBarTime + windowLength)
                               << " , len=" << windowLength);
 
             // send all notes in bar window to synth
@@ -161,22 +215,19 @@ bool SynthDevice::p_fillBuffer()
                         continue;
 
                     // window-local time
-                    double ltime = barLength * bar.columnTime(c) - p_curBarTime;
+                    double ltime = barLength * bar.columnTime(c) - curBarTime;
                     if (ltime >= 0 && ltime < windowLength)
                     {
-                        size_t samplePos = (procTime + ltime) * sampleRate();
+                        size_t samplePos = (procTime + ltime) * p->sampleRate();
 
                         // stop prev note
                         if (n.value() != Note::Space)
                         {
-                            if (p_notesPlaying[r] >= 0)
-                                p_synth.noteOff(p_notesPlaying[r], samplePos);
-                            p_notesPlaying[r] = Note::Invalid;
+                            synth.noteOffByIndex(r, samplePos);
                         }
                         if (n.isNote())
                         {
-                            p_synth.noteOn(n.value(), 0.1, samplePos);
-                            p_notesPlaying[r] = n.value();
+                            synth.noteOn(n.value(), 0.1, samplePos, r);
                         }
                     }
                 }
@@ -184,22 +235,42 @@ bool SynthDevice::p_fillBuffer()
 
             SONOT_DEBUG_SYNTH("fed " << windowLength);
 
-            p_curBarTime += windowLength;
+            curBarTime += windowLength;
             procTime += windowLength;
         }
     }
 
-    // also add all playNote requests
-    while (!p_playNotes.empty())
+
+    // also add all PlayNote requests
+    std::list<PlayNote> notes;
+    for (PlayNote& n : playNotes)
     {
-        p_synth.noteOn(p_playNotes.front(), 0.1);
-        p_playNotes.pop_front();
+        if (n.started < 0.)
+        {
+            n.idx = 10000 + playNotes.size();
+            n.started = p->currentSecond();
+            synth.noteOn(n.note, 0.1, 0, n.idx);
+        }
+
+        // stop when duration is within this window
+        double d = p->currentSecond() - n.started
+                - n.duration + bufferLength;
+        if (d > 0. && d < bufferLength)
+        {
+            synth.noteOffByIndex(n.idx, std::min(
+                                     p->bufferSize()-1,
+                                     size_t(d * p->sampleRate())));
+            continue;
+        }
+
+        notes.push_back(n);
     }
+    playNotes.swap(notes);
 
     // execute synth block
-    p_synth.process(reinterpret_cast<float*>(p_buffer.data()),
-                    p_buffer.size() / sizeof(float));
-    p_curSample += p_buffer.size() / sizeof(float);
+    synth.process(reinterpret_cast<float*>(buffer.data()),
+                    p->bufferSize());
+    curSample += p->bufferSize();
 
     return true;
 }

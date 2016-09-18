@@ -70,6 +70,9 @@ public:
         or the one that was passed to Synth::noteOn(). */
     void * userData() const;
 
+    /** Returns the index previously given to Synth::noteOn(). */
+    int64_t userIndex() const;
+
     // ----------- setter --------------
 
     /** Freely chooseable user data */
@@ -175,16 +178,29 @@ public:
         but not active yet.
         Note that startSample must be smaller than the bufferLength parameter
         in process() to start the voice.
-        @p userData is passed to the SynthVoice. */
+        @p userData and @p userIndex is passed to the SynthVoice. */
     SynthVoice * noteOn(int note, double velocity,
-                        size_t startSample = 0, void * userData = 0);
+                        size_t startSample = 0,
+                        int64_t userIndex = -1,
+                        void * userData = 0);
 
     /** Stops all active voices of the given note.
         Depending on their sustain level, they will immidiately stop
-        (sustain==0) or enter into RELEASE evelope state. */
+        (sustain==0) or enter into RELEASE envelope state. */
     void noteOff(int note, size_t stopSample = 0);
 
-    /** Turn all notes off imediately. */
+    /** Stops all active voices with the given @p userIndex.
+        Depending on their sustain level, they will immidiately stop
+        (sustain==0) or enter into RELEASE envelope state. */
+    void noteOffByIndex(int64_t userIndex, size_t stopSample = 0);
+
+    /** Stops all notes.
+        Depending on their sustain level, they will immidiately stop
+        (sustain==0) or enter into RELEASE envelope state.
+        @see panic() */
+    void notesOff(size_t stopSample = 0);
+
+    /** Turn all notes off immediately. */
     void panic();
 
     /** Generates @p bufferLength samples of synthesizer music.
