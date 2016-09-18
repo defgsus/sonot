@@ -290,6 +290,27 @@ bool ScoreEditor::deleteStream(const Score::Index& idx)
     return false;
 }
 
+bool ScoreEditor::splitStream(const Score::Index& idx)
+{
+    SONOT__CHECK_INDEX(idx, false);
+    if (idx.isStreamEnd())
+        return false;
+    NoteStream* org = p_->getStream(idx);
+    if (!org)
+        return false;
+    NoteStream cpy = *org;
+    cpy.removeBars(0, idx.bar() + 1);
+    org->removeBars(idx.bar() + 1);
+    score()->insertNoteStream(idx.stream() + 1, cpy);
+    // get propper indices after change
+    auto i1 = score()->index(idx.stream(), 0,0,0),
+         i2 = score()->index(idx.stream()+1, 0,0,0);
+    QPROPS_ASSERT(i1.isValid(), "");
+    QPROPS_ASSERT(i2.isValid(), "");
+    emit streamsChanged(IndexList() << i1 << i2);
+    emit documentChanged();
+    return true;
+}
 
 NoteStream* ScoreEditor::Private::getStream(const Score::Index& idx)
 {

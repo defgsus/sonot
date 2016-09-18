@@ -99,9 +99,9 @@ public slots:
     void editDeleteBar();
     void editDeleteNote();
     void editDeleteRow();
+    void editSplitStream();
     void editTransposeUp(int steps = 1);
     void editTransposeDown(int steps = 1);
-
 
 protected:
 

@@ -286,12 +286,12 @@ QList<QAction*> ScoreView::createEditActions()
     //a->setShortcut(Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertStream(false); });
 
-    list << (a = new QAction(tr("insert new part (after)"), par));
-    //a->setShortcut(Qt::Key_Enter);
+    list << (a = new QAction(tr("insert new part (after bar)"), par));
+    a->setShortcut(Qt::ALT + Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertStream(true); });
 
     list << (a = new QAction(tr("insert bar"), par));
-    a->setShortcut(Qt::Key_Enter);
+    a->setShortcut(Qt::ALT + Qt::Key_B);
     connect(a, &QAction::triggered, [=](){ editInsertBar(false); });
 
     list << (a = new QAction(tr("insert row"), par));
@@ -305,6 +305,12 @@ QList<QAction*> ScoreView::createEditActions()
     list << (a = new QAction(tr("duplicate bar"), par));
     a->setShortcut(Qt::ALT + Qt::Key_D);
     connect(a, &QAction::triggered, [=](){ editDuplicateBar(); });
+
+    list << (a = new QAction(tr("split part"), par));
+    a->setStatusTip(tr("Splits the current part into two, "
+                       "after the current bar"));
+    //a->setShortcut(Qt::);
+    connect(a, &QAction::triggered, [=](){ editSplitStream(); });
 
     list << (a = new QAction(tr("delete bar"), par));
     a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_B);
@@ -437,6 +443,13 @@ void ScoreView::editDeleteNote()
     if (editor()->deleteNote(p_->cursor, true)
             && !p_->cursor.isValid())
         p_->setCursor(c, true);
+}
+
+void ScoreView::editSplitStream()
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+    editor()->splitStream(p_->cursor);
 }
 
 void ScoreView::editTransposeUp(int steps)
@@ -575,7 +588,8 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
     }
 
     const bool
-            isShift = e->modifiers() & Qt::SHIFT;
+            isShift = e->modifiers() & Qt::SHIFT,
+            isAlt = e->modifiers() & Qt::ALT;
 
     //qDebug() << p_->action << p_->cursor.toString();
 
@@ -629,9 +643,14 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             case Qt::Key_Delete:
                 editDeleteNote();
             break;
+            /** @todo there is some duplicate functionality
+                in keyEvent() and createEditActions() */
             case Qt::Key_Enter:
             case Qt::Key_Return:
-                editInsertBar(true);
+                if (isAlt)
+                    editInsertStream(true);
+                else
+                    editInsertBar(true);
             break;
             case '+':
                 editTransposeUp();

@@ -57,6 +57,11 @@ public:
     bool deleteRow(const Score::Index&);
     bool deleteStream(const Score::Index&);
 
+    /** Splits a stream at the given Bar.
+        The second stream will start with the next Bar.
+        Does nothing on the last Bar of a stream. */
+    bool splitStream(const Score::Index&);
+
 signals:
 
     /** When a new score was assigned */

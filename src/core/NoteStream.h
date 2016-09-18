@@ -50,12 +50,17 @@ public:
         If @p len == 0, the default length will be used. */
     Bar createDefaultBar(size_t len = 0) const;
 
-    /** Default empty bar block for this stream.
+    /** Default silent bar block for this stream.
         If @p len == 0, the default length will be used.
+        The bar will contain this number of silent notes.
         The number of rows will be equal
         to the number of rows in this stream, or at least 1. */
     QList<Bar> createDefaultBarRows(size_t len = 0) const;
 
+    /** Creates a default NoteStream.
+        The stream will contain at least one Bar created with
+        createDefaultBarRows().
+        The properties of the current stream are copied. */
     NoteStream createDefaultStream(size_t numBars = 0, size_t barLen = 0) const;
 
     // --- getter ---
@@ -115,7 +120,7 @@ public:
     void removeBar(size_t idx);
     /** Remove @p count Bars starting at @p idx.
         If @p count < 0, all Bars to the end will be removed */
-    void removeBars(size_t idx, int count);
+    void removeBars(size_t idx, int64_t count = -1);
 
     /** Inserts a Bar before given index.
         If @p idx is >= numBars(), the Bar will be appended. */

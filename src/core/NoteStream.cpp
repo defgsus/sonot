@@ -68,6 +68,7 @@ NoteStream NoteStream::createDefaultStream(
     NoteStream s;
     for (size_t i=0; i<std::max(size_t(1), numBars); ++i)
         s.appendBar( createDefaultBarRows(barLen) );
+    s.p_props_ = p_props_;
     return s;
 }
 
@@ -187,7 +188,7 @@ void NoteStream::setNumRows(size_t newRows)
 }
 
 
-void NoteStream::removeBars(size_t idx, int count)
+void NoteStream::removeBars(size_t idx, int64_t count)
 {
     QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::removeBars("
                      << idx << "," << count << ")");
