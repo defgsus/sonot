@@ -140,7 +140,11 @@ void SynthDevice::setIndex(const Score::Index& idx)
     p_->curBarTime = 0;
 }
 
-void SynthDevice::setPlaying(bool e) { p_->playing = e; }
+void SynthDevice::setPlaying(bool e)
+{
+    p_->playing = e;
+    p_->synth.notesOff();
+}
 
 void SynthDevice::setSynthProperties(const QProps::Properties& p)
 {
@@ -183,11 +187,22 @@ bool SynthDevice::Private::fillBuffer()
             if (curBarTime >= barLength)
             {
                 SONOT_DEBUG_SYNTH("next bar");
-                // start again
+                bool doStopNotes = false;
+                size_t curStream = index.stream(),
+                       numRows = index.numRows();
                 if (!index.nextBar())
                 {
+                    // start again
                     index = score->index(0,0,0,0);
+                    doStopNotes = true;
                 }
+                if (index.stream() != curStream)
+                    doStopNotes = true;
+                // note-off at stream end
+                /// @todo this is not timed within the dsp-block!
+                if (doStopNotes)
+                    for (size_t r=0; r<numRows; ++r)
+                        synth.noteOffByIndex(r, 0);
 
                 curBarTime = 0.;
             }
@@ -254,7 +269,7 @@ bool SynthDevice::Private::fillBuffer()
 
         // stop when duration is within this window
         double d = p->currentSecond() - n.started
-                - n.duration + bufferLength;
+                 - n.duration + bufferLength;
         if (d > 0. && d < bufferLength)
         {
             synth.noteOffByIndex(n.idx, std::min(

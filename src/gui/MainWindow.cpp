@@ -98,7 +98,8 @@ struct MainWindow::Private
     SynthDevice* synthStream;
 
     QMenu* menuEdit;
-    QAction* actSaveScore;
+    QAction* actSaveScore,
+            *actFollowPlay;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -146,8 +147,13 @@ void MainWindow::Private::createWidgets()
             p->statusBar()->showMessage(s);
         });
 
-        connect(synthStream, SIGNAL(indexChanged(Score::Index)),
-                scoreView, SLOT(setPlayingIndex(Score::Index)));
+        connect(synthStream, &SynthDevice::indexChanged,
+                [=](const Score::Index& idx)
+        {
+            scoreView->setPlayingIndex(idx);
+            if (actFollowPlay->isChecked())
+                scoreView->ensureIndexVisible(idx);
+        });
 
         propsView = new QProps::PropertiesView(p);
         propsView->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
@@ -233,6 +239,10 @@ void MainWindow::Private::createMenu()
     menu->addActions( scoreView->createEditActions() );
 
     menu = p->menuBar()->addMenu(tr("Playback"));
+
+    a = actFollowPlay = menu->addAction(tr("Follow play cursor"));
+    a->setCheckable(true);
+    a->setChecked(true);
 
     a = menu->addAction(tr("Play whole"));
     a->setShortcut(Qt::Key_F5);
