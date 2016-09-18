@@ -104,12 +104,13 @@ public:
     int8_t value() const { return p_value_; }
 
     int8_t octave() const;
+    int8_t octaveSpanish() const;
     Name noteName() const;
 
     /** Returns a string in the format 'C#3' */
     QString to3String() const;
     QString toSpanishString() const;
-    QString toShortAlphaString() const;
+    QString toShortAlphaNumString() const;
 
     bool isValid() const { return p_value_ != Invalid; }
     bool isNote() const { return p_value_ >= 0; }

@@ -60,6 +60,7 @@ public:
 signals:
 
     void noteEntered(const Note& n);
+    void statusChanged(const QString& n);
 
 public slots:
 
@@ -82,7 +83,7 @@ public slots:
         Returns true, if the view has changed */
     bool ensureIndexVisible(const Score::Index& );
 
-    void updateIndex(const Score::Index&, double margin = 1.);
+    void refreshIndex(const Score::Index&, double margin = 1.);
 
     void setPlayingIndex(const Score::Index&);
 

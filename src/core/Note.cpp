@@ -70,6 +70,11 @@ int8_t Note::octave() const
     return p_value_ < 0 ? 0 : p_value_ / 12;
 }
 
+int8_t Note::octaveSpanish() const
+{
+    return p_value_ < 5 ? 0 : ((p_value_-5) / 12);
+}
+
 Note::Name Note::noteName() const
 {
     return p_value_ < 0 ? C : Name(p_value_ % 12);
@@ -218,7 +223,7 @@ QString Note::toSpanishString() const
     return n;
 }
 
-QString Note::toShortAlphaString() const
+QString Note::toShortAlphaNumString() const
 {
     QString s = to3String().remove("-");
     if (s.endsWith("3"))

@@ -141,6 +141,11 @@ void MainWindow::Private::createWidgets()
             if (n.isNote())
                 synthStream->playNote(n.value());
         });
+        connect(scoreView, &ScoreView::statusChanged, [=](const QString& s)
+        {
+            p->statusBar()->showMessage(s);
+        });
+
         connect(synthStream, SIGNAL(indexChanged(Score::Index)),
                 scoreView, SLOT(setPlayingIndex(Score::Index)));
 

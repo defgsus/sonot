@@ -78,6 +78,7 @@ struct ScoreView::Private
     void setAction(Action);
     void setCursor(const Score::Index& cursor, bool ensureVisible);
     void clearCursor();
+    void updateStatus();
 
     // --- helper ---
 
@@ -107,7 +108,6 @@ struct ScoreView::Private
     QTransform lastMouseDownMatrix;
 
     Score::Index cursor, playCursor;
-    QString inputString;
     int curOctave;
 
     // -- config --
@@ -237,7 +237,7 @@ bool ScoreView::ensureIndexVisible(const Score::Index& idx)
     return false;
 }
 
-void ScoreView::updateIndex(const Score::Index& idx, double m)
+void ScoreView::refreshIndex(const Score::Index& idx, double m)
 {
     if (isAssigned())
     if (auto item = p_->document->getScoreItem(idx))
@@ -254,10 +254,10 @@ void ScoreView::setPlayingIndex(const Score::Index& cur)
     if (cur == p_->playCursor)
         return;
     if (p_->playCursor.isValid())
-        updateIndex(p_->playCursor);
+        refreshIndex(p_->playCursor);
     p_->playCursor = cur;
     if (p_->playCursor.isValid())
-        updateIndex(p_->playCursor);
+        refreshIndex(p_->playCursor);
 }
 
 QRect ScoreView::mapFromDocument(const QRectF& r)
@@ -428,11 +428,11 @@ void ScoreView::Private::connectEditor(ScoreEditor* editor)
 {
     connect(editor, &ScoreEditor::scoreReset, [=]()
     {
-        cursor = document->score()->index(0,0,0,0);
+        setCursor(document->score()->index(0,0,0,0), true);
         setAction(cursor.isValid()
                       ? Private::A_ENTER_NOTE
                       : Private::A_NOTHING);
-        p->goToPage(0);
+        //p->goToPage(0);
     });
     connect(editor, &ScoreEditor::refresh, [=]()
     {
@@ -483,22 +483,42 @@ void ScoreView::Private::setCursor(const Score::Index& cur, bool ensureVisible)
     if (cur == cursor)
         return;
     if (cursor.isValid())
-        p->updateIndex(cursor);
+        p->refreshIndex(cursor);
     cursor = cur;
     if (ensureVisible)
     {
         if (cursor.isValid())
             if (!p->ensureIndexVisible(cursor))
-                p->updateIndex(cursor);
+                p->refreshIndex(cursor);
+        updateStatus();
         return;
     }
     if (cursor.isValid())
-        p->updateIndex(cursor);
+        p->refreshIndex(cursor);
+    updateStatus();
 }
 
 void ScoreView::Private::clearCursor()
 {
     setCursor(Score::Index(), false);
+}
+
+void ScoreView::Private::updateStatus()
+{
+    QString s;
+    if (!cursor.isValid())
+        s = "[]";
+    else
+        s = QString("Piece: %1, Bar(%2): %3, Row: %4, Note: %5 (%6)")
+                .arg(cursor.stream())
+                .arg(cursor.getBar().length())
+                .arg(cursor.bar())
+                .arg(cursor.row())
+                .arg(cursor.column())
+                .arg(cursor.getNote().to3String());
+    s += QString(" | octave %1")
+            .arg(curOctave);
+    emit p->statusChanged(s);
 }
 
 
@@ -557,7 +577,6 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             if (cursor.isValid() && cursor != p_->cursor)
             {
                 p_->setCursor(cursor, true);
-                p_->inputString.clear();
             }
             return;
         }
@@ -580,25 +599,34 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             case '+':
                 editTransposeUp();
                 if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
+                {
                     emit noteEntered(p_->cursor.getNote());
+                    p_->curOctave = p_->cursor.getNote().octaveSpanish();
+                    p_->updateStatus();
+                }
             break;
             case '-':
                 editTransposeDown();
                 if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
+                {
                     emit noteEntered(p_->cursor.getNote());
+                    p_->curOctave = p_->cursor.getNote().octaveSpanish();
+                    p_->updateStatus();
+                }
             break;
             case '>':
                 p_->curOctave++;
+                p_->updateStatus();
             break;
             case '<':
                 p_->curOctave--;
+                p_->updateStatus();
             break;
 
             default: handled = false;
         }
         if (handled)
         {
-            p_->inputString.clear();
             return;
         }
 
@@ -652,14 +680,13 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             n.setValue(newVal);
             editor()->changeNote(p_->cursor, n);
             emit noteEntered(n);
+            p_->updateStatus();
         }
-        else
-            // remove illegal or unused character
-            p_->inputString.chop(1);
 
         return;
     }
 
+    /** @todo go-to-page-keys are ambigious now */
     if (e->key() >= Qt::Key_0 && e->key() <= Qt::Key_9)
     {
         if (e->modifiers() != 0)
@@ -693,7 +720,6 @@ void ScoreView::mousePressEvent(QMouseEvent* e)
         {
             p_->setCursor(idx, false);
             p_->setAction(Private::A_ENTER_NOTE);
-            p_->inputString.clear();
             return;
         }
         else
@@ -732,7 +758,6 @@ void ScoreView::mouseMoveEvent(QMouseEvent* e)
 
     if (p_->action == Private::A_DRAG_TRANSLATE)
     {
-
         p_->matrix = p_->lastMouseDownMatrix;
         p_->matrix.translate(delta.x(), delta.y());
         p_->onMatrixChanged();
@@ -935,7 +960,7 @@ void ScoreView::Private::paintScore(
     }
 
     // cursor
-    if (action == A_ENTER_NOTE && cursor.isValid())
+    if (cursor.isValid())
     if (auto item = document->getScoreItem(cursor))
     if (item->docIndex().pageIdx() == pageIndex)
     {
