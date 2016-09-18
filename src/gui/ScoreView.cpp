@@ -433,7 +433,7 @@ void ScoreView::editDeleteNote()
     if (!isAssigned() || !p_->cursor.isValid())
         return;
 
-    if (p_->cursor.getBar().length() <= 1)
+    if (p_->cursor.getNotes().length() <= 1)
         return;
 
     auto c = p_->cursor;
@@ -561,7 +561,7 @@ void ScoreView::Private::updateStatus()
     else
         s = QString("Part: %1, Bar(%2): %3, Row: %4, Note: %5 (%6)")
                 .arg(cursor.stream())
-                .arg(cursor.getBar().length())
+                .arg(cursor.getNotes().length())
                 .arg(cursor.bar())
                 .arg(cursor.row())
                 .arg(cursor.column())

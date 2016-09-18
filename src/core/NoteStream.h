@@ -26,9 +26,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QtCore>
 #include <QString>
 
-#include "Bar.h"
 #include "QProps/JsonInterface.h"
 #include "QProps/Properties.h"
+
+#include "Notes.h"
+#include "Bar.h"
 
 namespace Sonot {
 
@@ -48,14 +50,14 @@ public:
 
     /** Default empty bar for this stream.
         If @p len == 0, the default length will be used. */
-    Bar createDefaultBar(size_t len = 0) const;
+    Notes createDefaultNotes(size_t len = 0) const;
 
     /** Default silent bar block for this stream.
         If @p len == 0, the default length will be used.
         The bar will contain this number of silent notes.
         The number of rows will be equal
         to the number of rows in this stream, or at least 1. */
-    QList<Bar> createDefaultBarRows(size_t len = 0) const;
+    QList<Notes> createDefaultBarRows(size_t len = 0) const;
 
     /** Creates a default NoteStream.
         The stream will contain at least one Bar created with
@@ -88,13 +90,13 @@ public:
     double barLengthSeconds(size_t barIdx) const;
 
     /** Read reference to @p idx'th Bar */
-    const Bar& bar(size_t barIdx, size_t row) const;
+    const Notes& notes(size_t barIdx, size_t row) const;
 
     /** Returns Note from Bar */
     const Note& note(size_t barIdx, size_t row, size_t column) const;
 
     /** Returns a copy of the bars at barIdx */
-    QList<Bar> getRows(size_t barIdx) const;
+    QList<Notes> getRows(size_t barIdx) const;
 
     /** Returns a multi-line ascii string representing the data */
     QString toTabString() const;
@@ -124,18 +126,18 @@ public:
 
     /** Inserts a Bar before given index.
         If @p idx is >= numBars(), the Bar will be appended. */
-    void insertBar(size_t idx, const Bar& row);
-    void appendBar(const Bar& row) { insertBar(numBars(), row); }
+    void insertBar(size_t idx, const Notes& row);
+    void appendBar(const Notes& row) { insertBar(numBars(), row); }
 
-    void insertBar(size_t idx, const QList<Bar>& rows);
-    void appendBar(const QList<Bar>& rows) { insertBar(numBars(), rows); }
+    void insertBar(size_t idx, const QList<Notes>& rows);
+    void appendBar(const QList<Notes>& rows) { insertBar(numBars(), rows); }
 
     /** Inserts a row of Bars before the given row. */
     void insertRow(size_t row);
     void removeRow(size_t row);
 
 private:
-    std::vector<std::vector<Bar>> p_data_;
+    std::vector<Bar> p_data_;
     QProps::Properties p_props_;
 };
 

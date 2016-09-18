@@ -55,17 +55,17 @@ bool NoteStream::operator == (const NoteStream& rhs) const
     return p_data_ == rhs.p_data_;
 }
 
-Bar NoteStream::createDefaultBar(size_t len) const
+Notes NoteStream::createDefaultNotes(size_t len) const
 {
-    return Bar(std::max(size_t(1), len));
+    return Notes(std::max(size_t(1), len));
 }
 
-QList<Bar> NoteStream::createDefaultBarRows(size_t len) const
+QList<Notes> NoteStream::createDefaultBarRows(size_t len) const
 {
     size_t c = std::max(size_t(1), numRows());
-    QList<Bar> rows;
+    QList<Notes> rows;
     for (size_t i=0; i<c; ++i)
-        rows << createDefaultBar(len);
+        rows << createDefaultNotes(len);
     return rows;
 }
 
@@ -92,13 +92,8 @@ void NoteStream::setProperties(const QProps::Properties& props)
 size_t NoteStream::numNotes() const
 {
     size_t n = 0;
-    for (const std::vector<Bar>& bars : p_data_)
-    {
-        size_t m = 0;
-        for (const Bar& b : bars)
-            m = std::max(m, b.length());
-        n += m;
-    }
+    for (const Bar& bar : p_data_)
+        n += bar.maxNumberNotes();
     return n;
 }
 
@@ -106,7 +101,7 @@ size_t NoteStream::numNotes(size_t barIdx) const
 {
     QPROPS_ASSERT_LT(barIdx, numBars(), "in NoteStream::numNotes()");
     size_t n = 0;
-    for (const Bar& b : p_data_[barIdx])
+    for (const Notes& b : p_data_[barIdx])
         n = std::max(n, b.length());
     return n;
 }
@@ -114,10 +109,10 @@ size_t NoteStream::numNotes(size_t barIdx) const
 size_t NoteStream::numRows() const
 {
     return p_data_.empty() ? 0
-                           : p_data_.front().size();
+                           : p_data_.front().numRows();
 }
 
-const Bar& NoteStream::bar(size_t idx, size_t row) const
+const Notes& NoteStream::notes(size_t idx, size_t row) const
 {
     QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
     QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::bar()");
@@ -130,19 +125,19 @@ const Note& NoteStream::note(size_t idx, size_t row, size_t column) const
                      << idx << "," << row << "," << column << ")");
     QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::note("
                      << idx << "," << row << "," << column << ")");
-    const Bar& b = bar(idx, row);
+    const Notes& b = notes(idx, row);
     QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::note()");
     return b.note(column);
 }
 
-QList<Bar> NoteStream::getRows(size_t idx) const
+QList<Notes> NoteStream::getRows(size_t idx) const
 {
     QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::getRows("
                      << idx << ")");
 
-    QList<Bar> rows;
+    QList<Notes> rows;
     for (size_t i=0; i<numRows(); ++i)
-        rows << bar(idx, i);
+        rows << notes(idx, i);
     return rows;
 }
 
@@ -168,7 +163,7 @@ void NoteStream::setNote(size_t idx, size_t row, size_t column, const Note& n)
                      << idx << "," << row << "," << column << ")");
     QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::setNote("
                      << idx << "," << row << "," << column << ")");
-    Bar& b = p_data_[idx][row];
+    Notes& b = p_data_[idx][row];
     QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::setNote("
                      << idx << "," << row << "," << column << ")");
     b.setNote(column, n);
@@ -185,12 +180,12 @@ void NoteStream::setNumRows(size_t newRows)
 {
     if (newRows == numRows())
         return;
-    for (std::vector<Bar>& rows : p_data_)
+    for (Bar& bar : p_data_)
     {
-        size_t n = rows.size();
-        rows.resize(newRows);
+        size_t n = bar.numRows();
+        bar.resize(newRows);
         for (size_t i=n; i<newRows; ++i)
-            rows[n] = createDefaultBar();
+            bar[n] = createDefaultNotes();
     }
 }
 
@@ -210,63 +205,52 @@ void NoteStream::removeBars(size_t idx, int64_t count)
     p_data_.erase(p_data_.begin() + idx, p_data_.begin() + idx + count);
 }
 
-void NoteStream::insertBar(size_t idx, const Bar &b)
+void NoteStream::insertBar(size_t idx, const Notes &b)
 {
-    std::vector<Bar> bars;
-    bars.push_back(b);
+    Bar bar;
+    bar.append(b);
     for (size_t i=1; i<numRows(); ++i)
-        bars.push_back( Bar(1) );
+        bar.append( Notes(b.length()) );
 
     if (idx < numBars())
-        p_data_.insert(p_data_.begin() + idx, bars);
+        p_data_.insert(p_data_.begin() + idx, bar);
     else
-        p_data_.push_back(bars);
+        p_data_.push_back(bar);
 }
 
 
 
-void NoteStream::insertBar(size_t idx, const QList<Bar>& barList)
+void NoteStream::insertBar(size_t idx, const QList<Notes>& barList)
 {
     if (barList.isEmpty())
         return;
 
-    std::vector<Bar> bars;
+    Bar bar;
     for (auto& b : barList)
-        bars.push_back( b );
+        bar.append( b );
 
-    if (bars.size() < numRows())
+    if (bar.numRows() < numRows())
     {
         // append empty bars to insertion
         for (size_t i=1; i<numRows(); ++i)
-            bars.push_back( createDefaultBar() );
+            bar.append( createDefaultNotes() );
     }
-    else if (bars.size() > numRows())
+    else if (bar.numRows() > numRows())
         // otherwise resize data
-        setNumRows(bars.size());
+        setNumRows(bar.numRows());
 
     if (idx < numBars())
-        p_data_.insert(p_data_.begin() + idx, bars);
+        p_data_.insert(p_data_.begin() + idx, bar);
     else
-        p_data_.push_back(bars);
+        p_data_.push_back(bar);
 }
 
 void NoteStream::insertRow(size_t row)
 {
-    for (std::vector<Bar>& barBlock : p_data_)
+    for (Bar& bar : p_data_)
     {
-        size_t len = 1;
-        if (!barBlock.empty())
-        {
-            len = barBlock.front().length();
-            for (auto& b : barBlock)
-                len = std::max(len, b.length());
-        }
-        Bar bar = createDefaultBar(len);
-
-        if (row < barBlock.size())
-            barBlock.insert(barBlock.begin() + row, bar);
-        else
-            barBlock.push_back(bar);
+        Notes notes = createDefaultNotes( bar.maxNumberNotes() );
+        bar.insert(row, notes);
     }
 }
 
@@ -275,10 +259,8 @@ void NoteStream::removeRow(size_t row)
     if (row >= numRows())
         return;
 
-    for (std::vector<Bar>& barBlock : p_data_)
-    {
-        barBlock.erase(barBlock.begin() + row);
-    }
+    for (Bar& bar : p_data_)
+        bar.remove(row);
 }
 
 QString NoteStream::toTabString() const
@@ -304,7 +286,7 @@ QString NoteStream::toTabString() const
         for (size_t i=0; i<blength; ++i)
         for (size_t y=0; y<numRows(); ++y)
         {
-            const Bar& b = bar(barIdx, y);
+            const Notes& b = notes(barIdx, y);
             Note n(Note::Space);
             if (i < b.length())
                 n = b.note(i);
@@ -331,7 +313,7 @@ QString NoteStream::toInfoString() const
         int ma = 0;
         for (size_t r=0; r<numRows(); ++r)
         {
-            rows[r] += QString::number(bar(b, r).length());
+            rows[r] += QString::number(notes(b, r).length());
             ma = std::max(ma, rows[r].length());
         }
         // padding
@@ -353,21 +335,28 @@ QString NoteStream::toInfoString() const
 QJsonObject NoteStream::toJson() const
 {
     QProps::JsonInterfaceHelper json("NoteStream");
-
-    // write [[bar,bar,bar],[bar,barbar]]
+#if 1
+    // write [[bar,bar,bar],[bar,bar,bar]]
     QJsonArray jrows;
     for (size_t row = 0; row < numRows(); ++row)
     {
         QJsonArray jbars;
         for (size_t i = 0; i < numBars(); ++i)
         {
-            jbars.append(QJsonValue(bar(i, row).toJson()));
+            jbars.append(QJsonValue(notes(i, row).toJson()));
         }
         jrows.append( jbars );
     }
 
     QJsonObject o;
     o.insert("bars", jrows);
+#else
+
+
+
+    QJsonObject o;
+    o.insert("bars", jrows);
+#endif
     o.insert("properties", p_props_.toJson());
     return o;
 }
@@ -378,7 +367,7 @@ void NoteStream::fromJson(const QJsonObject& o)
 
     QJsonArray jrows = json.expectChildArray(o, "bars");
 
-    std::vector<std::vector<Bar>> data;
+    std::vector<Bar> data;
     for (int row=0; row<jrows.size(); ++row)
     {
         json.beginContext(QString("Reading row %1").arg(row));

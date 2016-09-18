@@ -241,7 +241,7 @@ bool Score::Index::isValid() const
         && stream() < (size_t)score()->noteStreams().size()
         && bar() < score()->noteStream(stream()).numBars()
         && row() < score()->noteStream(stream()).numRows()
-        && column() < score()->noteStream(stream()).bar(bar(), row()).length();
+        && column() < score()->noteStream(stream()).notes(bar(), row()).length();
 }
 
 bool Score::Index::isInserter() const
@@ -256,7 +256,7 @@ bool Score::Index::isInserter() const
         return false;
     if (row() >= score()->noteStream(stream()).numRows())
         return false;
-    if (score()->noteStream(stream()).bar(bar(), row()).isEmpty())
+    if (score()->noteStream(stream()).notes(bar(), row()).isEmpty())
         return true;
     return false;
 }
@@ -268,7 +268,7 @@ bool Score::Index::isValid(int s, int b, int r, int c) const
         && b >= 0 && (size_t)b < score()->noteStream(stream()).numBars()
         && r >= 0 && (size_t)r < score()->noteStream(stream()).numRows()
         && c >= 0 && (size_t)c < score()->noteStream(
-                                stream()).bar(bar(), row()).length();
+                                stream()).notes(bar(), row()).length();
 }
 
 bool Score::Index::isStreamStart() const
@@ -304,16 +304,17 @@ const NoteStream& Score::Index::getStream() const
     return score()->noteStream(stream());
 }
 
-const Bar& Score::Index::getBar(int row_) const
+const Notes& Score::Index::getNotes(int row_) const
 {
     row_ += row();
     QPROPS_ASSERT(isValid(stream(), bar(), row_, 0),
                   "in Score::Index::getBar(" << row_ << "), this="
                   << toString());
-    return score()->noteStream(stream()).bar(bar(), row_);
+    return score()->noteStream(stream()).notes(bar(), row_);
 }
 
-QList<Bar> Score::Index::getBars(int startRow, int numRows) const
+/*
+QList<Notes> Score::Index::getNotes(int startRow, int numRows) const
 {
     QPROPS_ASSERT(isValid(), "in Score::Index::getBars("
                              << startRow << ", " << numRows << ")");
@@ -323,16 +324,17 @@ QList<Bar> Score::Index::getBars(int startRow, int numRows) const
         numRows = getStream().numRows();
     numRows = std::min((size_t)numRows, getStream().numRows());
 
-    QList<Bar> bars;
+    QList<Notes> bars;
     for (int i=startRow; i<numRows; ++i)
         bars << getStream().bar(bar(), i);
     return bars;
 }
+*/
 
 const Note& Score::Index::getNote() const
 {
     QPROPS_ASSERT(isValid(), "in Score::Index::getNote()");
-    return score()->noteStream(stream()).bar(bar(), row()).note(column());
+    return score()->noteStream(stream()).notes(bar(), row()).note(column());
 }
 
 const Note& Score::Index::getNote(int r, int c) const
@@ -341,7 +343,7 @@ const Note& Score::Index::getNote(int r, int c) const
     c += column();
     QPROPS_ASSERT(isValid(stream(), bar(), r, c),
                   "in Score::Index::getNote(" << r << ", " << c << ")");
-    return score()->noteStream(stream()).bar(bar(), r).note(c);
+    return score()->noteStream(stream()).notes(bar(), r).note(c);
 }
 
 double Score::Index::getBeatsPerMinute() const
@@ -378,7 +380,7 @@ Score::Index Score::Index::limitRight() const
             x.p_bar = get_limit(x.p_bar, s.numBars());
             if (x.p_bar < s.numBars())
             {
-                auto& b = s.bar(x.p_bar, x.p_row);
+                auto& b = s.notes(x.p_bar, x.p_row);
                 x.p_column = get_limit(x.p_column, b.length());
             }
         }
@@ -396,7 +398,7 @@ bool Score::Index::nextStream()
         return false;
 
     size_t row = get_limit(p_row, nextStream.numRows());
-    if (nextStream.bar(0, row).isEmpty())
+    if (nextStream.notes(0, row).isEmpty())
         return false;
 
     p_stream = p_stream + 1;
@@ -417,13 +419,13 @@ bool Score::Index::prevStream()
         return false;
 
     size_t row = get_limit(p_row, nextStream.numRows());
-    if (nextStream.bar(nextStream.numBars()-1, row).isEmpty())
+    if (nextStream.notes(nextStream.numBars()-1, row).isEmpty())
         return false;
 
     p_stream = p_stream - 1;
     p_row = row;
     p_bar = nextStream.numBars() - 1;
-    p_column = getBar().length() - 1;
+    p_column = getNotes().length() - 1;
 
     return true;
 }
@@ -438,7 +440,7 @@ bool Score::Index::nextBar()
 
     auto& st = p_score->noteStream(p_stream);
     size_t row = get_limit(p_row, st.numRows());
-    if (st.bar(p_bar+1, row).isEmpty())
+    if (st.notes(p_bar+1, row).isEmpty())
         return false;
 
     p_row = row;
@@ -457,12 +459,12 @@ bool Score::Index::prevBar()
 
     auto& st = p_score->noteStream(p_stream);
     size_t row = get_limit(p_row, st.numRows());
-    if (st.bar(p_bar-1, row).isEmpty())
+    if (st.notes(p_bar-1, row).isEmpty())
         return false;
 
     p_row = row;
     p_bar = p_bar - 1;
-    p_column = st.bar(p_bar, row).length() - 1;
+    p_column = st.notes(p_bar, row).length() - 1;
     return true;
 }
 
@@ -471,7 +473,7 @@ bool Score::Index::nextNote()
 {
     if (!isValid())
         return false;
-    if (column() + 1 >= getBar().length())
+    if (column() + 1 >= getNotes().length())
     {
         if (bar() + 1 >= getStream().numBars())
             return nextStream();
@@ -506,11 +508,11 @@ bool Score::Index::nextRow()
         return false;
 
     auto& st = score()->noteStream(stream());
-    if (st.bar(bar(), p_row+1).isEmpty())
+    if (st.notes(bar(), p_row+1).isEmpty())
         return false;
 
     ++p_row;
-    p_column = get_limit(p_column, st.bar(bar(), row()).length());
+    p_column = get_limit(p_column, st.notes(bar(), row()).length());
     return true;
 }
 
@@ -520,11 +522,11 @@ bool Score::Index::prevRow()
         return false;
 
     auto& st = score()->noteStream(stream());
-    if (st.bar(bar(), p_row-1).isEmpty())
+    if (st.notes(bar(), p_row-1).isEmpty())
         return false;
 
     --p_row;
-    p_column = get_limit(p_column, st.bar(bar(), row()).length());
+    p_column = get_limit(p_column, st.notes(bar(), row()).length());
     return true;
 }
 

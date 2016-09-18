@@ -10,14 +10,21 @@ Framework: Qt, License: GPL
 
 ## VOCABULARY
 
-      Bar
-     /  \     Note
-    /    \    |
-    |1 2 |5 6 7 8| row \                . .| ...|
-    |2   |7''    | row  > line of score  . | .. |
-    |  4 |p   3  | row /                   | .  |
-    \                                          /
-     \--------------NoteStream----------------/
+      Notes
+      /  \
+     /    \
+    |123456|
+     |
+    Note
+
+         "Bar"
+         /  \     Note
+        /    \    | column
+        |1 2 |5 6 7 8| row \                . .| ...|
+        |2   |7''    | row  > line of score  . | .. |
+        |  4 |p   3  | row /                   | .  |
+        \                                          /
+         \--------------NoteStream----------------/
 
           *top annotation
     |1   |p 6 7 8|
@@ -49,13 +56,18 @@ Framework: Qt, License: GPL
 
 ### NoteStream
 - voices
-- data[voice] of Bar
+- data[voice][rows] of Bar
 
 ### Score::Index
 - stream
 - bar
 - row
 - column
+
+### Score::Selection
+- Score::Index from, to
+- create NoteStream from selection
+- clipboard
 
 ### Score
 - data[] of NoteStream
@@ -84,12 +96,6 @@ Framework: Qt, License: GPL
     - barsDeleted(QList<Index>)
     - streamsAboutToBeDeleted(QList<Index>)
 
-### ScoreEditorCursor
-- move within bar
-- move within NoteStream
-- set/insert/delete note
-- insert/delete bar
-- insert/delete row
 
 
 ## GUI/DRAWING
@@ -99,6 +105,12 @@ Framework: Qt, License: GPL
 - font
 - bounding-box
 - margin
+
+### ScoreItem
+- Score::Index, ScoreDocument::Index
+- note, line, TextItem, ...
+- bounding box
+- draw()
 
 ### PageAnnotation
 - TextItem[] (title, header, footer, pagenum, ...)
@@ -122,23 +134,20 @@ Framework: Qt, License: GPL
 - note spacing
 - min/max Bar width
 
-### ScoreItem
-- bar, note, TextItem, ...
-- bounding box
-- draw()
+### PerPage<T>
+- per-page (or finer) instance of T
 
 ### ScoreDocument
 - Score
 - ScoreEditor
-- PageLayout (global)
-- ScoreLayout (global)
-- optional override, per-page or until-next:
-    - PageMargins
-    - PageAnnotation
-    - ScoreLayout
-- createScoreItems(Score, pageIndex)
-- bool pageChanged[]
+- PageLayout (PerPage)
+- ScoreLayout (PerPage)
+- PageAnnotation (PerPage)
+- createScoreItems(Score)
+- updateScoreItems( from_editor_signals )
+- ScoreItemForPagePos()
+- ScoreItemForScoreIndex()
 
 ### ScoreView
-- ScoreDocument
+- ScoreDocument + editor
 - renderPage(QPainter*, pageIndex)

@@ -19,7 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ****************************************************************************/
 
 #include "SynthDevice.h"
-#include "core/Bar.h"
+#include "core/Notes.h"
 #include "core/NoteStream.h"
 
 #if (0)
@@ -222,7 +222,7 @@ bool SynthDevice::Private::fillBuffer()
             // send all notes in bar window to synth
             for (size_t r=0; r<cursor.getStream().numRows(); ++r)
             {
-                const Bar& bar = cursor.getBar(r);
+                const Notes& bar = cursor.getNotes(r);
                 for (size_t c=0; c<bar.length(); ++c)
                 {
                     Note n = bar.note(c);

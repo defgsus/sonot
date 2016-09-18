@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "QProps/error.h"
 
 #include "ScoreEditor.h"
-#include "Bar.h"
+#include "Notes.h"
 #include "NoteStream.h"
 
 namespace Sonot {
@@ -38,7 +38,7 @@ struct ScoreEditor::Private
     /** Returns writeable NoteStream */
     NoteStream* getStream(const Score::Index& i);
     /** Returns writeable Bar */
-    Bar* getBar(const Score::Index& i);
+    Notes* getBar(const Score::Index& i);
 
     ScoreEditor* p;
 
@@ -99,7 +99,7 @@ bool ScoreEditor::insertNote(
     SONOT__CHECK_INDEX(idx, false);
     if (!allRows)
     {
-        if (Bar* bar = p_->getBar(idx))
+        if (Notes* bar = p_->getBar(idx))
         {
             bar->insertNote(idx.column(), n);
             emit barsChanged(IndexList() << idx);
@@ -118,7 +118,7 @@ bool ScoreEditor::insertNote(
                                     i,
                                     idx.column());
             x = x.limitRight();
-            if (Bar* bar = p_->getBar(x))
+            if (Notes* bar = p_->getBar(x))
             {
                 bar->insertNote(idx.column(), n);
                 changed = true;
@@ -135,7 +135,7 @@ bool ScoreEditor::insertNote(
 }
 
 bool ScoreEditor::insertBars(
-        const Score::Index& idx, const QList<Bar>& rows, bool after)
+        const Score::Index& idx, const QList<Notes>& rows, bool after)
 {
     SONOT__CHECK_INDEX(idx, false);
     if (NoteStream* stream = p_->getStream(idx))
@@ -199,7 +199,7 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
 bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (Bar* bar = p_->getBar(idx))
+    if (Notes* bar = p_->getBar(idx))
     {
         bar->setNote(idx.column(), n);
         emit noteValuesChanged(IndexList() << idx);
@@ -209,10 +209,10 @@ bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
     return false;
 }
 
-bool ScoreEditor::changeBar(const Score::Index& idx, const Bar& b)
+bool ScoreEditor::changeBar(const Score::Index& idx, const Notes& b)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (Bar* bar = p_->getBar(idx))
+    if (Notes* bar = p_->getBar(idx))
     {
         *bar = b;
         emit barsChanged(IndexList() << idx);
@@ -225,7 +225,7 @@ bool ScoreEditor::changeBar(const Score::Index& idx, const Bar& b)
 bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (Bar* bar = p_->getBar(idx))
+    if (Notes* bar = p_->getBar(idx))
     {
         IndexList list;
         if (!allRows)
@@ -246,7 +246,7 @@ bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
             }
             emit notesAboutToBeDeleted(list);
             for (auto& x : list)
-            if (Bar* b = p_->getBar(x))
+            if (Notes* b = p_->getBar(x))
             {
                 b->removeNote(x.column());
             }
@@ -318,11 +318,11 @@ NoteStream* ScoreEditor::Private::getStream(const Score::Index& idx)
     return const_cast<NoteStream*>(&score_->noteStreams()[idx.stream()]);
 }
 
-Bar* ScoreEditor::Private::getBar(const Score::Index& idx)
+Notes* ScoreEditor::Private::getBar(const Score::Index& idx)
 {
     SONOT__CHECK_INDEX(idx, nullptr);
-    return const_cast<Bar*>(&score_->noteStreams()[idx.stream()]
-                            .bar(idx.bar(), idx.row()));
+    return const_cast<Notes*>(&score_->noteStreams()[idx.stream()]
+                            .notes(idx.bar(), idx.row()));
 }
 
 

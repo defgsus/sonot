@@ -23,66 +23,54 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <vector>
 
-#include "Note.h"
-#include "QProps/JsonInterface.h"
+#include "Notes.h"
 
 namespace Sonot {
 
-/** A single-row bar/messure of notes. */
-class Bar : public QProps::JsonInterface
+/** Rows of Notes combined in a Bar */
+class Bar
 {
 public:
-    Bar(size_t length = 0);
+    Bar();
+    ~Bar();
 
-    // --- io ---
+    Bar(const Bar& o);
+    Bar& operator = (const Bar& o);
 
-    QJsonObject toJson() const override;
-    void fromJson(const QJsonObject&) override;
+    typedef std::vector<Notes>::iterator Iter;
+    typedef std::vector<Notes>::const_iterator ConstIter;
 
-    // --- getter ---
+    // -- getter --
 
-    bool isEmpty() const { return p_data_.empty(); }
+    bool operator == (const Bar& o) const;
+    bool operator != (const Bar& o) const { return !(*this == o); }
 
-    /** Number of Notes */
-    size_t length() const { return p_data_.size(); }
+    bool isEmpty() const;
+    size_t numRows() const;
+    size_t maxNumberNotes() const;
 
-    /** Returns the note at given column.
-        @warning No range checking! */
-    const Note& note(size_t column) const;
+    ConstIter begin() const;
+    ConstIter end() const;
 
-    /** Returns the given column's time in range [0,1]
-        scaled from length(). */
-    double columnTime(double columnWithFraction) const;
+    const Notes& operator[](size_t i) const;
 
-    /** Is any of the Notes annotated? */
-    bool isAnnotated() const;
+    // -- setter --
 
-    bool operator == (const Bar& rhs) const;
-    bool operator != (const Bar& rhs) const { return !(*this == rhs); }
+    Iter begin();
+    Iter end();
 
-    QString toString() const;
+    void clear() { resize(0); }
+    void resize(size_t numRows);
+    void setNotes(size_t row, const Notes& n);
+    void append(const Notes& n);
+    void insert(size_t idx, const Notes& n);
+    void remove(size_t idx);
 
-    // --- setter ---
-
-    void resize(size_t length);
-
-    /** Stores the Note at given column and row.
-        @warning No range checking! */
-    void setNote(size_t column, const Note& n);
-
-    void insertNote(size_t column, const Note& n);
-    void removeNote(size_t column);
-
-    Bar& append(const Note& n);
-
-    Bar& operator << (const Note& n) { return append(n); }
-    Bar& operator << (const char* name);
-    Bar& operator << (const QString& name);
-
-    void transpose(int8_t noteStep);
+    Notes& operator[](size_t i);
 
 private:
-    std::vector<Note> p_data_;
+    struct Private;
+    Private* p_;
 };
 
 } // namespace Sonot

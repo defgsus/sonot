@@ -30,7 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace Sonot {
 
 class Note;
-class Bar;
+class Notes;
 class NoteStream;
 
 /** Collection of NoteStream and custom properties */
@@ -54,9 +54,9 @@ public:
         size_t stream() const { return p_stream; }
         /** The index of the row/voice (zero-based) */
         size_t row() const { return p_row; }
-        /** The index of the Bar within the row() (zero-based) */
+        /** The index of the Bar (zero-based) */
         size_t bar() const { return p_bar; }
-        /** The index of the Note in the Bar (zero-based) */
+        /** The index of the Note in Notes (zero-based) */
         size_t column() const { return p_column; }
 
         /** Returns true if the index is within the range of
@@ -86,9 +86,9 @@ public:
         bool operator < (const Index& rhs) const;
 
         const NoteStream& getStream() const;
-        const Bar& getBar(int row_offset = 0) const;
+        const Notes& getNotes(int row_offset = 0) const;
         const Note& getNote() const;
-        QList<Bar> getBars(int startRow = -1, int numRows = -1) const;
+        //QList<Notes> getBar(int startRow = -1, int numRows = -1) const;
 
         const Note& getNote(int row, int column) const;
 
@@ -130,9 +130,21 @@ public:
 
     private:
         friend class Score;
-        //void p_limit_();
         Score* p_score;
         size_t p_stream, p_bar, p_row, p_column;
+    };
+
+    /** A selection between two indices */
+    struct Selection
+    {
+        /** Creates invalid selection */
+        Selection() : p_score(nullptr) { }
+
+
+    private:
+        friend class Score;
+        Score* p_score;
+        Index p_from, p_to;
     };
 
 

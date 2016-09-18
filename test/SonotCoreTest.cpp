@@ -35,8 +35,8 @@ class SonotCoreTest : public QObject
 public:
     SonotCoreTest() { }
 
-    static Bar createRandomBar(size_t length);
-    static QList<Bar> createRandomBar(size_t length, size_t rows);
+    static Notes createRandomNotes(size_t length);
+    static QList<Notes> createRandomBar(size_t length, size_t rows);
     static Score createScoreForIndexTest();
 
 private slots:
@@ -45,19 +45,19 @@ private slots:
     void testResize();
     void testRandomCursor();
     void testKeepDataOnResize();
-    void testJsonBar();
+    void testJsonNotes();
     void testJsonStream();
     void testJsonScore();
     void testScoreIndexNextNote();
     void testScoreIndexPrevNote();
 };
 
-Bar SonotCoreTest::createRandomBar(size_t length)
+Notes SonotCoreTest::createRandomNotes(size_t length)
 {
     QStringList anno;
     anno << "bladiblub" << "annotation" << "anno 1900"
          << "andante" << "piano forte";
-    Bar b(length);
+    Notes b(length);
     for (size_t x = 0; x < length; ++x)
     {
         if (rand()%10 <= 7)
@@ -71,11 +71,11 @@ Bar SonotCoreTest::createRandomBar(size_t length)
     return b;
 }
 
-QList<Bar> SonotCoreTest::createRandomBar(size_t length, size_t rows)
+QList<Notes> SonotCoreTest::createRandomBar(size_t length, size_t rows)
 {
-    QList<Bar> l;
+    QList<Notes> l;
     for (size_t i=0; i<rows; ++i)
-        l << createRandomBar(length);
+        l << createRandomNotes(length);
     return l;
 }
 
@@ -175,7 +175,7 @@ void SonotCoreTest::testNoteFromString()
 
 void SonotCoreTest::testResize()
 {
-    Bar bar(2);
+    Notes bar(2);
 
     QCOMPARE(bar.length(), size_t(2));
 
@@ -198,10 +198,10 @@ void SonotCoreTest::testRandomCursor()
             int jc = i == 0 ? 4 : (rand()%20);
             for (int j=0; j<jc; ++j)
             {
-                QList<Bar> rows;
+                QList<Notes> rows;
                 int kc = i == 0 ? 4 : (rand()%10);
                 for (int k=0; k<kc; ++k)
-                    rows << createRandomBar(i == 0 ? 4 : (rand()%17));
+                    rows << createRandomNotes(i == 0 ? 4 : (rand()%17));
                 n.appendBar(rows);
             }
             //qDebug().noquote() << ("\n" + n.toInfoString());
@@ -250,7 +250,7 @@ void SonotCoreTest::testRandomCursor()
 
 void SonotCoreTest::testKeepDataOnResize()
 {
-    Bar bar1(2), bar2(5);
+    Notes bar1(2), bar2(5);
     bar1.setNote(0, Note(Note::A));
     bar1.setNote(1, Note(Note::B));
     bar2.setNote(0, Note(Note::A));
@@ -263,21 +263,23 @@ void SonotCoreTest::testKeepDataOnResize()
 
 
 
-void SonotCoreTest::testJsonBar()
+void SonotCoreTest::testJsonNotes()
 {
-    Bar bar2, bar1 = createRandomBar(8);
+    Notes n2, n1 = createRandomNotes(8);
 
-    bar2.fromJsonString(bar1.toJsonString());
-    QCOMPARE(bar1, bar2);
+    n2.fromJsonString(n1.toJsonString());
+    QCOMPARE(n2, n1);
 }
 
 void SonotCoreTest::testJsonStream()
 {
     NoteStream stream1, stream2;
     for (int i=0; i<5; ++i)
-        stream1.appendBar( createRandomBar(rand()%4 + 4) );
+        stream1.appendBar( createRandomNotes(rand()%4 + 4) );
 
     stream2.fromJsonString(stream1.toJsonString());
+    //qDebug().noquote() << "\n" << stream1.toJsonString()
+    //                   << "\n" << stream2.toJsonString();
     QCOMPARE(stream1, stream2);
 }
 
@@ -294,7 +296,9 @@ void SonotCoreTest::testJsonScore()
     score1.setTitle("Amazing Haze");
     score1.setAuthor("Convenieous Bar");
     score1.setCopyright("(c) 1964");
-    score1.props().set("version", 23);
+    auto p = score1.props();
+    p.set("version", 23);
+    score1.setProperties(p);
 
     score2.fromJsonString(score1.toJsonString());
     QCOMPARE(score1, score2);

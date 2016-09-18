@@ -844,7 +844,7 @@ ScoreDocument::Private::createBarItems_Fixed(
         {
             double y = pagePos.y() + rowSpace * row;
 
-            const Bar& b = scoreIdx.getBar(row);
+            const Notes& b = scoreIdx.getNotes(row);
             for (size_t col=0; col<b.length(); ++col)
             {
                 if (! scoreIdx.offset(row, col).getNote().isValid())

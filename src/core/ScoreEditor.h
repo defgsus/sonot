@@ -45,13 +45,13 @@ public:
     void setStreamProperties(size_t streamIdx, const QProps::Properties& p);
 
     bool insertNote(const Score::Index&, const Note& n, bool allRows);
-    bool insertBars(const Score::Index&, const QList<Bar>& rows,
+    bool insertBars(const Score::Index&, const QList<Notes>& rows,
                     bool insertAfterIndex = false);
     bool insertRow(const Score::Index&, bool insertAfterIndex = false);
     bool insertStream(const Score::Index&, const NoteStream& s,
                       bool insertAfterIndex = false);
     bool changeNote(const Score::Index&, const Note& n);
-    bool changeBar(const Score::Index&, const Bar& b);
+    bool changeBar(const Score::Index&, const Notes& b);
     bool deleteNote(const Score::Index&, bool allRows);
     bool deleteBar(const Score::Index&);
     bool deleteRow(const Score::Index&);
