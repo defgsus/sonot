@@ -29,12 +29,18 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
+namespace { const double defaultBpm_ = 120.; }
+
 NoteStream::NoteStream()
     : p_props_      ("note-stream")
 {
     p_props_.set("bpm", tr("tempo"), tr("Tempo in beats-per-minute"),
-                 120.);
+                 defaultBpm_);
     p_props_.setMin("bpm", 1.);
+
+    p_props_.set("title", tr("title"),
+                 tr("The title of this part"),
+                 QString());
 }
 
 bool NoteStream::operator == (const NoteStream& rhs) const
@@ -137,14 +143,14 @@ double NoteStream::beatsPerMinute(size_t idx) const
     QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::beatsPerMinute("
                      << idx << ")");
 
-    return p_props_.get("bpm", 120.).toDouble();
+    return std::max(1., p_props_.get("bpm", defaultBpm_).toDouble());
 }
 
 double NoteStream::barLengthSeconds(size_t idx) const
 {
     QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::barLengthSeconds("
                      << idx << ")");
-    return 240. / beatsPerMinute(idx);
+    return 4. * 60. / beatsPerMinute(idx);
 }
 
 

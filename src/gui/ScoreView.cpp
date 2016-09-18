@@ -282,11 +282,11 @@ QList<QAction*> ScoreView::createEditActions()
     QAction* a;
     QList<QAction*> list;
 
-    list << (a = new QAction(tr("insert new piece"), par));
+    list << (a = new QAction(tr("insert new part"), par));
     //a->setShortcut(Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertStream(false); });
 
-    list << (a = new QAction(tr("insert new piece (after)"), par));
+    list << (a = new QAction(tr("insert new part (after)"), par));
     //a->setShortcut(Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertStream(true); });
 
@@ -546,7 +546,7 @@ void ScoreView::Private::updateStatus()
     if (!cursor.isValid())
         s = "[]";
     else
-        s = QString("Piece: %1, Bar(%2): %3, Row: %4, Note: %5 (%6)")
+        s = QString("Part: %1, Bar(%2): %3, Row: %4, Note: %5 (%6)")
                 .arg(cursor.stream())
                 .arg(cursor.getBar().length())
                 .arg(cursor.bar())

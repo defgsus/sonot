@@ -299,7 +299,7 @@ void MainWindow::Private::createMenu()
     a->setChecked(true);
     SONOT__CREATE_PROP(tr("Synth"), "synth");
     SONOT__CREATE_PROP(tr("Score"), "score");
-    SONOT__CREATE_PROP(tr("Piece"), "stream");
+    SONOT__CREATE_PROP(tr("Part"), "stream");
     SONOT__CREATE_PROP(tr("Document"), "document");
     SONOT__CREATE_PROP(tr("Page layout (title)"), "page-layout-title");
     SONOT__CREATE_PROP(tr("Page layout (left)"), "page-layout-left");

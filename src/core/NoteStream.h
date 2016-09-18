@@ -76,7 +76,8 @@ public:
     /** Returns the maximum number of notes in Bar */
     size_t numNotes(size_t barIdx) const;
 
-    /** The Bars-per-minute for the given bar. */
+    /** The beats-per-minute for the given bar.
+        Supposes a bar is typically 4 quarter notes. */
     double beatsPerMinute(size_t barIdx) const;
     /** The length of the given bar in seconds. */
     double barLengthSeconds(size_t barIdx) const;

@@ -816,18 +816,26 @@ ScoreDocument::Private::createBarItems_Fixed(
         items->docIndex = Index(pageIdx, lineIdx, barIdx);
         items->scoreIndex = scoreIdx;
 
-        // tempo indicator
-        if (scoreIdx.isStreamStart() || scoreIdx.isTempoChange())
+        // annotation at stream start
+        if (scoreIdx.isStreamStart())
         {
+            QString anno;
+
+            // tempo indicator
+            if (scoreIdx.isStreamStart() || scoreIdx.isTempoChange())
+            {
+                anno += QString("%1bpm ").arg(scoreIdx.getBeatsPerMinute());
+            }
+
+            // stream title
+            anno += scoreIdx.getStream().props().get("title").toString();
+
             double si = noteSize - 1.;
             QRectF rect(scoreRect.x() + barIdx * barWidth,
                         scoreRect.y() + pagePos.y(),
                         si, si);
-            items->items.push_back( ScoreItem(
-                        scoreIdx,
-                        items->docIndex,
-                        rect,
-                        QString("%1 bpm").arg(scoreIdx.getBeatsPerMinute())) );
+            items->items.push_back(
+                ScoreItem(scoreIdx, items->docIndex, rect, anno) );
             pagePos.ry() += si;
         }
 
