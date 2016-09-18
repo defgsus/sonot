@@ -271,6 +271,28 @@ bool Score::Index::isValid(int s, int b, int r, int c) const
                                 stream()).bar(bar(), row()).length();
 }
 
+bool Score::Index::isStreamStart() const
+{
+    return bar() == 0;
+}
+
+bool Score::Index::isStreamEnd() const
+{
+    if (!isValid())
+        return false;
+    auto& s = getStream();
+    return s.isEmpty() || (bar() + 1 == s.numBars());
+}
+
+bool Score::Index::isTempoChange() const
+{
+    QPROPS_ASSERT(isValid(), "in Score::Index::isTempoChange()");
+    auto i = *this;
+    if (!i.prevBar())
+        return false;
+    return getBeatsPerMinute() != i.getBeatsPerMinute();
+}
+
 size_t Score::Index::numRows() const
 {
     return isValid() ? getStream().numRows() : 0;
@@ -320,6 +342,17 @@ const Note& Score::Index::getNote(int r, int c) const
     QPROPS_ASSERT(isValid(stream(), bar(), r, c),
                   "in Score::Index::getNote(" << r << ", " << c << ")");
     return score()->noteStream(stream()).bar(bar(), r).note(c);
+}
+
+double Score::Index::getBeatsPerMinute() const
+{
+    QPROPS_ASSERT(isValid(), "in Score::Index::getBeatsPerMinute()");
+    return getStream().beatsPerMinute(bar());
+}
+
+double Score::Index::getBarLengthSeconds() const
+{
+    return getStream().barLengthSeconds(bar());
 }
 
 namespace {

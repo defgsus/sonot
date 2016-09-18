@@ -168,9 +168,9 @@ bool SynthDevice::Private::fillBuffer()
 
     if (playing && score && index.isValid() && index.score() == score)
     {
-        // time per bar
-        double barLength = 1.15;
-        // time in dsp block
+        // seconds per bar
+        double barLength = index.getBarLengthSeconds();
+        // seconds in dsp block
         double procTime = 0.;
 
         SONOT_DEBUG_SYNTH("--- dsp-block --- " << bufferSize());
@@ -183,28 +183,28 @@ bool SynthDevice::Private::fillBuffer()
                               << ", bufferLength" << bufferLength
                               << ", barLength" << barLength);
 
-            // get next bar
+            // go to next bar
             if (curBarTime >= barLength)
             {
                 SONOT_DEBUG_SYNTH("next bar");
-                bool doStopNotes = false;
-                size_t curStream = index.stream(),
-                       numRows = index.numRows();
+                bool doPause = index.isStreamEnd();
+                size_t numRows = index.numRows();
                 if (!index.nextBar())
                 {
                     // start again
                     index = score->index(0,0,0,0);
-                    doStopNotes = true;
+                    doPause = true;
                 }
-                if (index.stream() != curStream)
-                    doStopNotes = true;
                 // note-off at stream end
                 /// @todo this is not timed within the dsp-block!
-                if (doStopNotes)
+                if (doPause)
                     for (size_t r=0; r<numRows; ++r)
                         synth.noteOffByIndex(r, 0);
 
-                curBarTime = 0.;
+                if (!index.isValid())
+                    barLength = index.getBarLengthSeconds();
+                // wait one bar length
+                curBarTime = doPause ? -barLength : 0.;
             }
 
             Score::Index cursor = index.topLeft();

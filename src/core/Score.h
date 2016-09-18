@@ -65,8 +65,17 @@ public:
         bool isValid() const;
         bool isValid(int stream, int barIdx, int row, int column) const;
 
+        /** Returns true if the index is pointing into the first
+            Bar of a NoteStream */
+        bool isStreamStart() const;
+        bool isStreamEnd() const;
+
+        /** Returns true if this Bar's tempo is different to previous one's */
+        bool isTempoChange() const;
+
         /** Returns true if the index points to an empty Stream or Bar.
-            Getter functions are not allowed to use! */
+            Getter functions are not allowed to use!
+            @todo not used yet */
         bool isInserter() const;
 
         /** Returns the number of rows in current NoteStream */
@@ -82,6 +91,12 @@ public:
         QList<Bar> getBars(int startRow = -1, int numRows = -1) const;
 
         const Note& getNote(int row, int column) const;
+
+        /** The beats-per-minute at the current position */
+        double getBeatsPerMinute() const;
+        /** The length of this bar in seconds,
+            depending on the BPM. */
+        double getBarLengthSeconds() const;
 
         Index topLeft() const { return score()->index(stream(), bar(), 0, 0); }
         Index left() const { return score()->index(stream(), bar(), row(), 0); }

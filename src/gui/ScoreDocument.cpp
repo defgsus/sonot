@@ -816,6 +816,21 @@ ScoreDocument::Private::createBarItems_Fixed(
         items->docIndex = Index(pageIdx, lineIdx, barIdx);
         items->scoreIndex = scoreIdx;
 
+        // tempo indicator
+        if (scoreIdx.isStreamStart() || scoreIdx.isTempoChange())
+        {
+            double si = noteSize - 1.;
+            QRectF rect(scoreRect.x() + barIdx * barWidth,
+                        scoreRect.y() + pagePos.y(),
+                        si, si);
+            items->items.push_back( ScoreItem(
+                        scoreIdx,
+                        items->docIndex,
+                        rect,
+                        QString("%1 bpm").arg(scoreIdx.getBeatsPerMinute())) );
+            pagePos.ry() += si;
+        }
+
         // create item for each note in this bar block
         for (size_t row=0; row<scoreIdx.numRows(); ++row)
         {
@@ -830,9 +845,9 @@ ScoreDocument::Private::createBarItems_Fixed(
                 double x = barIdx * barWidth
                          + b.columnTime(col+.5) * barWidth;
 
-                QRect rect(x + scoreRect.x() -noteSize/2.,
-                           y + scoreRect.y(),
-                           noteSize, noteSize);
+                QRectF rect(x + scoreRect.x() -noteSize/2.,
+                            y + scoreRect.y(),
+                            noteSize, noteSize);
                 items->items.push_back(
                             ScoreItem(scoreIdx.offset(row, col),
                                       items->docIndex, rect) );
@@ -874,6 +889,7 @@ ScoreDocument::Private::createBarItems_Fixed(
         barItems.push_back(pit);
 
         barItemMap.insert(items->docIndex, items);
+
 
         // forward index and check for stream change
         size_t curStream = scoreIdx.stream();

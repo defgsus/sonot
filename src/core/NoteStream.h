@@ -23,16 +23,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <vector>
 
+#include <QtCore>
 #include <QString>
 
 #include "Bar.h"
 #include "QProps/JsonInterface.h"
+#include "QProps/Properties.h"
 
 namespace Sonot {
 
 /** Collection of Bars */
 class NoteStream : public QProps::JsonInterface
 {
+    Q_DECLARE_TR_FUNCTIONS(NoteStream);
 public:
     NoteStream();
 
@@ -57,6 +60,8 @@ public:
 
     // --- getter ---
 
+    const QProps::Properties& props() const;
+
     bool isEmpty() const { return p_data_.empty(); }
 
     /** Number of Bars in this collection */
@@ -70,6 +75,11 @@ public:
 
     /** Returns the maximum number of notes in Bar */
     size_t numNotes(size_t barIdx) const;
+
+    /** The Bars-per-minute for the given bar. */
+    double beatsPerMinute(size_t barIdx) const;
+    /** The length of the given bar in seconds. */
+    double barLengthSeconds(size_t barIdx) const;
 
     /** Read reference to @p idx'th Bar */
     const Bar& bar(size_t barIdx, size_t row) const;
@@ -91,8 +101,7 @@ public:
 
     // --- setter ---
 
-    /** Read/Write reference to @p idx'th Bar */
-    Bar& bar(size_t idx, size_t row);
+    void setProperties(const QProps::Properties& props);
 
     void clear() { p_data_.clear(); }
 
@@ -121,6 +130,7 @@ public:
 
 private:
     std::vector<std::vector<Bar>> p_data_;
+    QProps::Properties p_props_;
 };
 
 } // namespace Sonot

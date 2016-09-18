@@ -37,13 +37,16 @@ public:
     enum Type
     {
         T_NOTE,
-        T_BAR_SLASH
+        T_BAR_SLASH,
+        T_TEXT
     };
 
     ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
               const QRectF& rect);
     ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
               const QLineF& rect);
+    ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
+              const QRectF& rect, const QString& text);
 
     // ---- getter ----
 
@@ -67,6 +70,7 @@ private:
     ScoreDocument::Index p_docIndex_;
     Type p_type_;
     QRectF p_rect_;
+    QString p_text_;
 };
 
 } // namespace Sonot

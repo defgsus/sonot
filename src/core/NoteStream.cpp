@@ -30,8 +30,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace Sonot {
 
 NoteStream::NoteStream()
+    : p_props_      ("note-stream")
 {
-
+    p_props_.set("bpm", tr("tempo"), tr("Tempo in beats-per-minute"),
+                 120.);
+    p_props_.setMin("bpm", 1.);
 }
 
 bool NoteStream::operator == (const NoteStream& rhs) const
@@ -60,6 +63,16 @@ NoteStream NoteStream::createDefaultStream(
     for (size_t i=0; i<std::max(size_t(1), numBars); ++i)
         s.appendBar( createDefaultBarRows(barLen) );
     return s;
+}
+
+const QProps::Properties& NoteStream::props() const
+{
+    return p_props_;
+}
+
+void NoteStream::setProperties(const QProps::Properties& props)
+{
+    p_props_ = props;
 }
 
 size_t NoteStream::numNotes() const
@@ -97,17 +110,12 @@ const Bar& NoteStream::bar(size_t idx, size_t row) const
     return p_data_[idx][row];
 }
 
-Bar& NoteStream::bar(size_t idx, size_t row)
-{
-    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
-    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::bar()");
-    return p_data_[idx][row];
-}
-
 const Note& NoteStream::note(size_t idx, size_t row, size_t column) const
 {
-    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::note()");
-    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::note()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::note("
+                     << idx << "," << row << "," << column << ")");
+    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::note("
+                     << idx << "," << row << "," << column << ")");
     const Bar& b = bar(idx, row);
     QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::note()");
     return b.note(column);
@@ -115,7 +123,8 @@ const Note& NoteStream::note(size_t idx, size_t row, size_t column) const
 
 QList<Bar> NoteStream::getRows(size_t idx) const
 {
-    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::getRows()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::getRows("
+                     << idx << ")");
 
     QList<Bar> rows;
     for (size_t i=0; i<numRows(); ++i)
@@ -123,18 +132,38 @@ QList<Bar> NoteStream::getRows(size_t idx) const
     return rows;
 }
 
+double NoteStream::beatsPerMinute(size_t idx) const
+{
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::beatsPerMinute("
+                     << idx << ")");
+
+    return p_props_.get("bpm", 120.).toDouble();
+}
+
+double NoteStream::barLengthSeconds(size_t idx) const
+{
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::barLengthSeconds("
+                     << idx << ")");
+    return 240. / beatsPerMinute(idx);
+}
+
+
 void NoteStream::setNote(size_t idx, size_t row, size_t column, const Note& n)
 {
-    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::setNote()");
-    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::setNote()");
-    Bar& b = bar(idx, row);
-    QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::setNote()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::setNote("
+                     << idx << "," << row << "," << column << ")");
+    QPROPS_ASSERT_LT(row, numRows(), "in NoteStream::setNote("
+                     << idx << "," << row << "," << column << ")");
+    Bar& b = p_data_[idx][row];
+    QPROPS_ASSERT_LT(column, b.length(), "in NoteStream::setNote("
+                     << idx << "," << row << "," << column << ")");
     b.setNote(column, n);
 }
 
 void NoteStream::removeBar(size_t idx)
 {
-    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::removeBar()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::removeBar("
+                     << idx << ")");
     p_data_.erase(p_data_.begin() + idx);
 }
 
@@ -154,7 +183,8 @@ void NoteStream::setNumRows(size_t newRows)
 
 void NoteStream::removeBars(size_t idx, int count)
 {
-    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::removeBars()");
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::removeBars("
+                     << idx << "," << count << ")");
     if (count == 0)
         return;
     if (count < 0)
@@ -324,6 +354,7 @@ QJsonObject NoteStream::toJson() const
 
     QJsonObject o;
     o.insert("bars", jrows);
+    o.insert("properties", p_props_.toJson());
     return o;
 }
 
@@ -331,7 +362,7 @@ void NoteStream::fromJson(const QJsonObject& o)
 {
     QProps::JsonInterfaceHelper json("NoteStream");
 
-    QJsonArray jrows = json.expectArray(json.expectChildValue(o, "bars"));
+    QJsonArray jrows = json.expectChildArray(o, "bars");
 
     std::vector<std::vector<Bar>> data;
     for (int row=0; row<jrows.size(); ++row)
@@ -353,6 +384,14 @@ void NoteStream::fromJson(const QJsonObject& o)
         }
 
         json.endContext();
+    }
+
+    if (o.contains("properties"))
+    {
+        QJsonObject jprops = json.expectChildObject(o, "properties");
+        auto props = p_props_;
+        props.fromJson(jprops);
+        p_props_.swap(props);
     }
 
     p_data_.swap(data);

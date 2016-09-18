@@ -62,6 +62,8 @@ signals:
 
     void noteEntered(const Note& n);
     void statusChanged(const QString& n);
+    void currentIndexChanged(const Score::Index& newIdx,
+                             const Score::Index& oldIdx);
 
 public slots:
 

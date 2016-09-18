@@ -44,6 +44,17 @@ ScoreItem::ScoreItem(const Score::Index& i, const ScoreDocument::Index& j, const
 
 }
 
+ScoreItem::ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
+                     const QRectF& rect, const QString& text)
+    : p_index_      (i)
+    , p_docIndex_   (j)
+    , p_type_       (T_TEXT)
+    , p_rect_       (rect)
+    , p_text_       (text)
+{
+
+}
+
 void ScoreItem::paint(QPainter& p)
 {
     if (p_type_ == T_NOTE)
@@ -60,12 +71,21 @@ void ScoreItem::paint(QPainter& p)
         //p.drawLine(p_rect_.center().x(), p_rect_.top(),
         //           p_rect_.center().x(), p_rect_.bottom());
     }
-    else
+    else if (p_type_ == T_BAR_SLASH)
     {
         p.drawLine(p_rect_.x(), p_rect_.y(),
                    p_rect_.bottomRight().x(), p_rect_.bottomRight().y());
     }
-
+    else if (p_type_ == T_TEXT)
+    {
+        QFont f(p.font());
+        f.setPixelSize(p_rect_.height());
+        f.setBold(false);
+        f.setItalic(true);
+        p.setFont(f);
+        p.drawText(p_rect_, Qt::AlignLeft | Qt::AlignVCenter
+                            | Qt::TextDontClip, p_text_);
+    }
 
 }
 

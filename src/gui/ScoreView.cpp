@@ -518,6 +518,7 @@ void ScoreView::Private::setCursor(const Score::Index& cur, bool ensureVisible)
         return;
     if (cursor.isValid())
         p->refreshIndex(cursor);
+    auto oldIdx = cursor;
     cursor = cur;
     if (ensureVisible)
     {
@@ -525,11 +526,13 @@ void ScoreView::Private::setCursor(const Score::Index& cur, bool ensureVisible)
             if (!p->ensureIndexVisible(cursor))
                 p->refreshIndex(cursor);
         updateStatus();
+        emit p->currentIndexChanged(cursor, oldIdx);
         return;
     }
     if (cursor.isValid())
         p->refreshIndex(cursor);
     updateStatus();
+    emit p->currentIndexChanged(cursor, oldIdx);
 }
 
 void ScoreView::Private::clearCursor()

@@ -42,6 +42,7 @@ public:
     // --- editing ---
 
     void setScore(const Score& s);
+    void setStreamProperties(size_t streamIdx, const QProps::Properties& p);
 
     bool insertNote(const Score::Index&, const Note& n, bool allRows);
     bool insertBars(const Score::Index&, const QList<Bar>& rows,

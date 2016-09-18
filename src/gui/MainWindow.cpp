@@ -146,6 +146,13 @@ void MainWindow::Private::createWidgets()
         {
             p->statusBar()->showMessage(s);
         });
+        connect(scoreView, &ScoreView::currentIndexChanged,
+                [=](const Score::Index& newIdx, const Score::Index& oldIdx)
+        {
+            // update stream property view on stream change
+            if (curPropId == "stream" && newIdx.stream() != oldIdx.stream())
+                setEditProperties(curPropId);
+        });
 
         connect(synthStream, &SynthDevice::indexChanged,
                 [=](const Score::Index& idx)
@@ -292,6 +299,7 @@ void MainWindow::Private::createMenu()
     a->setChecked(true);
     SONOT__CREATE_PROP(tr("Synth"), "synth");
     SONOT__CREATE_PROP(tr("Score"), "score");
+    SONOT__CREATE_PROP(tr("Piece"), "stream");
     SONOT__CREATE_PROP(tr("Document"), "document");
     SONOT__CREATE_PROP(tr("Page layout (title)"), "page-layout-title");
     SONOT__CREATE_PROP(tr("Page layout (left)"), "page-layout-left");
@@ -328,6 +336,14 @@ void MainWindow::Private::setEditProperties(const QString &s)
     {
         propsView->setProperties(document->score()->props());
     }
+    else if (curPropId.startsWith("stream"))
+    {
+        QProps::Properties p("tmp");
+        auto idx = scoreView->currentIndex();
+        if (idx.isValid())
+            p = idx.getStream().props();
+        propsView->setProperties(p);
+    }
     else
         propsView->clear();
 
@@ -361,6 +377,15 @@ void MainWindow::Private::applyProperties()
     else if (curPropId.startsWith("score"))
     {
         document->setScoreProperties(propsView->properties());
+    }
+    else if (curPropId.startsWith("stream"))
+    {
+        auto idx = scoreView->currentIndex();
+        if (idx.isValid())
+        {
+            document->editor()->setStreamProperties(
+                        idx.stream(), propsView->properties());
+        }
     }
     /*
     PageAnnotation anno = scoreView->scoreDocument().pageAnnotation(0);

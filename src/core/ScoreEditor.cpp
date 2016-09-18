@@ -79,6 +79,20 @@ void ScoreEditor::setScore(const Score& s)
     emit scoreReset(p_->score_);
 }
 
+void ScoreEditor::setStreamProperties(
+        size_t streamIdx, const QProps::Properties& p)
+{
+    if (!score())
+        return;
+    auto idx = score()->index(streamIdx, 0,0,0);
+    if (NoteStream* stream = p_->getStream(idx))
+    {
+        stream->setProperties(p);
+        emit streamsChanged(IndexList() << idx);
+        emit documentChanged();
+    }
+}
+
 bool ScoreEditor::insertNote(
         const Score::Index& idx, const Note& n, bool allRows)
 {
