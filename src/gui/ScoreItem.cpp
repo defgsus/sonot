@@ -64,6 +64,7 @@ void ScoreItem::paint(QPainter& p)
         QFont f(p.font());
         f.setPixelSize(p_rect_.height());
         f.setBold(true);
+        f.setItalic(false);
         p.setFont(f);
         p.drawText(p_rect_, Qt::AlignCenter | Qt::TextDontClip, t);
         //p.drawRect(p_rect_);
