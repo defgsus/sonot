@@ -19,6 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ****************************************************************************/
 
 #include "QProps/error.h"
+#include "QProps/JsonInterfaceHelper.h"
 
 #include "Bar.h"
 
@@ -119,6 +120,34 @@ void Bar::remove(size_t i)
 {
     QPROPS_ASSERT_LT(i, numRows(), "");
     p_->rows.erase(p_->rows.begin() + i);
+}
+
+
+QJsonObject Bar::toJson() const
+{
+    QJsonArray jrows;
+    for (const Notes& n : p_->rows)
+        jrows.append( n.toJson() );
+
+    QJsonObject o;
+    o.insert("notes", jrows);
+    return o;
+}
+
+void Bar::fromJson(const QJsonObject& o)
+{
+    QProps::JsonInterfaceHelper json("Bar");
+
+    QJsonArray jrows = json.expectChildArray(o, "notes");
+    std::vector<Notes> rows;
+    for (int i=0; i<jrows.size(); ++i)
+    {
+        Notes n;
+        n.fromJson(json.expectObject(jrows[i]));
+        rows.push_back( n );
+    }
+
+    p_->rows.swap( rows );
 }
 
 } // namespace Sonot

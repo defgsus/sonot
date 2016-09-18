@@ -23,12 +23,14 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <vector>
 
+#include "QProps/JsonInterface.h"
+
 #include "Notes.h"
 
 namespace Sonot {
 
 /** Rows of Notes combined in a Bar */
-class Bar
+class Bar : public QProps::JsonInterface
 {
 public:
     Bar();
@@ -39,6 +41,11 @@ public:
 
     typedef std::vector<Notes>::iterator Iter;
     typedef std::vector<Notes>::const_iterator ConstIter;
+
+    // --- io ---
+
+    QJsonObject toJson() const override;
+    void fromJson(const QJsonObject&) override;
 
     // -- getter --
 
