@@ -335,22 +335,6 @@ QString NoteStream::toInfoString() const
 QJsonObject NoteStream::toJson() const
 {
     QProps::JsonInterfaceHelper json("NoteStream");
-#if 0
-    // write [[bar,bar,bar],[bar,bar,bar]]
-    QJsonArray jrows;
-    for (size_t row = 0; row < numRows(); ++row)
-    {
-        QJsonArray jbars;
-        for (size_t i = 0; i < numBars(); ++i)
-        {
-            jbars.append(QJsonValue(notes(i, row).toJson()));
-        }
-        jrows.append( jbars );
-    }
-
-    QJsonObject o;
-    o.insert("bars", jrows);
-#else
 
     QJsonArray jbars;
     for (const Bar& p : p_data_)
@@ -360,7 +344,7 @@ QJsonObject NoteStream::toJson() const
 
     QJsonObject o;
     o.insert("music", jbars);
-#endif
+
     o.insert("properties", p_props_.toJson());
     return o;
 }
@@ -371,48 +355,19 @@ void NoteStream::fromJson(const QJsonObject& o)
 
     std::vector<Bar> data;
 
-    /** @todo Remove old version */
-    if (o.contains("bars"))
+    QJsonArray jbars = json.expectChildArray(o, "music");
+
+    for (int i=0; i<jbars.size(); ++i)
     {
-        QJsonArray jrows = json.expectChildArray(o, "bars");
-
-        for (int row=0; row<jrows.size(); ++row)
-        {
-            json.beginContext(QString("Reading row %1").arg(row));
-            QJsonArray jbars = json.expectArray(jrows[row]);
-            if (data.empty())
-            {
-                data.resize(jbars.size());
-                for (int i=0; i<jbars.size(); ++i)
-                    data[i].resize(jrows.size());
-            }
-            else if (data.size() != size_t(jbars.size()))
-                    QPROPS_IO_ERROR("row length mismatch, expected "
-                                    << data.size() << ", got " << jbars.size());
-            for (int i=0; i<jbars.size(); ++i)
-            {
-                data[i][row].fromJson(json.expectObject(jbars.at(i)));
-            }
-
-            json.endContext();
-        }
-    }
-    else
-    {
-        QJsonArray jbars = json.expectChildArray(o, "music");
-
-        for (int i=0; i<jbars.size(); ++i)
-        {
-            json.beginContext(QString("Reading bar %1").arg(i));
-            Bar bar;
-            bar.fromJson(json.expectObject(jbars[i]));
-            data.push_back(bar);
-            if (i > 0 && data[i].numRows() != data[i-1].numRows())
-                QPROPS_IO_ERROR("row length mismatch, expected "
-                                << data[i-1].numRows()
-                                << ", got " << data[i].numRows());
-            json.endContext();
-        }
+        json.beginContext(QString("Reading bar %1").arg(i));
+        Bar bar;
+        bar.fromJson(json.expectObject(jbars[i]));
+        data.push_back(bar);
+        if (i > 0 && data[i].numRows() != data[i-1].numRows())
+            QPROPS_IO_ERROR("row length mismatch, expected "
+                            << data[i-1].numRows()
+                            << ", got " << data[i].numRows());
+        json.endContext();
     }
 
     if (o.contains("properties"))

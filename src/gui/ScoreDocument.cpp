@@ -184,7 +184,9 @@ bool ScoreDocument::operator == (const ScoreDocument& o) const
 QJsonObject ScoreDocument::toJson() const
 {
     //QProps::JsonInterfaceHelper json("ScoreDocument");
-    QJsonObject o, jscore = p_->score()->toJson();
+    QJsonObject o, jscore;
+    if (p_->score())
+        jscore = p_->score()->toJson();
 
     o.insert("score-layout", p_->scoreLayout.toJson());
     o.insert("page-layout", p_->pageLayout.toJson());

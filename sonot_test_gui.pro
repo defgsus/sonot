@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += testlib gui widgets
+QT       += testlib gui widgets multimedia
 
 TARGET = SonotGuiTest
 CONFIG   += console c++11
@@ -16,6 +16,7 @@ TEMPLATE = app
 INCLUDEPATH += ./src
 
 include(src/core.pri)
+include(src/audio.pri)
 include(src/gui.pri)
 include(src/QProps.pri)
 

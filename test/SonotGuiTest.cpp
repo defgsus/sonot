@@ -68,7 +68,7 @@ public:
     ScoreLayout createRandomScoreLayout();
     PageLayout createRandomPageLayout();
     TextItem createRandomTextItem();
-    ScoreDocument createRandomScoreDocument();
+    void randomizeScoreDocument(ScoreDocument& s);
 
 private slots:
 
@@ -107,12 +107,14 @@ namespace {
 ScoreLayout SonotGuiTest::createRandomScoreLayout()
 {
     ScoreLayout l;
-    l.setLineSpacing(rnd(1,10));
-    l.setMaxBarWidth(rnd(50,100));
-    l.setMinBarWidth(rnd(10,50));
-    l.setNoteSize(rnd(2,12));
-    l.setNoteSpacing(rnd(1,10));
-    l.setRowSpacing(rnd(1,10));
+    QProps::Properties p = l.props();
+    p.set("line-spacing", rnd(1,10));
+    p.set("min-bar-width", rnd(10,50));
+    p.set("max-bar-width", rnd(50,100));
+    p.set("note-size", rnd(2,12));
+    p.set("note-spacing", rnd(1,10));
+    p.set("row-spacing", rnd(1,10));
+    l.setProperties(p);
     return l;
 }
 
@@ -150,15 +152,15 @@ TextItem SonotGuiTest::createRandomTextItem()
     return t;
 }
 
-ScoreDocument SonotGuiTest::createRandomScoreDocument()
+void SonotGuiTest::randomizeScoreDocument(ScoreDocument& s)
 {
-    ScoreDocument s;
     s.initLayout();
     s.setPageLayout(0, createRandomPageLayout());
     s.setPageLayout(1, createRandomPageLayout());
     s.setPageLayout(2, createRandomPageLayout());
-    s.setPageSpacing(QPointF(rnd(1,10), rnd(1,10)));
-    return s;
+    QProps::Properties p = s.props();
+    p.set("page-spacing", QPointF(rnd(1,10), rnd(1,10)));
+    s.setProperties(p);
 }
 
 
@@ -192,7 +194,8 @@ void SonotGuiTest::testJsonTextItem()
 
 void SonotGuiTest::testJsonScoreDocument()
 {
-    ScoreDocument s2, s = createRandomScoreDocument();
+    ScoreDocument s, s2;
+    randomizeScoreDocument(s);
     PRINT(s.toJsonString().toStdString());
     s2.fromJsonString(s.toJsonString());
     //s2 = s;
