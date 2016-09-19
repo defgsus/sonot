@@ -38,6 +38,10 @@ NoteStream::NoteStream()
                  defaultBpm_);
     p_props_.setMin("bpm", 1.);
 
+    p_props_.set("keysig", tr("key signature"),
+                 tr("a list of keys applying to this part"),
+                 QString());
+
     p_props_.set("title", tr("title"),
                  tr("The title of this part"),
                  QString());
@@ -87,6 +91,13 @@ const QProps::Properties& NoteStream::props() const
 void NoteStream::setProperties(const QProps::Properties& props)
 {
     p_props_ = props;
+}
+
+KeySignature NoteStream::keySignature() const
+{
+    KeySignature s;
+    s.fromString(props().get("keysig").toString());
+    return s;
 }
 
 size_t NoteStream::numNotes() const

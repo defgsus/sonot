@@ -219,13 +219,15 @@ bool SynthDevice::Private::fillBuffer()
                               << (curBarTime + windowLength)
                               << " , len=" << windowLength);
 
+            KeySignature keysig = cursor.getStream().keySignature();
+
             // send all notes in bar window to synth
             for (size_t r=0; r<cursor.getStream().numRows(); ++r)
             {
                 const Notes& bar = cursor.getNotes(r);
                 for (size_t c=0; c<bar.length(); ++c)
                 {
-                    Note n = bar.note(c);
+                    Note n = keysig.transform(bar.note(c));
                     if (!n.isValid())
                         continue;
 

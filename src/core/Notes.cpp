@@ -105,14 +105,6 @@ Notes& Notes::operator<<(const QString& name)
     return *this;
 }
 
-bool Notes::isAnnotated() const
-{
-    for (const Note& n : p_data_)
-        if (n.isAnnotated())
-            return true;
-    return false;
-}
-
 QString Notes::toString() const
 {
     QString s;
@@ -125,7 +117,7 @@ QString Notes::toString() const
 
 QJsonObject Notes::toJson() const
 {
-    QProps::JsonInterfaceHelper json("Bar");
+    QProps::JsonInterfaceHelper json("Notes");
 
     QJsonObject o;
 
@@ -137,24 +129,12 @@ QJsonObject Notes::toJson() const
         o.insert("notes", json.toArray(v));
     }
 
-    if (isAnnotated())
-    {
-        QJsonObject ann;
-        for (size_t col=0; col<length(); ++col)
-        {
-            const Note& n = note(col);
-            if (n.isAnnotated())
-                ann.insert(QString::number(col), n.annotation());
-        }
-        o.insert("text", ann);
-    }
-
     return o;
 }
 
 void Notes::fromJson(const QJsonObject& o)
 {
-    QProps::JsonInterfaceHelper json("Bar");
+    QProps::JsonInterfaceHelper json("Notes");
 
     std::vector<Note> notes;
 
@@ -166,29 +146,6 @@ void Notes::fromJson(const QJsonObject& o)
             size_t n = jnotes[i].toInt(Note::Invalid);
             notes.push_back(Note(n));
         }
-    }
-
-    if (o.contains("text"))
-    {
-        json.beginContext("read Bar annotation");
-
-        QJsonObject ann = json.expectObject(o.value("text"));
-        QStringList keys = ann.keys();
-        for (const QString& key : keys)
-        {
-            bool ok;
-            int k = key.toInt(&ok);
-            if (!ok)
-                QPROPS_IO_ERROR("Expected integer key in Bar object, got '"
-                               << key << "'");
-            if (k < 0 || size_t(k) >= notes.size())
-                QPROPS_IO_ERROR("Integer key out of range in Bar object, got "
-                               << k << ", expected [0," << notes.size() << ")");
-            QString text = json.expectChild<QString>(ann, key);
-            notes[k].setAnnotation(text);
-        }
-
-        json.endContext();
     }
 
     p_data_.swap(notes);

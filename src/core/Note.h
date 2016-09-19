@@ -114,9 +114,6 @@ public:
 
     bool isValid() const { return p_value_ != Invalid; }
     bool isNote() const { return p_value_ >= 0; }
-    bool isAnnotated() const { return !p_annotation_.isEmpty(); }
-
-    QString annotation() const { return p_annotation_; }
 
     bool operator == (const Note& rhs) const;
     bool operator != (const Note& rhs) const { return !(*this == rhs); }
@@ -129,11 +126,8 @@ public:
 
     void transpose(int8_t noteStep);
 
-    Note& setAnnotation(const QString& a) { p_annotation_ = a; return *this; }
-
 private:
     int8_t p_value_;
-    QString p_annotation_;
 };
 
 

@@ -21,6 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QString>
 #include <QtTest>
 
+#include "core/KeySignature.h"
 #include "core/NoteStream.h"
 #include "core/Score.h"
 #include "QProps/Properties.h"
@@ -42,6 +43,7 @@ public:
 private slots:
 
     void testNoteFromString();
+    void testKeySignature();
     void testResize();
     void testRandomCursor();
     void testKeepDataOnResize();
@@ -172,6 +174,22 @@ void SonotCoreTest::testNoteFromString()
     SONOT__COMPARE("7x",    F   , 1);
 }
 
+void SonotCoreTest::testKeySignature()
+{
+    KeySignature k, k1;
+    k.setKey(Note::B, -1);
+    k.setKey(Note::F,  1);
+    k.setKey(Note::G, -2);
+
+    QCOMPARE(k.transform(Note::B), (int8_t)Note::Bes);
+    QCOMPARE(k.transform(Note::F), (int8_t)Note::Fis);
+    QCOMPARE(k.transform(Note::G), (int8_t)Note::F);
+
+    qDebug() << k.toString();
+    k1.fromJson(k.toJson());
+
+    QCOMPARE(k1, k);
+}
 
 void SonotCoreTest::testResize()
 {

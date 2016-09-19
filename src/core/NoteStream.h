@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "QProps/JsonInterface.h"
 #include "QProps/Properties.h"
 
+#include "KeySignature.h"
 #include "Notes.h"
 #include "Bar.h"
 
@@ -68,6 +69,8 @@ public:
     // --- getter ---
 
     const QProps::Properties& props() const;
+
+    KeySignature keySignature() const;
 
     bool isEmpty() const { return p_data_.empty(); }
 
