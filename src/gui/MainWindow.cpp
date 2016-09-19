@@ -252,10 +252,12 @@ void MainWindow::Private::createMenu()
         synthStream->setPlaying(true);
     });
 
-    a = menu->addAction(tr("Continue"));
+    a = menu->addAction(tr("Play current part"));
     a->setShortcut(Qt::Key_F6);
     a->connect(a, &QAction::triggered, [=]()
     {
+        auto idx = scoreView->currentIndex();
+        synthStream->setIndex(synthStream->score()->index(idx.stream(),0,0,0));
         synthStream->setPlaying(true);
     });
 

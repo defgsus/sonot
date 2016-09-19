@@ -18,99 +18,102 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include <QDebug>
 #include "Note.h"
 
 namespace Sonot {
 
+namespace
+{
+    static const int8_t name2Val[] =
+       // c c# d d# e f f# g g# a a# b
+        { 0,   2,   4,5,   7,   9,   11 };
+    static const int8_t val2NameAcc[] =
+        { 0, 0,    // c
+          0, 1,    // c#
+          1, 0,    // d
+          1, 1,    // d#
+          2, 0,    // e
+          3, 0,    // f
+          3, 1,    // f#
+          4, 0,    // g
+          4, 1,    // g#
+          5, 0,    // a
+          5, 1,    // a#
+          6, 0 };  // b
+}
+
+
 Note::Note(Special s)
-    : p_value_   (s)
+    : p_note_   (s)
+    , p_oct_    (0)
+    , p_acc_    (0)
 {
 
 }
 
-Note::Note(int8_t note)
-    : p_value_   (note)
-{
-
-}
-
-Note::Note(Name noteName, int8_t octave)
-    : p_value_   ((noteName % 12) + octave * 12)
-{
-
-}
-
-Note::Note(NameCrossing noteName, int8_t octave)
-    : p_value_   (std::max(-1, noteName % 12)
-                               + 12 * ((noteName == Ces ? -1 : 1) + octave) )
-{
-
-}
-
-Note::Note(const char *str)
-    : p_value_  (valueFromString(str))
+Note::Note(Name note, int8_t octave, int8_t accidental)
+    : p_note_   (note)
+    , p_oct_    (octave)
+    , p_acc_    (accidental)
 {
 
 }
 
 Note::Note(const QString &str)
-    : p_value_  (valueFromString(str))
 {
-
+    *this = fromString(str);
 }
 
 bool Note::operator == (const Note& rhs) const
 {
-    return p_value_ == rhs.p_value_;
+    bool sameNote = p_note_ == rhs.p_note_;
+    if (sameNote && p_note_ < 0)
+        return true;
+    return sameNote
+        && p_oct_ == rhs.p_oct_
+        && p_acc_ == rhs.p_acc_;
 }
 
-int8_t Note::octave() const
+int8_t Note::value() const
 {
-    return p_value_ < 0 ? 0 : p_value_ / 12;
+    return isNote() ? name2Val[p_note_] + p_acc_ + p_oct_ * 12
+                    : p_note_;
 }
 
 int8_t Note::octaveSpanish() const
 {
-    return p_value_ < 5 ? 0 : ((p_value_-5) / 12);
+    return p_note_ < 5 ? octave() + 1 : octave();
 }
 
-Note::Name Note::noteName() const
-{
-    return p_value_ < 0 ? C : Name(p_value_ % 12);
-}
 
-int8_t Note::valueFromString(const char *str)
-{
-    return valueFromString(QString(str));
-}
-
-int8_t Note::valueFromString(const QString &s)
+Note Note::fromString(const QString& s)
 {
     if (s.isEmpty())
-        return Invalid;
+        return Note();
 
     QString str = s.toLower();
 
     if (str.startsWith(" "))
-        return Space;
+        return Note(Space);
     if (str.startsWith("-") || str.startsWith("p") || str.startsWith("r"))
-        return Rest;
+        return Note(Rest);
 
-    int8_t val = Invalid;
-    int8_t oct = 3;
+    Name note = C;
+    int oct = 3, acc = 0;
 
     // spanish note names
     if (str.at(0).isDigit())
     {
         switch ((short)str.at(0).unicode() - short('0'))
         {
-            case 1: val = F; break;
-            case 2: val = G; break;
-            case 3: val = A; break;
-            case 4: val = B; break;
-            case 5: val = C; ++oct; break;
-            case 6: val = D; ++oct; break;
-            case 7: val = E; ++oct; break;
+            case 1: note = F; break;
+            case 2: note = G; break;
+            case 3: note = A; break;
+            case 4: note = B; break;
+            case 5: note = C; ++oct; break;
+            case 6: note = D; ++oct; break;
+            case 7: note = E; ++oct; break;
         }
     }
     else
@@ -118,28 +121,23 @@ int8_t Note::valueFromString(const QString &s)
     {
         switch ((short)str.at(0).unicode())
         {
-            case 'a': val = A; break;
+            case 'a': note = A; break;
             case 'h':
-            case 'b': val = B; break;
-            case 'c': val = C; break;
-            case 'd': val = D; break;
-            case 'e': val = E; break;
-            case 'f': val = F; break;
-            case 'g': val = G; break;
+            case 'b': note = B; break;
+            case 'c': note = C; break;
+            case 'd': note = D; break;
+            case 'e': note = E; break;
+            case 'f': note = F; break;
+            case 'g': note = G; break;
         }
     }
     else
-        return Invalid;
+        return Note();
 
     // flat or sharp ?
     if (str.size() > 1)
     {
-        QString add = str.mid(1);
-        if (add.startsWith("#") || add.startsWith("is") || add.startsWith("x"))
-            ++val;
-        else if (add.startsWith("b")
-                 || add.startsWith("es") || add.startsWith("s"))
-            --val;
+        acc += -str.mid(1).count('b') + str.count('#');
     }
 
     // octave digit?
@@ -148,73 +146,112 @@ int8_t Note::valueFromString(const QString &s)
         ++i;
     if (i < str.size())
     {
-        oct = (short)str.at(i).unicode() - short('0');
+        oct = str.mid(i).toInt();
     }
 
     // octave subscript?
     oct += str.count(QChar('\''));
     oct -= str.count(QChar(','));
 
-    val += oct * 12;
+    return Note(note, oct, acc);
+}
 
-    return val >= 0 ? val : int8_t(Invalid);
+Note Note::fromValue(int8_t v)
+{
+    if (v < 0)
+        return Note(Special(v));
+    size_t idx = (v % 12) * 2;
+    return Note(Name(val2NameAcc[idx]),
+                v / 12,
+                val2NameAcc[idx+1]);
+    //qDebug() << v << n.toNoaString();
+    //return n;
+}
+
+const char* Note::noteName(Name n)
+{
+    switch (n)
+    {
+        case C: return "C";
+        case D: return "D";
+        case E: return "E";
+        case F: return "F";
+        case G: return "G";
+        case A: return "A";
+        case B: return "B";
+        default: return "X";
+    }
+}
+
+QString Note::toString() const
+{
+    if (p_note_ == Invalid)
+        return QString();
+    if (p_note_ == Rest)
+        return "p";
+    if (p_note_ == Space)
+        return ".";
+
+    QString n = noteName(Name(p_note_));
+    if (p_acc_ > 0)
+        n += QString("#").repeated(p_acc_);
+    else if (p_acc_ < 0)
+        n += QString("b").repeated(-p_acc_);
+    n += QString("%1").arg(octave());
+    return n;
+}
+
+QString Note::toNoaString() const
+{
+    return QString("%1,%2,%3")
+            .arg(note()).arg(octave()).arg(accidental());
 }
 
 QString Note::to3String() const
 {
-    if (p_value_ == Invalid)
+    if (p_note_ == Invalid)
         return QString();
-    if (p_value_ == Rest)
+    if (p_note_ == Rest)
         return " p ";
-    if (p_value_ == Space)
+    if (p_note_ == Space)
         return " . ";
 
-    QString n;
-    switch (noteName())
-    {
-        case C:  n = "C-"; break;
-        case Cis: n = "C#"; break;
-        case D:  n = "D-"; break;
-        case Dis: n = "D#"; break;
-        case E:  n = "E-"; break;
-        case F:  n = "F-"; break;
-        case Fis: n = "F#"; break;
-        case G:  n = "G-"; break;
-        case Gis: n = "G#"; break;
-        case A:  n = "A-"; break;
-        case Ais: n = "A#"; break;
-        case B:  n = "B-"; break;
-    }
+    QString n = noteName(Name(p_note_));
+    if (p_acc_ == 0)
+        n += "-";
+    else if (p_acc_ > 0)
+        n += "#";
+    else
+        n += "b";
     n += QString("%1").arg(octave());
     return n;
 }
 
 QString Note::toSpanishString() const
 {
-    if (p_value_ == Invalid)
+    if (p_note_ == Invalid)
         return QString();
-    if (p_value_ == Rest)
+    if (p_note_ == Rest)
         return "p";
-    if (p_value_ == Space)
+    if (p_note_ == Space)
         return ".";
 
     QString n;
     int oct = octave();
-    switch (noteName())
+    switch (note())
     {
         case C:   n = "5";  --oct; break;
-        case Cis: n = "6b"; --oct; break;
         case D:   n = "6";  --oct; break;
-        case Dis: n = "7b"; --oct; break;
         case E:   n = "7";  --oct; break;
         case F:   n = "1";  break;
-        case Fis: n = "2b"; break;
         case G:   n = "2";  break;
-        case Gis: n = "3b"; break;
         case A:   n = "3";  break;
-        case Ais: n = "4b"; break;
         case B:   n = "4";  break;
     }
+    if (p_acc_ > 0)
+        n += QString("#").repeated(p_acc_);
+    else if (p_acc_ < 0)
+        n += QString("b").repeated(-p_acc_);
     if (oct > 3)
         n += QString("'").repeated(oct-3);
     else if (oct < 3)
@@ -230,27 +267,20 @@ QString Note::toShortAlphaNumString() const
     return s;
 }
 
-Note& Note::setOctave(int8_t o)
-{
-    if (p_value_ >= 0)
-        p_value_ = o * 12 + (p_value_ % 12);
-    return *this;
-}
-
-Note& Note::setNoteName(Name n)
-{
-    p_value_ = n + octave() * 12;
-    return *this;
-}
-
 void Note::transpose(int8_t noteStep)
 {
-    if (isNote())
+    if (noteStep != 0 && isNote())
     {
-        int value = int(p_value_) + int(noteStep);
-        if (value < 0 || value > 127)
-            value = Space;
-        p_value_ = value;
+#if 0
+        auto tmp = fromValue(std::max(0,std::min(127,
+                    int(value()) + int(noteStep) )));
+        qDebug() << "transpose" << toString() << toNoaString()
+                 << value() << "+" << noteStep
+                 << "=" << tmp.toString() << tmp.toNoaString()
+                 << tmp.value();
+#endif
+        *this = fromValue(std::max(0,std::min(127,
+                int(value()) + int(noteStep) )));
     }
 }
 

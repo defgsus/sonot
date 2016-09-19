@@ -173,7 +173,7 @@ bool SynthDevice::Private::fillBuffer()
         // seconds in dsp block
         double procTime = 0.;
 
-        SONOT_DEBUG_SYNTH("--- dsp-block --- " << bufferSize());
+        SONOT_DEBUG_SYNTH("--- dsp-block --- " << p->bufferSize());
 
         while (procTime < bufferLength)
         {

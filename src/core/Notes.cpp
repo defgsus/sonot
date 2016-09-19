@@ -109,10 +109,13 @@ QString Notes::toString() const
 {
     QString s;
     for (const Note& n : p_data_)
-        s += n.to3String() + " ";
+    {
+        if (!s.isEmpty())
+            s += " ";
+        s += n.toString();
+    }
     return s;
 }
-
 
 
 QJsonObject Notes::toJson() const
@@ -125,8 +128,12 @@ QJsonObject Notes::toJson() const
     {
         std::vector<int> v;
         for (const Note& n : p_data_)
-            v.push_back(n.value());
-        o.insert("notes", json.toArray(v));
+        {
+            v.push_back(n.note());
+            v.push_back(n.octave());
+            v.push_back(n.accidental());
+        }
+        o.insert("noa", json.toArray(v));
     }
 
     return o;
@@ -138,13 +145,31 @@ void Notes::fromJson(const QJsonObject& o)
 
     std::vector<Note> notes;
 
+    // old version
     if (o.contains("notes"))
     {
         QJsonArray jnotes = json.expectArray(json.expectChildValue(o, "notes"));
         for (int i=0; i<jnotes.size(); ++i)
         {
-            size_t n = jnotes[i].toInt(Note::Invalid);
-            notes.push_back(Note(n));
+            int n = jnotes[i].toInt(Note::Invalid);
+            if (n == Note::Invalid)
+                notes.push_back(Note());
+            else
+                notes.push_back(Note::fromValue(n));
+        }
+    }
+    else if (o.contains("noa"))
+    {
+        QJsonArray jnotes = json.expectArray(json.expectChildValue(o, "noa"));
+        for (int i=0; i<jnotes.size()/3; ++i)
+        {
+            int n = jnotes[i*3].toInt(Note::Invalid);
+            if (n == Note::Invalid)
+                notes.push_back(Note());
+            else
+                notes.push_back(Note(Note::Name(n),
+                                     jnotes[i*3+1].toInt(3),
+                                     jnotes[i*3+2].toInt(0)));
         }
     }
 

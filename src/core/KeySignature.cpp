@@ -56,18 +56,18 @@ bool KeySignature::operator == (const KeySignature& o) const
     return p_map == o.p_map;
 }
 
-int8_t KeySignature::transform(int8_t note) const
-{
-    auto i = p_map.find(note % 12);
-    if (i != p_map.end())
-        return std::max(0, note + i->second);
-    return note;
-}
-
 Note KeySignature::transform(const Note &note) const
 {
+    if (!note.isNote())
+        return note;
+
+    auto i = p_map.find(note.note());
+    if (i == p_map.end())
+        return note;
+
     Note n(note);
-    n.setValue( transform(n.value()) );
+    n.transpose(i->second);
+    //n.setAccidental(n.accidental() + i->second);
     return n;
 }
 
@@ -76,8 +76,7 @@ QString KeySignature::toString() const
     QString s;
     for (auto i = p_map.begin(); i != p_map.end(); ++i)
     {
-        Note n(i->first);
-        QString nn = n.toShortAlphaNumString();
+        QString nn = Note::noteName(Note::Name(i->first));
         QPROPS_ASSERT(!nn.isEmpty(), "in KeySignature::toString()");
         if (!s.isEmpty())
             s += " ";
@@ -99,7 +98,9 @@ void KeySignature::fromString(const QString& s)
         Note n(key[0]);
         if (!n.isNote())
             continue;
-        setKey(n.value()%12, -key.count('b') + key.count('#'));
+        int shift = -key.mid(1).count('b') + key.count('#');
+        if (shift != 0)
+            setKey(n.note(), shift);
     }
 }
 

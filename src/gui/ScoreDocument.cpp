@@ -811,6 +811,8 @@ ScoreDocument::Private::createBarItems_Fixed(
     QPROPS_ASSERT(numBarsPerLine > 0, "");
     const double barWidth = scoreRect.width() / numBarsPerLine;
 
+    KeySignature keySig = scoreIdx.getStream().keySignature();
+
     for (size_t barIdx = 0; barIdx < numBarsPerLine; ++barIdx)
     {
         // container for one bar block
@@ -818,28 +820,43 @@ ScoreDocument::Private::createBarItems_Fixed(
         items->docIndex = Index(pageIdx, lineIdx, barIdx);
         items->scoreIndex = scoreIdx;
 
+        QString anno;
+
         // annotation at stream start
         if (scoreIdx.isStreamStart())
         {
-            QString anno;
-
-            // tempo indicator
-            if (scoreIdx.isStreamStart() || scoreIdx.isTempoChange())
-            {
-                anno += QString("%1bpm ").arg(scoreIdx.getBeatsPerMinute());
-            }
-
             // stream title
             anno += scoreIdx.getStream().props().get("title").toString();
 
-            double si = noteSize - 1.;
+            // signature
+            if (!keySig.isEmpty())
+            {
+                if (!anno.isEmpty())
+                    anno += " ";
+                anno += keySig.toString();
+            }
+        }
+
+        // tempo indicator
+        if (scoreIdx.isStreamStart() || scoreIdx.isTempoChange())
+        {
+            if (!anno.isEmpty())
+                anno += " ";
+            anno += QString("%1bpm").arg(scoreIdx.getBeatsPerMinute());
+        }
+
+        // print annotation
+        if (!anno.isEmpty())
+        {
+            double si = noteSize;
             QRectF rect(scoreRect.x() + barIdx * barWidth,
                         scoreRect.y() + pagePos.y(),
                         si, si);
             items->items.push_back(
                 ScoreItem(scoreIdx, items->docIndex, rect, anno) );
-            pagePos.ry() += si;
+            pagePos.ry() += si + 2;
         }
+
 
         // create item for each note in this bar block
         for (size_t row=0; row<scoreIdx.numRows(); ++row)
@@ -849,7 +866,9 @@ ScoreDocument::Private::createBarItems_Fixed(
             const Notes& b = scoreIdx.getNotes(row);
             for (size_t col=0; col<b.length(); ++col)
             {
-                if (! scoreIdx.offset(row, col).getNote().isValid())
+                Note note = scoreIdx.offset(row, col).getNote();
+                //note = keySig.transform(note);
+                if (!note.isValid())
                     continue;
 
                 double x = barIdx * barWidth
@@ -860,7 +879,7 @@ ScoreDocument::Private::createBarItems_Fixed(
                             noteSize, noteSize);
                 items->items.push_back(
                             ScoreItem(scoreIdx.offset(row, col),
-                                      items->docIndex, rect) );
+                                      items->docIndex, rect, note) );
                 scoreItemMap.insert(
                             items->items.back().scoreIndex(),
                             &items->items.back() );

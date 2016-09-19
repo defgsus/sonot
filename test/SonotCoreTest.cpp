@@ -43,6 +43,8 @@ public:
 private slots:
 
     void testNoteFromString();
+    void testNoteFromValue();
+    void testNoteTranspose();
     void testKeySignature();
     void testResize();
     void testRandomCursor();
@@ -64,9 +66,7 @@ Notes SonotCoreTest::createRandomNotes(size_t length)
     {
         if (rand()%10 <= 7)
         {
-            Note note = Note(rand()%128);
-            if (rand()%10 < 2)
-                note.setAnnotation(anno[rand()%anno.size()]);
+            Note note = Note::fromValue(rand()%128);
             b.setNote(x, note);
         }
     }
@@ -98,7 +98,13 @@ namespace QTest {
     template <>
     char* toString(const Note& n)
     {
-        return toString(n.to3String());
+        return toString(n.toString());
+    }
+
+    template <>
+    char* toString(const Notes& n)
+    {
+        return toString(n.toString());
     }
 
     template <>
@@ -119,59 +125,91 @@ namespace QTest {
 
 void SonotCoreTest::testNoteFromString()
 {
-#define SONOT__COMPARE(str__, N__, oct__) \
-    QCOMPARE(Note(str__),       Note(Note::N__, 3+(oct__))); \
-    QCOMPARE(Note(str__ "4"),   Note(Note::N__, 4        )); \
-    QCOMPARE(Note(str__ "-5"),  Note(Note::N__, 5        )); \
-    QCOMPARE(Note(str__ ",,"),  Note(Note::N__, 1+(oct__))); \
-    QCOMPARE(Note(str__ "'''"), Note(Note::N__, 6+(oct__)));
+#define SONOT__COMPARE(str__, N__, oct__, acc__) \
+    QCOMPARE(Note(str__),       Note(Note::N__, 3+(oct__), (acc__))); \
+    QCOMPARE(Note(str__ "4"),   Note(Note::N__, 4        , (acc__))); \
+    QCOMPARE(Note(str__ "-5"),  Note(Note::N__, 5        , (acc__))); \
+    QCOMPARE(Note(str__ ",,"),  Note(Note::N__, 1+(oct__), (acc__))); \
+    QCOMPARE(Note(str__ "'''"), Note(Note::N__, 6+(oct__), (acc__)));
     //QCOMPARE(Note(str__).value(), int8_t(Note::N__ + 3 * 12));
     //qDebug() << Note(str__).toNoteString() << Note(Note::N__, 3).toNoteString();
 
-    SONOT__COMPARE("C",     C   , 0);
+    SONOT__COMPARE("C",     C   , 0, 0);
+    SONOT__COMPARE("c",     C   , 0, 0);
+    SONOT__COMPARE("d",     D   , 0, 0);
+    SONOT__COMPARE("e",     E   , 0, 0);
+    SONOT__COMPARE("f",     F   , 0, 0);
+    SONOT__COMPARE("g",     G   , 0, 0);
+    SONOT__COMPARE("a",     A   , 0, 0);
+    SONOT__COMPARE("b",     B   , 0, 0);
+    SONOT__COMPARE("b#",    B   , 0, 1);
+    SONOT__COMPARE("bb",    B   , 0, -1);
+    SONOT__COMPARE("h",     B   , 0, 0);
 
-    SONOT__COMPARE("ces",   Ces , 0);
-    SONOT__COMPARE("c",     C   , 0);
-    SONOT__COMPARE("cis",   Cis , 0);
-    SONOT__COMPARE("des",   Des , 0);
-    SONOT__COMPARE("d",     D   , 0);
-    SONOT__COMPARE("dis",   Dis , 0);
-    SONOT__COMPARE("es",    Es  , 0);
-    SONOT__COMPARE("e",     E   , 0);
-    SONOT__COMPARE("eis",   Eis , 0);
-    SONOT__COMPARE("fes",   Fes , 0);
-    SONOT__COMPARE("f",     F   , 0);
-    SONOT__COMPARE("fis",   Fis , 0);
-    SONOT__COMPARE("ges",   Ges , 0);
-    SONOT__COMPARE("g",     G   , 0);
-    SONOT__COMPARE("gis",   Gis , 0);
-    SONOT__COMPARE("as",    As  , 0);
-    SONOT__COMPARE("a",     A   , 0);
-    SONOT__COMPARE("ais",   Ais , 0);
-    SONOT__COMPARE("bes",   Bes , 0);
-    SONOT__COMPARE("b",     B   , 0);
-    SONOT__COMPARE("bis",   Bis , 0);
-    SONOT__COMPARE("h",     B   , 0);
+    SONOT__COMPARE("1b",    F   , 0, -1);
+    SONOT__COMPARE("1",     F   , 0, 0);
+    SONOT__COMPARE("1#",    F   , 0, 1);
+    SONOT__COMPARE("2b",    G   , 0, -1);
+    SONOT__COMPARE("2",     G   , 0, 0);
+    SONOT__COMPARE("2#",    G   , 0, 1);
+    SONOT__COMPARE("3b",    A   , 0, -1);
+    SONOT__COMPARE("3",     A   , 0, 0);
+    SONOT__COMPARE("3#",    A   , 0, 1);
+    SONOT__COMPARE("4b",    B   , 0, -1);
+    SONOT__COMPARE("4",     B   , 0, 0);
+    SONOT__COMPARE("4#",    B   , 0, 1);
+    SONOT__COMPARE("5b",    C   , 1, -1);
+    SONOT__COMPARE("5",     C   , 1, 0);
+    SONOT__COMPARE("5#",    C   , 1, 1);
+    SONOT__COMPARE("6b",    D   , 1, -1);
+    SONOT__COMPARE("6",     D   , 1, 0);
+    SONOT__COMPARE("6#",    D   , 1, 1);
+    SONOT__COMPARE("7b",    E   , 1, -1);
+    SONOT__COMPARE("7",     E   , 1, 0);
+    SONOT__COMPARE("7#",    E   , 1, 1);
+}
 
-    SONOT__COMPARE("1b",    E   , 0);
-    SONOT__COMPARE("1",     F   , 0);
-    SONOT__COMPARE("1x",    Fis , 0);
-    SONOT__COMPARE("2b",    Fis , 0);
-    SONOT__COMPARE("2",     G   , 0);
-    SONOT__COMPARE("2x",    Gis , 0);
-    SONOT__COMPARE("3b",    Gis , 0);
-    SONOT__COMPARE("3",     A   , 0);
-    SONOT__COMPARE("3x",    Ais , 0);
-    SONOT__COMPARE("4b",    Ais , 0);
-    SONOT__COMPARE("4",     B   , 0);
-    SONOT__COMPARE("5",     C   , 1);
-    SONOT__COMPARE("5x",    Cis , 1);
-    SONOT__COMPARE("6b",    Cis , 1);
-    SONOT__COMPARE("6",     D   , 1);
-    SONOT__COMPARE("6x",    Dis , 1);
-    SONOT__COMPARE("7b",    Dis , 1);
-    SONOT__COMPARE("7",     E   , 1);
-    SONOT__COMPARE("7x",    F   , 1);
+void SonotCoreTest::testNoteFromValue()
+{
+    for (int8_t oct=0; oct<10; ++oct)
+    {
+        int8_t o = oct * 12;
+        QCOMPARE( Note::fromValue(o+0),  Note(Note::C, oct, 0) );
+        QCOMPARE( Note::fromValue(o+1),  Note(Note::C, oct, 1) );
+        QCOMPARE( Note::fromValue(o+2),  Note(Note::D, oct, 0) );
+        QCOMPARE( Note::fromValue(o+3),  Note(Note::D, oct, 1) );
+        QCOMPARE( Note::fromValue(o+4),  Note(Note::E, oct, 0) );
+        QCOMPARE( Note::fromValue(o+5),  Note(Note::F, oct, 0) );
+        QCOMPARE( Note::fromValue(o+6),  Note(Note::F, oct, 1) );
+        QCOMPARE( Note::fromValue(o+7),  Note(Note::G, oct, 0) );
+        QCOMPARE( Note::fromValue(o+8),  Note(Note::G, oct, 1) );
+        QCOMPARE( Note::fromValue(o+9),  Note(Note::A, oct, 0) );
+        QCOMPARE( Note::fromValue(o+10), Note(Note::A, oct, 1) );
+        QCOMPARE( Note::fromValue(o+11), Note(Note::B, oct, 0) );
+    }
+    for (int8_t i=0;i!=-128; ++i)
+    {
+        QCOMPARE( Note::fromValue(i).value(), i );
+    }
+}
+
+void SonotCoreTest::testNoteTranspose()
+{
+    //for (int i=0; i<127; ++i)
+    //    qDebug() << Note::fromValue(i).toNoaString();
+
+    Note a, b;
+#define SONOT__COMP(a__, t__, b__) \
+    a = Note(a__).transposed(t__); b = Note(b__); \
+    if (a != b) qDebug() << "mismatch" << b.toNoaString() \
+                         << "->" << a.toNoaString(); \
+    QCOMPARE( Note(a__).transposed(t__), Note(b__) );
+
+    SONOT__COMP("C",  1, "C#");
+    SONOT__COMP("C#", 1, "D" );
+    SONOT__COMP("C#", 2, "D#");
+    SONOT__COMP("B",  1, "C4");
+#undef SONOT__COMP
 }
 
 void SonotCoreTest::testKeySignature()
@@ -181,12 +219,13 @@ void SonotCoreTest::testKeySignature()
     k.setKey(Note::F,  1);
     k.setKey(Note::G, -2);
 
-    QCOMPARE(k.transform(Note::B), (int8_t)Note::Bes);
-    QCOMPARE(k.transform(Note::F), (int8_t)Note::Fis);
-    QCOMPARE(k.transform(Note::G), (int8_t)Note::F);
+    //QCOMPARE(k.transform(Note(Note::B)), Note(Note::B, 3, -1));
+    //QCOMPARE(k.transform(Note(Note::F)), Note(Note::F, 3,  1));
+    //QCOMPARE(k.transform(Note(Note::G)), Note(Note::F, 3, -2));
 
     qDebug() << k.toString();
     k1.fromJson(k.toJson());
+    qDebug() << k1.toString();
 
     QCOMPARE(k1, k);
 }
@@ -298,7 +337,7 @@ void SonotCoreTest::testJsonStream()
     stream2.fromJsonString(stream1.toJsonString());
     //qDebug().noquote() << "\n" << stream1.toJsonString()
     //                   << "\n" << stream2.toJsonString();
-    QCOMPARE(stream1, stream2);
+    QCOMPARE(stream2, stream1);
 }
 
 void SonotCoreTest::testJsonScore()

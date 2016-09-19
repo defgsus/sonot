@@ -37,6 +37,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "TextItem.h"
 #include "PageLayout.h"
 #include "ScoreItem.h"
+#include "core/KeySignature.h"
 #include "core/NoteStream.h"
 #include "core/Score.h"
 #include "core/ScoreEditor.h"
@@ -459,7 +460,7 @@ void ScoreView::editTransposeUp(int steps)
     Note n = p_->cursor.getNote();
     if (n.isNote())
     {
-        n.setValue( std::max(0,std::min(127, (int)n.value() + steps)) );
+        n.transpose(steps);
         editor()->changeNote(p_->cursor, n);
     }
 }
@@ -467,6 +468,23 @@ void ScoreView::editTransposeUp(int steps)
 void ScoreView::editTransposeDown(int steps)
 {
     editTransposeUp(-steps);
+}
+
+void ScoreView::editAccidentialUp(int steps)
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+    Note n = p_->cursor.getNote();
+    if (n.isNote())
+    {
+        n.setAccidental(n.accidental() + steps);
+        editor()->changeNote(p_->cursor, n);
+    }
+}
+
+void ScoreView::editAccidentialDown(int steps)
+{
+    editAccidentialUp(-steps);
 }
 
 // ######################### EVENTS #########################
@@ -652,17 +670,13 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
                 else
                     editInsertBar(true);
             break;
+
             case '+':
-                editTransposeUp();
-                if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
-                {
-                    emit noteEntered(p_->cursor.getNote());
-                    p_->curOctave = p_->cursor.getNote().octaveSpanish();
-                    p_->updateStatus();
-                }
-            break;
             case '-':
-                editTransposeDown();
+                if (e->key() == '+')
+                    editAccidentialUp();
+                else
+                    editAccidentialDown();
                 if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
                 {
                     emit noteEntered(p_->cursor.getNote());
@@ -670,6 +684,7 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
                     p_->updateStatus();
                 }
             break;
+
             case '>':
                 p_->curOctave++;
                 p_->updateStatus();
@@ -690,6 +705,7 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         // ENTER NOTES
         handled = true;
         QString noteStr;
+        KeySignature keySig = p_->cursor.getStream().keySignature();
         switch (e->key())
         {
             case Qt::Key_1:
@@ -716,6 +732,7 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             break;
 
             case Qt::Key_Space:
+                noteStr = " ";
             break;
 
             default: handled = false;
@@ -727,17 +744,19 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             return;
         }
 
-        Note n = p_->cursor.getNote();
-        auto newVal = noteStr.isEmpty()
-                        ? (int8_t)Note::Space
-                        : Note::valueFromString(noteStr);
-        if (newVal != Note::Invalid && newVal != n.value())
+        Note note = Note::fromString(noteStr);
+        if (!note.isValid())
+            return;
+
+        Note old = p_->cursor.getNote();
+        if (note != old)
         {
-            n.setValue(newVal);
-            editor()->changeNote(p_->cursor, n);
-            emit noteEntered(n);
+            editor()->changeNote(p_->cursor, note);
             p_->updateStatus();
         }
+
+        note = keySig.transform(note);
+        emit noteEntered(note);
 
         return;
     }
@@ -980,24 +999,9 @@ void ScoreView::Private::paintScore(
 {
     auto pageLayout = document->pageLayout(pageIndex);
     auto scoreLayout = document->scoreLayout(pageIndex);
-    //auto srect = pageLayout.scoreRect();
-
-    /*
-    double y = 0.;
-    while (y < srect.height())
-    {
-        int numRows = 3;
-        if (y + scoreLayout.lineHeight(numRows) >= srect.height())
-            break;
-
-        p->setPen(penScoreRow);
-        for (int i=0; i<numRows; ++i, y += scoreLayout.rowSpacing())
-            p->drawLine(srect.left(), srect.top() + y,
-                        srect.right(), srect.top() + y);
-
-        y += scoreLayout.lineSpacing();
-    }
-    */
+    auto srect = pageLayout.scoreRect();
+    if (!srect.intersects(updateRect))
+        return;
 
     //p->setBrush(QBrush(QColor(rand()&0xff,rand()&0xff,rand()&0xff)));
     //p->drawRect(updateRect);

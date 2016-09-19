@@ -42,7 +42,7 @@ public:
     };
 
     ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
-              const QRectF& rect);
+              const QRectF& rect, const Note& n);
     ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
               const QLineF& rect);
     ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
@@ -55,7 +55,7 @@ public:
     ScoreDocument::Index docIndex() const { return p_docIndex_; }
     Type type() const { return p_type_; }
 
-    const Note& note() const { return p_index_.getNote(); }
+    const Note& note() const { return p_note_; }
 
     QRectF boundingBox() const { return p_rect_; }
 
@@ -71,6 +71,7 @@ private:
     Type p_type_;
     QRectF p_rect_;
     QString p_text_;
+    Note p_note_;
 };
 
 } // namespace Sonot

@@ -44,10 +44,11 @@ public:
     bool operator == (const KeySignature& o) const;
     bool operator != (const KeySignature& o) const { return !(*this == o); }
 
+    bool isEmpty() const { return p_map.empty(); }
+
     bool hasKey(int8_t note) const
         { return p_map.find(note % 12) != p_map.end(); }
 
-    int8_t transform(int8_t note) const;
     Note transform(const Note& note) const;
 
     QString toString() const;

@@ -62,20 +62,7 @@ public:
         @warning Order/values must not change for file persistence */
     enum Name
     {
-        C, Cis, D, Dis, E, F, Fis, G, Gis, A, Ais, B,
-        Des = Cis,
-        Es  = Dis,
-        Eis = F,
-        Fes = E,
-        Ges = Fis,
-        As  = Gis,
-        Bes = Ais
-    };
-
-    enum NameCrossing
-    {
-        Ces = B,
-        Bis = C
+        C, D, E, F, G, A, B
     };
 
     /** Special notes
@@ -88,46 +75,57 @@ public:
     };
 
     explicit Note(Special s = Invalid);
-    explicit Note(Name noteName, int8_t octave);
-    explicit Note(NameCrossing noteName, int8_t octave);
-    explicit Note(int8_t value);
-    explicit Note(const char* str);
+    explicit Note(Name note, int8_t octave = 3, int8_t accidental = 0);
     explicit Note(const QString& str);
 
     // --- getter ---
 
-    static int8_t valueFromString(const char* str);
-    static int8_t valueFromString(const QString& str);
+    static const char* noteName(Name n);
 
     /** Pure value, this is either a note if >= 0
         or a Special enum if < 0 */
-    int8_t value() const { return p_value_; }
+    int8_t value() const;
 
-    int8_t octave() const;
+    bool isValid() const { return p_note_ != Invalid; }
+    bool isNote() const { return p_note_ >= C && p_note_ <= B; }
+    bool isSpecial() const { return !isNote(); }
+    bool isNote(Name n) const { return p_note_ == n; }
+    bool isSpecial(Special s) const { return p_note_ == s; }
+
+    Name   note() const { return Name(p_note_); }
+    int8_t accidental() const { return p_acc_; }
+    int8_t octave() const { return p_oct_; }
     int8_t octaveSpanish() const;
-    Name noteName() const;
 
+    QString toString() const;
+    QString toNoaString() const;
     /** Returns a string in the format 'C#3' */
     QString to3String() const;
     QString toSpanishString() const;
     QString toShortAlphaNumString() const;
-
-    bool isValid() const { return p_value_ != Invalid; }
-    bool isNote() const { return p_value_ >= 0; }
 
     bool operator == (const Note& rhs) const;
     bool operator != (const Note& rhs) const { return !(*this == rhs); }
 
     // --- setter ---
 
-    Note& setValue(int8_t n) { p_value_ = n; return *this; }
-    Note& setOctave(int8_t o);
-    Note& setNoteName(Name n);
+    Note& set(Name note, int8_t oct, int8_t accidental)
+        { p_note_ = note; p_oct_ = oct; p_acc_ = accidental; return *this; }
+    Note& setNote(Name n) { p_note_ = n; return *this; }
+    Note& setAccidental(int8_t a) { p_acc_ = a; return *this; }
+    Note& setOctave(int8_t o) { p_oct_ = o; return *this; }
 
     void transpose(int8_t noteStep);
+    Note transposed(int8_t noteStep) const
+        { Note n(*this); n.transpose(noteStep); return n; }
+
+    static Note fromString(const QString&);
+    static Note fromValue(int8_t value);
 
 private:
-    int8_t p_value_;
+    int8_t p_note_,
+           p_oct_,
+           p_acc_;
 };
 
 
