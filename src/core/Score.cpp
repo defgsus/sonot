@@ -192,6 +192,19 @@ void Score::removeNoteStream(size_t idx)
     p_->streams.removeAt(idx);
 }
 
+void Score::removeNoteStreams(size_t idx, int64_t count)
+{
+    QPROPS_ASSERT_LT(idx, size_t(p_->streams.size()),
+                    "in Score::removeNoteStreams("
+                     << idx << "," << count << ")");
+    if (count < 0)
+        count = p_->streams.size();
+    while (count && (size_t)p_->streams.size() >= idx)
+    {
+        p_->streams.removeAt(idx);
+        --count;
+    }
+}
 
 
 
@@ -252,6 +265,20 @@ bool Score::Index::isValid() const
         && column() < score()->noteStream(stream()).notes(bar(), row()).length();
 }
 
+bool Score::Index::isRight() const
+{
+    if (!isValid())
+        return false;
+    return column() < getNotes().length();
+}
+
+bool Score::Index::isBottom() const
+{
+    if (!isValid())
+        return false;
+    return row() < getBar().numRows();
+}
+
 bool Score::Index::isInserter() const
 {
     if (p_score == nullptr)
@@ -279,12 +306,12 @@ bool Score::Index::isValid(int s, int b, int r, int c) const
                                 stream()).notes(bar(), row()).length();
 }
 
-bool Score::Index::isStreamStart() const
+bool Score::Index::isStreamLeft() const
 {
     return bar() == 0;
 }
 
-bool Score::Index::isStreamEnd() const
+bool Score::Index::isStreamRight() const
 {
     if (!isValid())
         return false;
@@ -651,19 +678,37 @@ bool Score::Selection::isValid() const
     { return p_from.isValid() && p_to.isValid(); }
 
 bool Score::Selection::isSingleNote() const
-    { return isSingleRow() && isSingleColumn(); }
+    { return isValid() && isSingleRow() && isSingleColumn(); }
 
 bool Score::Selection::isSingleRow() const
-    { return p_from.row() == p_to.row(); }
+    { return isValid() && p_from.row() == p_to.row(); }
 
 bool Score::Selection::isSingleColumn() const
-    { return p_from.column() == p_to.column() && isSingleBar(); }
+    { return isValid() && p_from.column() == p_to.column() && isSingleBar(); }
 
 bool Score::Selection::isSingleBar() const
-    { return p_from.bar() == p_to.bar() && isSingleStream(); }
+    { return isValid() && p_from.bar() == p_to.bar() && isSingleStream(); }
 
 bool Score::Selection::isSingleStream() const
-    { return p_from.stream() == p_to.stream(); }
+    { return isValid() && p_from.stream() == p_to.stream(); }
+
+bool Score::Selection::isCompleteRow() const
+    { return isValid() && p_from.isLeft() && p_to.isRight(); }
+
+bool Score::Selection::isCompleteColumn() const
+    { return isValid() && p_from.isTop() && p_to.isBottom(); }
+
+bool Score::Selection::isCompleteBar() const
+    { return isValid() && p_from.isTop() && p_from.isLeft()
+          && p_to.isBottom() && p_to.isRight(); }
+
+bool Score::Selection::isCompleteStream() const
+    { return isValid() && p_from.isStreamLeft() && p_to.isStreamRight(); }
+
+bool Score::Selection::isCompleteScore() const
+    { return isValid() && p_from.stream() == 0
+            && p_to.stream()+1 == p_from.score()->numNoteStreams(); }
+
 
 bool Score::Selection::contains(const Index &idx) const
 {

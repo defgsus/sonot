@@ -187,7 +187,7 @@ bool SynthDevice::Private::fillBuffer()
             if (curBarTime >= barLength)
             {
                 SONOT_DEBUG_SYNTH("next bar");
-                bool doPause = index.isStreamEnd();
+                bool doPause = index.isStreamRight();
                 size_t numRows = index.numRows();
                 if (!index.nextBar())
                 {

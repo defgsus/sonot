@@ -64,13 +64,13 @@ Notes NoteStream::createDefaultNotes(size_t len) const
     return Notes(std::max(size_t(1), len));
 }
 
-QList<Notes> NoteStream::createDefaultBarRows(size_t len) const
+Bar NoteStream::createDefaultBar(size_t len) const
 {
     size_t c = std::max(size_t(1), numRows());
-    QList<Notes> rows;
+    Bar bar;
     for (size_t i=0; i<c; ++i)
-        rows << createDefaultNotes(len);
-    return rows;
+        bar.append( createDefaultNotes(len) );
+    return bar;
 }
 
 NoteStream NoteStream::createDefaultStream(
@@ -78,7 +78,7 @@ NoteStream NoteStream::createDefaultStream(
 {
     NoteStream s;
     for (size_t i=0; i<std::max(size_t(1), numBars); ++i)
-        s.appendBar( createDefaultBarRows(barLen) );
+        s.appendBar( createDefaultBar(barLen) );
     s.p_props_ = p_props_;
     return s;
 }
@@ -237,24 +237,12 @@ void NoteStream::insertBar(size_t idx, const Notes &b)
 
 
 
-void NoteStream::insertBar(size_t idx, const QList<Notes>& barList)
+void NoteStream::insertBar(size_t idx, const Bar& barIn)
 {
-    if (barList.isEmpty())
-        return;
+    Bar bar(barIn);
 
-    Bar bar;
-    for (auto& b : barList)
-        bar.append( b );
-
-    if (bar.numRows() < numRows())
-    {
-        // append empty bars to insertion
-        for (size_t i=1; i<numRows(); ++i)
-            bar.append( createDefaultNotes() );
-    }
-    else if (bar.numRows() > numRows())
-        // otherwise resize data
-        setNumRows(bar.numRows());
+    if (bar.numRows() != numRows())
+        bar.resize(bar.numRows());
 
     if (idx < numBars())
         p_data_.insert(p_data_.begin() + idx, bar);

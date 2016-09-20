@@ -498,7 +498,7 @@ bool MainWindow::Private::saveScore(const QString& fn)
 Score MainWindow::Private::createNewScore()
 {
     NoteStream n;
-    n.appendBar(n.createDefaultBarRows());
+    n.appendBar(n.createDefaultBar());
 
     Score s;
     s.appendNoteStream(n);

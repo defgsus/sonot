@@ -25,6 +25,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "Score.h"
 
+class QMimeData;
+
 namespace Sonot {
 
 class ScoreEditor : public QObject
@@ -45,10 +47,14 @@ public:
     void setStreamProperties(size_t streamIdx, const QProps::Properties& p);
 
     bool insertNote(const Score::Index&, const Note& n, bool allRows);
-    bool insertBars(const Score::Index&, const QList<Notes>& rows,
+    bool insertBar(const Score::Index&, const Bar& bar,
+                    bool insertAfterIndex = false);
+    bool insertBars(const Score::Index&, const NoteStream& stream,
                     bool insertAfterIndex = false);
     bool insertRow(const Score::Index&, bool insertAfterIndex = false);
     bool insertStream(const Score::Index&, const NoteStream& s,
+                      bool insertAfterIndex = false);
+    bool insertScore(const Score::Index&, const Score& s,
                       bool insertAfterIndex = false);
     bool changeNote(const Score::Index&, const Note& n);
     bool changeBar(const Score::Index&, const Notes& b);
@@ -61,6 +67,10 @@ public:
         The second stream will start with the next Bar.
         Does nothing on the last Bar of a stream. */
     bool splitStream(const Score::Index&);
+
+    /** Pastes the clipboard data, if valid */
+    bool pasteMimeData(const Score::Index&,
+                       const QMimeData*, bool insertAfterIndex = false);
 
 signals:
 

@@ -18,7 +18,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include <QMimeData>
+
 #include "QProps/error.h"
+#include "QProps/JsonInterfaceHelper.h"
 
 #include "ScoreEditor.h"
 #include "Notes.h"
@@ -134,15 +137,32 @@ bool ScoreEditor::insertNote(
     return false;
 }
 
-bool ScoreEditor::insertBars(
-        const Score::Index& idx, const QList<Notes>& rows, bool after)
+bool ScoreEditor::insertBar(
+        const Score::Index& idx, const Bar& bar, bool after)
 {
     SONOT__CHECK_INDEX(idx, false);
     if (NoteStream* stream = p_->getStream(idx))
     {
-        //size_t rows = stream->numRows();
-        stream->insertBar(idx.bar() + (after ? 1 : 0), rows);
-        //if (stream->numRows() != rows)
+        stream->insertBar(idx.bar() + (after ? 1 : 0), bar);
+        emit streamsChanged(IndexList() << idx);
+        emit documentChanged();
+        return true;
+    }
+    return false;
+}
+
+bool ScoreEditor::insertBars(
+        const Score::Index& idx, const NoteStream& stream, bool after)
+{
+    SONOT__CHECK_INDEX(idx, false);
+    if (NoteStream* dst = p_->getStream(idx))
+    {
+        size_t iidx = idx.bar() + (after ? 1 : 0);
+        for (size_t b = 0; b < stream.numBars(); ++b)
+        {
+            dst->insertBar(iidx, stream.bar(b));
+            iidx++;
+        }
         emit streamsChanged(IndexList() << idx);
         emit documentChanged();
         return true;
@@ -171,6 +191,28 @@ bool ScoreEditor::insertStream(
     {
         size_t iidx = idx.stream() + (after ? 1 : 0);
         score()->insertNoteStream(iidx, s);
+
+        IndexList list;
+        for (size_t i = iidx; i < score()->numNoteStreams(); ++i)
+            list << score()->index(i, 0,0,0);
+        emit streamsChanged(list);
+        emit documentChanged();
+        return true;
+    }
+    return false;
+}
+
+bool ScoreEditor::insertScore(
+        const Score::Index& idx, const Score& s, bool after)
+{
+    SONOT__CHECK_INDEX(idx, false);
+    if (idx.stream() < score()->numNoteStreams())
+    {
+        size_t iidx = idx.stream() + (after ? 1 : 0);
+        for (size_t i = 0; i<s.numNoteStreams(); ++i)
+        {
+            score()->insertNoteStream(iidx + i, s.noteStream(i));
+        }
 
         IndexList list;
         for (size_t i = iidx; i < score()->numNoteStreams(); ++i)
@@ -293,7 +335,7 @@ bool ScoreEditor::deleteStream(const Score::Index& idx)
 bool ScoreEditor::splitStream(const Score::Index& idx)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (idx.isStreamEnd())
+    if (idx.isStreamRight())
         return false;
     NoteStream* org = p_->getStream(idx);
     if (!org)
@@ -323,6 +365,52 @@ Notes* ScoreEditor::Private::getBar(const Score::Index& idx)
     SONOT__CHECK_INDEX(idx, nullptr);
     return const_cast<Notes*>(&score_->noteStreams()[idx.stream()]
                             .notes(idx.bar(), idx.row()));
+}
+
+bool ScoreEditor::pasteMimeData(const Score::Index& idx,
+                                const QMimeData* data, bool after)
+{
+    if (!data->hasText())
+        return false;
+    auto doc = QJsonDocument::fromJson(data->data("text/plain"));
+    if (doc.isNull())
+        return false;
+
+    QProps::JsonInterfaceHelper json("ScoreEditor");
+
+    QJsonObject o = doc.object();
+
+    int startRow = o.value("row-start").toInt(-1),
+        endRow = o.value("row-end").toInt(-1),
+        startCol = o.value("col-start").toInt(-1),
+        endCol = o.value("col-end").toInt(-1);
+
+    if (o.contains("bar"))
+    {
+        Bar bar;
+        bar.fromJson( json.expectChildObject(o, "bar") );
+        return insertBar(idx, bar, after);
+    }
+    else if (o.contains("bars"))
+    {
+        NoteStream s;
+        s.fromJson( json.expectChildObject(o, "bars") );
+        return insertBars(idx, s, after);
+    }
+    else if (o.contains("stream"))
+    {
+        NoteStream s;
+        s.fromJson( json.expectChildObject(o, "stream") );
+        return insertStream(idx, s, after);
+    }
+    else if (o.contains("score"))
+    {
+        Score s;
+        s.fromJson( json.expectChildObject(o, "score") );
+        return insertScore(idx, s, after);
+    }
+
+    return false;
 }
 
 

@@ -58,7 +58,7 @@ public:
         The bar will contain this number of silent notes.
         The number of rows will be equal
         to the number of rows in this stream, or at least 1. */
-    QList<Notes> createDefaultBarRows(size_t len = 0) const;
+    Bar createDefaultBar(size_t len = 0) const;
 
     /** Creates a default NoteStream.
         The stream will contain at least one Bar created with
@@ -135,8 +135,8 @@ public:
     void insertBar(size_t idx, const Notes& row);
     void appendBar(const Notes& row) { insertBar(numBars(), row); }
 
-    void insertBar(size_t idx, const QList<Notes>& rows);
-    void appendBar(const QList<Notes>& rows) { insertBar(numBars(), rows); }
+    void insertBar(size_t idx, const Bar& bar);
+    void appendBar(const Bar& bar) { insertBar(numBars(), bar); }
 
     /** Inserts a row of Bars before the given row. */
     void insertRow(size_t row);

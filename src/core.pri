@@ -7,7 +7,8 @@ HEADERS += \
     $$PWD/core/ScoreEditor.h \
     $$PWD/core/Notes.h \
     $$PWD/core/Bar.h \
-    $$PWD/core/KeySignature.h
+    $$PWD/core/KeySignature.h \
+    $$PWD/core/SelectionMimeData.h
 
 SOURCES += \
     src/core/Note.cpp \
@@ -16,4 +17,5 @@ SOURCES += \
     $$PWD/core/ScoreEditor.cpp \
     $$PWD/core/Notes.cpp \
     $$PWD/core/Bar.cpp \
-    $$PWD/core/KeySignature.cpp
+    $$PWD/core/KeySignature.cpp \
+    $$PWD/core/SelectionMimeData.cpp

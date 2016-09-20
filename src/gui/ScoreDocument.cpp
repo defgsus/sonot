@@ -823,7 +823,7 @@ ScoreDocument::Private::createBarItems_Fixed(
         QString anno;
 
         // annotation at stream start
-        if (scoreIdx.isStreamStart())
+        if (scoreIdx.isStreamLeft())
         {
             // stream title
             anno += scoreIdx.getStream().props().get("title").toString();
@@ -838,7 +838,7 @@ ScoreDocument::Private::createBarItems_Fixed(
         }
 
         // tempo indicator
-        if (scoreIdx.isStreamStart() || scoreIdx.isTempoChange())
+        if (scoreIdx.isStreamLeft() || scoreIdx.isTempoChange())
         {
             if (!anno.isEmpty())
                 anno += " ";

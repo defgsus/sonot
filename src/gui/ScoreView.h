@@ -107,6 +107,8 @@ public slots:
     void editAccidentialDown(int steps = 1);
 
     void editSelectNext();
+    void editCopySel();
+    void editPaste(bool after = false);
 
 protected:
 

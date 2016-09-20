@@ -66,10 +66,17 @@ public:
         bool isValid() const;
         bool isValid(int stream, int barIdx, int row, int column) const;
 
+        /** Is at start of row/Notes */
+        bool isLeft() const { return isValid() && column() == 0; }
+        /** Is at end of row/Notes */
+        bool isRight() const;
+        bool isTop() const { return isValid() && row() == 0; }
+        bool isBottom() const;
+
         /** Returns true if the index is pointing into the first
             Bar of a NoteStream */
-        bool isStreamStart() const;
-        bool isStreamEnd() const;
+        bool isStreamLeft() const;
+        bool isStreamRight() const;
 
         /** Returns true if this Bar's tempo is different to previous one's */
         bool isTempoChange() const;
@@ -164,6 +171,11 @@ public:
         bool isSingleColumn() const;
         bool isSingleBar() const;
         bool isSingleStream() const;
+        bool isCompleteRow() const;
+        bool isCompleteColumn() const;
+        bool isCompleteBar() const;
+        bool isCompleteStream() const;
+        bool isCompleteScore() const;
 
         bool operator == (const Selection& o) const
             { return from() == o.from() && to() == o.to(); }
@@ -223,6 +235,7 @@ public:
 
     const QProps::Properties& props() const;
 
+    bool isEmpty() const { return numNoteStreams() == 0; }
     size_t numNoteStreams() const;
     const NoteStream& noteStream(size_t idx) const;
 
@@ -253,6 +266,7 @@ public:
     void appendNoteStream(const NoteStream&);
     void insertNoteStream(size_t idx, const NoteStream&);
     void removeNoteStream(size_t idx);
+    void removeNoteStreams(size_t idx, int64_t count = -1);
 
     void setProperties(const QProps::Properties& p);
     void setTitle(const QString& s) { propsw().set("title", s); }

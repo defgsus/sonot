@@ -28,6 +28,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QPaintEvent>
 #include <QPainter>
 #include <QBrush>
+#include <QClipboard>
+#include <QApplication>
 
 #include "QProps/error.h"
 
@@ -41,6 +43,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/NoteStream.h"
 #include "core/Score.h"
 #include "core/ScoreEditor.h"
+#include "core/SelectionMimeData.h"
 
 namespace Sonot {
 
@@ -334,6 +337,14 @@ QList<QAction*> ScoreView::createEditActions()
     a->setShortcut(Qt::ALT + Qt::Key_S);
     connect(a, &QAction::triggered, [=](){ editSelectNext(); });
 
+    list << (a = new QAction(tr("copy selection"), par));
+    a->setShortcut(Qt::CTRL + Qt::Key_C);
+    connect(a, &QAction::triggered, [=](){ editCopySel(); });
+
+    list << (a = new QAction(tr("paste selection"), par));
+    a->setShortcut(Qt::CTRL + Qt::Key_V);
+    connect(a, &QAction::triggered, [=](){ editPaste(); });
+
     return list;
 }
 
@@ -362,9 +373,9 @@ void ScoreView::editInsertBar(bool after)
         return;
 
     size_t len = p_->cursor.getStream().numNotes(p_->cursor.bar());
-    if (editor()->insertBars(p_->cursor,
-                             p_->cursor.getStream().createDefaultBarRows(len),
-                             after))
+    if (editor()->insertBar(p_->cursor,
+                            p_->cursor.getStream().createDefaultBar(len),
+                            after))
     {
         auto c = p_->cursor.left();
         if (after)
@@ -404,8 +415,8 @@ void ScoreView::editDuplicateBar()
     if (!isAssigned() || !p_->cursor.isValid())
         return;
 
-    auto rows = p_->cursor.getStream().getRows(p_->cursor.bar());
-    if (editor()->insertBars(p_->cursor, rows, true))
+    auto& bar = p_->cursor.getBar();
+    if (editor()->insertBar(p_->cursor, bar, true))
     {
         auto c = p_->cursor.left();
         c.nextBar();
@@ -498,6 +509,8 @@ void ScoreView::editAccidentialDown(int steps)
 
 void ScoreView::editSelectNext()
 {
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
     if (!p_->curSelection.contains(p_->cursor) )
     {
         p_->setSelection(Score::Selection::fromColumn(p_->cursor));
@@ -519,6 +532,24 @@ void ScoreView::editSelectNext()
             p_->setSelection(Score::Selection::fromStream(p_->cursor));
         }
     }
+}
+
+void ScoreView::editCopySel()
+{
+    if (!isAssigned() || !p_->curSelection.isValid())
+        return;
+
+    auto data = SelectionMimeData::fromSelection(p_->curSelection);
+    qApp->clipboard()->setMimeData(data);
+}
+
+void ScoreView::editPaste(bool after)
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+    editor()->pasteMimeData(p_->cursor,
+                            qApp->clipboard()->mimeData(),
+                            after);
 }
 
 // ######################### EVENTS #########################
