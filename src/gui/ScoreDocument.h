@@ -165,6 +165,9 @@ public:
     Score::Index getScoreIndex(const QPointF& documentPos) const;
     ScoreItem* getScoreItem(const Score::Index& i) const;
     ScoreItem* getClosestScoreItem(int pageIdx, const QPointF& pagePos) const;
+    ScoreItem* getLeftScoreItem(const Score::Index& i) const;
+    ScoreItem* getRightScoreItem(int pageIdx, int lineIdx) const;
+
     //void updateScoreIndex(const Score::Index& i);
 
     /** Returns the score index for the next row,
@@ -207,6 +210,8 @@ public:
     void paintScoreItems(QPainter& p, int pageIdx,
                          const QRectF& updateRect) const;
 
+    QList<QRectF> getSelectionRects(int pageIdx,
+                                    const Score::Selection& s) const;
 private:
     struct Private;
     Private* p_;

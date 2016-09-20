@@ -795,7 +795,7 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
                 if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
                 {
                     emit noteEntered(p_->cursor.getNote());
-                    p_->curOctave = p_->cursor.getNote().octaveSpanish();
+                    //p_->curOctave = p_->cursor.getNote().octaveSpanish();
                     p_->updateStatus();
                 }
             break;
@@ -1146,6 +1146,11 @@ void ScoreView::Private::paintScore(
 
     if (curSelection.isValid())
     {
+        QList<QRectF> rects = document->getSelectionRects(
+                    pageIndex, curSelection);
+        for (const auto& r : rects)
+            p->fillRect(r, brushSelection);
+        /*
         auto i1 = document->getScoreItem(curSelection.from()),
              i2 = document->getScoreItem(curSelection.to());
         if (i1 && i2)
@@ -1153,6 +1158,7 @@ void ScoreView::Private::paintScore(
             QRectF r = i1->boundingBox() | i2->boundingBox();
             p->fillRect(r, brushSelection);
         }
+        */
     }
 }
 

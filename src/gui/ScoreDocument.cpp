@@ -352,6 +352,7 @@ ScoreDocument::Index ScoreDocument::docIndexForScoreIndex(
 }
 
 
+
 ScoreDocument::BarItems* ScoreDocument::getBarItems(const Index& idx) const
 {
     auto i = p_->barItemMap.find(idx);
@@ -363,6 +364,34 @@ ScoreItem* ScoreDocument::getScoreItem(const Score::Index &idx) const
 {
     auto i = p_->scoreItemMap.find(idx);
     return i == p_->scoreItemMap.end() ? nullptr : i.value();
+}
+
+ScoreItem* ScoreDocument::getLeftScoreItem(const Score::Index& idx) const
+{
+    auto i = getScoreItem(idx);
+    if (i == nullptr)
+        return i;
+    auto docIdx = i->docIndex();
+    double ma = i->boundingBox().left();
+    for (auto& sp : p_->barItems)
+    {
+        BarItems* items = sp.get();
+        if (items->docIndex.pageIdx() == docIdx.pageIdx()
+         && items->docIndex.lineIdx() == docIdx.lineIdx())
+        {
+            for (ScoreItem& sitem : items->items)
+            {
+                if (sitem.scoreIndex().row() != idx.row())
+                    continue;
+                if (sitem.boundingBox().left() < ma)
+                {
+                    ma = sitem.boundingBox().left();
+                    i = &sitem;
+                }
+            }
+        }
+    }
+    return i;
 }
 
 ScoreDocument::BarItems* ScoreDocument::getBarItems(
@@ -866,7 +895,8 @@ ScoreDocument::Private::createBarItems_Fixed(
             const Notes& b = scoreIdx.getNotes(row);
             for (size_t col=0; col<b.length(); ++col)
             {
-                Note note = scoreIdx.offset(row, col).getNote();
+                Score::Index idx = scoreIdx.offset(row, col);
+                Note note = idx.getNote();
                 //note = keySig.transform(note);
                 if (!note.isValid())
                     continue;
@@ -878,11 +908,11 @@ ScoreDocument::Private::createBarItems_Fixed(
                             y + scoreRect.y(),
                             noteSize, noteSize);
                 items->items.push_back(
-                            ScoreItem(scoreIdx.offset(row, col),
-                                      items->docIndex, rect, note) );
+                            ScoreItem(idx, items->docIndex, rect, note) );
                 scoreItemMap.insert(
                             items->items.back().scoreIndex(),
                             &items->items.back() );
+
             }
         }
 
@@ -918,7 +948,6 @@ ScoreDocument::Private::createBarItems_Fixed(
         barItems.push_back(pit);
 
         barItemMap.insert(items->docIndex, items);
-
 
         // forward index and check for stream change
         size_t curStream = scoreIdx.stream();
@@ -965,6 +994,45 @@ void ScoreDocument::paintScoreItems(QPainter &p, int pageIdx,
             item.paint(p);
         }
     }
+}
+
+QList<QRectF> ScoreDocument::getSelectionRects(int pageIdx,
+                                      const Score::Selection &s) const
+{
+    QList<QRectF> rects;
+
+    auto i1 = getScoreItem(s.from()),
+         i2 = getScoreItem(s.to());
+    if (i1 && i2)
+    {
+        if (i1->docIndex().pageIdx() == i2->docIndex().pageIdx())
+        {
+            if (i1->docIndex().pageIdx() == pageIdx)
+            {
+                if (i1->docIndex().lineIdx() == i2->docIndex().lineIdx())
+                {
+                    rects << (i1->boundingBox() | i2->boundingBox());
+                }
+                else
+                for (int i=i1->docIndex().lineIdx();
+                     i <= i2->docIndex().lineIdx(); ++i)
+                {
+
+                    if (auto leftItem = getLeftScoreItem(s.from()))
+                        rects << (leftItem->boundingBox() | i2->boundingBox());
+                }
+            }
+        }
+    }
+    /*
+    for (auto& sp : p_->barItems)
+    {
+        BarItems* items = sp.get();
+        if (items->docIndex.p_pageIdx != pageIdx)
+            continue;
+    }*/
+
+    return rects;
 }
 
 } // namespace Sonot
