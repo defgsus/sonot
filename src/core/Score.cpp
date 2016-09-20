@@ -438,6 +438,12 @@ Score::Index Score::Index::closest(const Index &i1,
     return d1 < d2 ? i1 : i2;
 }
 
+Score::Index Score::Index::farthestManhatten(const Index &i1,
+                                             const Index &i2) const
+{
+    return closestManhatten(i1, i2) == i1 ? i2 : i1;
+}
+
 Score::Index Score::Index::closestManhatten(const Index &i1,
                                             const Index &i2) const
 {
@@ -628,10 +634,10 @@ bool Score::Index::prevRow()
 // ####################### Selection ##############################
 
 Score::Selection::Selection(const Index& i1, const Index& i2)
-    : p_from    (std::min(i1, i2))
-    , p_to      (std::max(i1, i2))
+    : p_from    (i1)
+    , p_to      (i1)
 {
-
+    unifyWith(i2);
 }
 
 QString Score::Selection::toString() const
@@ -661,11 +667,30 @@ bool Score::Selection::isSingleStream() const
 
 bool Score::Selection::contains(const Index &idx) const
 {
-    return isValid()
-            && idx.stream() >= from().stream() && idx.stream() <= to().stream()
-            && idx.bar() >= from().bar() && idx.bar() <= to().bar()
-            && idx.column() >= from().column() && idx.column() <= to().column()
-            && idx.row() >= from().row() && idx.row() <= to().row();
+    /*if (!isValid() || !idx.isValid())
+        return false;
+
+    return ( idx.stream() >= from().stream() && idx.stream() <= to().stream()
+           && idx.row() >= from().row() && idx.row() <= to().row()
+             );
+    */
+
+    if (!( isValid() && idx.isValid()
+        && idx.stream() >= from().stream() && idx.stream() <= to().stream()
+        && idx.row() >= from().row() && idx.row() <= to().row() ))
+        return false;
+
+    if ((idx.stream() == from().stream() && idx.bar() < from().bar())
+      ||(idx.stream() == to().stream() && idx.bar() > to().bar()))
+        return false;
+
+    if ((idx.stream() == from().stream() && idx.bar() == from().bar()
+         && idx.column() < from().column())
+      ||(idx.stream() == to().stream() && idx.bar() == to().bar()
+         && idx.column() > to().column()))
+        return false;
+
+    return true;
 }
 
 
@@ -677,10 +702,33 @@ void Score::Selection::set(const Index& idx)
 /** expand current selection */
 Score::Selection& Score::Selection::unifyWith(const Index& idx)
 {
-    //qDebug() << toString() << " | " << idx.toString();
-    p_from = std::min(p_from, idx);
-    p_to = std::max(p_to, idx);
-    //qDebug() << "=" << toString();
+    if (!isValid() || !idx.isValid())
+        return *this;
+
+    QPROPS_ASSERT(idx.score() == score(), "in Score::Selection::unifyWith("
+                                          << idx.toString() << ")");
+    p_from = score()->index(
+                std::min(p_from.stream(), idx.stream()),
+                p_from.stream() == idx.stream()
+                    ? std::min(p_from.bar(), idx.bar())
+                    : p_from.stream() < idx.stream()
+                      ? p_from.bar() : idx.bar(),
+                std::min(p_from.row(), idx.row()),
+                p_from.bar() == idx.bar()
+                    ? std::min(p_from.column(), idx.column())
+                    : p_from.bar() < idx.bar()
+                      ? p_from.column() : idx.column() );
+    p_to = score()->index(
+                std::max(p_to.stream(), idx.stream()),
+                p_to.stream() == idx.stream()
+                    ? std::max(p_to.bar(), idx.bar())
+                    : p_to.stream() > idx.stream()
+                      ? p_to.bar() : idx.bar(),
+                std::max(p_to.row(), idx.row()),
+                p_to.bar() == idx.bar()
+                    ? std::max(p_to.column(), idx.column())
+                    : p_to.bar() > idx.bar()
+                      ? p_to.column() : idx.column() );
     return *this;
 }
 
@@ -716,6 +764,13 @@ Score::Selection Score::Selection::fromStream(const Index& i)
     if (!i.isValid())
         return Selection();
     return Selection(i.streamTopLeft(), i.streamBottomRight());
+}
+
+Score::Selection Score::Selection::fromBars(const Selection& sel)
+{
+    if (!sel.isValid())
+        return Selection();
+    return Selection(sel.from().topLeft(), sel.to().bottomRight());
 }
 
 } // namespace Sonot

@@ -111,7 +111,7 @@ struct ScoreView::Private
         lastMouseDownDoc;
     QTransform lastMouseDownMatrix;
 
-    Score::Index cursor, playCursor;
+    Score::Index cursor, playCursor, selStart;
     Score::Selection curSelection;
     int curOctave;
 
@@ -510,14 +510,11 @@ void ScoreView::editSelectNext()
         }
         else
         {
-            if (p_->curSelection.isSingleBar())
+            auto s = Score::Selection::fromBars(p_->curSelection);
+            if (s != p_->curSelection)
             {
-                auto s = Score::Selection::fromBar(p_->cursor);
-                if (s != p_->curSelection)
-                {
-                    p_->setSelection(s);
-                    return;
-                }
+                p_->setSelection(s);
+                return;
             }
             p_->setSelection(Score::Selection::fromStream(p_->cursor));
         }
@@ -603,18 +600,29 @@ void ScoreView::Private::setCursor(
     updateStatus();
     emit p->currentIndexChanged(cursor, oldCursor);
 
-    if (extendSelection)
+    if (cursor.isValid() && extendSelection)
     {
-        if (!curSelection.contains(oldCursor))
-            setSelection(Score::Selection(oldCursor, cursor));
+        if (!selStart.isValid())
+        {
+            // adjust selection after release
+            if (curSelection.contains(oldCursor))
+            {
+                selStart = cursor.farthestManhatten(
+                            curSelection.from(),
+                            curSelection.to());
+                setSelection(Score::Selection(selStart, cursor));
+            }
+            else
+            {
+                // start new selection
+                setSelection(Score::Selection(oldCursor, cursor));
+                selStart = curSelection.from();
+            }
+        }
         else
         {
-            auto c = oldCursor.closestManhatten(
-                                    curSelection.from(),
-                                    curSelection.to()),
-                 f = c == curSelection.from() ? curSelection.to()
-                                              : curSelection.from();
-            setSelection(Score::Selection(cursor, f));
+            // adjust selection without release
+            setSelection(Score::Selection(selStart, cursor));
         }
     }
 }
@@ -622,8 +630,25 @@ void ScoreView::Private::setCursor(
 void ScoreView::Private::setSelection(const Score::Selection& s)
 {
     curSelection = s;
+    if (!s.isValid())
+        selStart = Score::Index();
     /** @todo refine refresh window for Score::Selection */
     p->update();
+    /*
+    QString st;
+    for (int r = 0; r < 4; ++r)
+    {
+        for (int b = 0; b < 4; ++b)
+        {
+            st += "|";
+            for (int c = 0; c < 8; ++c)
+                st += curSelection.contains(p->score()->index(0,b,r,c))
+                    ? "*" : ".";
+        }
+        st += "\n";
+    }
+    qDebug().noquote() << st;
+    */
 }
 
 void ScoreView::Private::clearCursor()
@@ -699,6 +724,8 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         {
             if (cursor.isValid() && cursor != p_->cursor)
             {
+                if (!isShift)
+                    p_->selStart = Score::Index();
                 p_->setCursor(cursor, true, isShift);
             }
             return;

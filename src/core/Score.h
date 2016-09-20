@@ -117,6 +117,7 @@ public:
 
         Index closest(const Index& i1, const Index& i2) const;
         Index closestManhatten(const Index& i1, const Index& i2) const;
+        Index farthestManhatten(const Index& i1, const Index& i2) const;
 
         QString toString() const;
 
@@ -195,6 +196,9 @@ public:
         static Selection fromBar(const Index& idx);
         /** Creates a selection from the whole stream at @p idx */
         static Selection fromStream(const Index& idx);
+        /** Creates a selection containing all full bars of the
+            original selection */
+        static Selection fromBars(const Selection& sel);
 
     private:
         friend class Score;
