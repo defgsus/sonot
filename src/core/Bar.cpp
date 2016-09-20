@@ -150,4 +150,22 @@ void Bar::fromJson(const QJsonObject& o)
     p_->rows.swap( rows );
 }
 
+QString Bar::toString() const
+{
+    QString s;
+    for (size_t row = 0; row < numRows(); ++row)
+    {
+        s += "|";
+        const Notes& n = (*this)[row];
+        for (size_t i=0; i<n.length(); ++i)
+        {
+            if (i != 0)
+                s += " ";
+            s += n.note(i).toString();
+        }
+        s += "\n";
+    }
+    return s;
+}
+
 } // namespace Sonot

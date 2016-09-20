@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace Sonot {
 
+class Bar;
 class Note;
 class Notes;
 class NoteStream;
@@ -86,6 +87,7 @@ public:
         bool operator < (const Index& rhs) const;
 
         const NoteStream& getStream() const;
+        const Bar& getBar() const;
         const Notes& getNotes(int row_offset = 0) const;
         const Note& getNote() const;
         //QList<Notes> getBar(int startRow = -1, int numRows = -1) const;
@@ -98,14 +100,23 @@ public:
             depending on the BPM. */
         double getBarLengthSeconds() const;
 
-        Index topLeft() const { return score()->index(stream(), bar(), 0, 0); }
         Index left() const { return score()->index(stream(), bar(), row(), 0); }
-        Index top() const { return score()->index(stream(), bar(), 0, column()); }
+        Index right() const;
+        Index top() const { return score()->index(stream(), bar(), 0, column());}
+        Index bottom() const;
+        Index topLeft() const { return score()->index(stream(), bar(), 0, 0); }
+        Index bottomRight() const;
+        Index streamTopLeft() const { return score()->index(stream(), 0,0,0); }
+        Index streamBottomRight() const;
+
         Index offset(int row_, int column_) const
             { return score()->index(stream(), bar(),
                                     row()+row_, column()+column_); }
         /** Clamp to valid right stream/row/bar/note */
         Index limitRight() const;
+
+        Index closest(const Index& i1, const Index& i2) const;
+        Index closestManhatten(const Index& i1, const Index& i2) const;
 
         QString toString() const;
 
@@ -138,12 +149,55 @@ public:
     struct Selection
     {
         /** Creates invalid selection */
-        Selection() : p_score(nullptr) { }
+        Selection() { }
+        /** Creates selection from single note */
+        Selection(const Index& idx) : Selection(idx, idx) { }
+        /** Creates selection from smallest to largets index */
+        Selection(const Index& i1, const Index& i2);
 
+        // -- getter --
+
+        bool isValid() const;
+        bool isSingleNote() const;
+        bool isSingleRow() const;
+        bool isSingleColumn() const;
+        bool isSingleBar() const;
+        bool isSingleStream() const;
+
+        bool operator == (const Selection& o) const
+            { return from() == o.from() && to() == o.to(); }
+        bool operator != (const Selection& o) const { return !(*this == o); }
+
+        Score* score() const;
+        const Index& from() const { return p_from; }
+        const Index& to() const { return p_to; }
+
+        bool contains(const Index& idx) const;
+
+        QString toString() const;
+
+        // -- re-select --
+
+        /** clear and reassign single point */
+        void set(const Index& idx);
+        /** Set selection between lowest and highest point */
+        void set(const Index& idx1, const Index& idx2)
+            { set(idx1); unifyWith(idx2); }
+        /** expand current selection */
+        Selection& unifyWith(const Index& idx);
+        Selection unified(const Index& idx) const;
+
+        /** Creates a selection from the Notes line at @p idx */
+        static Selection fromNotes(const Index& idx);
+        /** Creates a selection from the note column at @p idx */
+        static Selection fromColumn(const Index& idx);
+        /** Creates a selection from the whole bar at @p idx */
+        static Selection fromBar(const Index& idx);
+        /** Creates a selection from the whole stream at @p idx */
+        static Selection fromStream(const Index& idx);
 
     private:
         friend class Score;
-        Score* p_score;
         Index p_from, p_to;
     };
 

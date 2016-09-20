@@ -62,6 +62,7 @@ struct ScoreView::Private
         , curOctave             (3)
         , brushBackground       (QColor(155,155,155))
         , brushPageBackground   (QColor(255,255,240))
+        , brushSelection        (QColor(0,100,240, 40))
         , penLayoutFrame        (QColor(0,50,50,30))
         , penScoreRow           (QColor(0,0,0,50))
         , penScoreItem          (QColor(0,0,0))
@@ -77,7 +78,9 @@ struct ScoreView::Private
     void connectEditor(ScoreEditor*);
     void onMatrixChanged();
     void setAction(Action);
-    void setCursor(const Score::Index& cursor, bool ensureVisible);
+    void setCursor(const Score::Index& cursor,
+                   bool ensureVisible, bool extendSelection);
+    void setSelection(const Score::Selection&);
     void clearCursor();
     void updateStatus();
 
@@ -109,12 +112,14 @@ struct ScoreView::Private
     QTransform lastMouseDownMatrix;
 
     Score::Index cursor, playCursor;
+    Score::Selection curSelection;
     int curOctave;
 
     // -- config --
 
     QBrush  brushBackground,
-            brushPageBackground;
+            brushPageBackground,
+            brushSelection;
     QPen    penLayoutFrame,
             penScoreRow,
             penScoreItem,
@@ -325,6 +330,10 @@ QList<QAction*> ScoreView::createEditActions()
     a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_N);
     connect(a, &QAction::triggered, [=](){ editDeleteNote(); });
 
+    list << (a = new QAction(tr("select notes"), par));
+    a->setShortcut(Qt::ALT + Qt::Key_S);
+    connect(a, &QAction::triggered, [=](){ editSelectNext(); });
+
     return list;
 }
 
@@ -341,7 +350,7 @@ void ScoreView::editInsertStream(bool after)
         {
             auto c = score()->index(p_->cursor.stream() + 1, 0,0,0);
             if (c.isValid())
-                p_->setCursor(c, true);
+                p_->setCursor(c, true, false);
         }
     }
 
@@ -361,7 +370,7 @@ void ScoreView::editInsertBar(bool after)
         if (after)
             c.nextBar();
         if (c.isValid())
-            p_->setCursor(c, true);
+            p_->setCursor(c, true, false);
     }
 }
 
@@ -379,7 +388,7 @@ void ScoreView::editDeleteBar()
 
     if (editor()->deleteBar(p_->cursor)
             && !p_->cursor.isValid())
-        p_->setCursor(c, true);
+        p_->setCursor(c, true, false);
 }
 
 void ScoreView::editInsertRow(bool after)
@@ -401,7 +410,7 @@ void ScoreView::editDuplicateBar()
         auto c = p_->cursor.left();
         c.nextBar();
         if (c.isValid())
-            p_->setCursor(c, true);
+            p_->setCursor(c, true, false);
     }
 }
 
@@ -414,11 +423,11 @@ void ScoreView::editDeleteRow()
         return;
 
     auto c = p_->cursor;
-    if (!c.nextRow())
-        c.prevRow();
+    if (!c.prevRow())
+        c.nextRow();
     if (editor()->deleteRow(p_->cursor)
             && !p_->cursor.isValid())
-        p_->setCursor(c, true);
+        p_->setCursor(c, true, false);
 }
 
 void ScoreView::editInsertNote(const Note& n)
@@ -438,12 +447,12 @@ void ScoreView::editDeleteNote()
         return;
 
     auto c = p_->cursor;
-    if (!c.nextNote())
-        c.prevNote();
+    if (!c.prevNote())
+        c.nextNote();
 
     if (editor()->deleteNote(p_->cursor, true)
             && !p_->cursor.isValid())
-        p_->setCursor(c, true);
+        p_->setCursor(c, true, false);
 }
 
 void ScoreView::editSplitStream()
@@ -487,13 +496,42 @@ void ScoreView::editAccidentialDown(int steps)
     editAccidentialUp(-steps);
 }
 
+void ScoreView::editSelectNext()
+{
+    if (!p_->curSelection.contains(p_->cursor) )
+    {
+        p_->setSelection(Score::Selection::fromColumn(p_->cursor));
+    }
+    else
+    {
+        if (p_->curSelection.isSingleColumn())
+        {
+            p_->setSelection(Score::Selection::fromNotes(p_->cursor));
+        }
+        else
+        {
+            if (p_->curSelection.isSingleBar())
+            {
+                auto s = Score::Selection::fromBar(p_->cursor);
+                if (s != p_->curSelection)
+                {
+                    p_->setSelection(s);
+                    return;
+                }
+            }
+            p_->setSelection(Score::Selection::fromStream(p_->cursor));
+        }
+    }
+}
+
 // ######################### EVENTS #########################
 
 void ScoreView::Private::connectEditor(ScoreEditor* editor)
 {
     connect(editor, &ScoreEditor::scoreReset, [=]()
     {
-        setCursor(document->score()->index(0,0,0,0), false);
+        setCursor(document->score()->index(0,0,0,0), false, false);
+        setSelection(Score::Selection());
         setAction(cursor.isValid()
                       ? Private::A_ENTER_NOTE
                       : Private::A_NOTHING);
@@ -543,32 +581,54 @@ void ScoreView::Private::setAction(Action a)
     //qDebug() << "ACTION" << action;
 }
 
-void ScoreView::Private::setCursor(const Score::Index& cur, bool ensureVisible)
+void ScoreView::Private::setCursor(
+        const Score::Index& cur, bool ensureVisible, bool extendSelection)
 {
     if (cur == cursor)
         return;
     if (cursor.isValid())
         p->refreshIndex(cursor);
-    auto oldIdx = cursor;
+    auto oldCursor = cursor;
     cursor = cur;
     if (ensureVisible)
     {
         if (cursor.isValid())
             if (!p->ensureIndexVisible(cursor))
                 p->refreshIndex(cursor);
-        updateStatus();
-        emit p->currentIndexChanged(cursor, oldIdx);
-        return;
     }
-    if (cursor.isValid())
-        p->refreshIndex(cursor);
+    else
+        if (cursor.isValid())
+            p->refreshIndex(cursor);
+
     updateStatus();
-    emit p->currentIndexChanged(cursor, oldIdx);
+    emit p->currentIndexChanged(cursor, oldCursor);
+
+    if (extendSelection)
+    {
+        if (!curSelection.contains(oldCursor))
+            setSelection(Score::Selection(oldCursor, cursor));
+        else
+        {
+            auto c = oldCursor.closestManhatten(
+                                    curSelection.from(),
+                                    curSelection.to()),
+                 f = c == curSelection.from() ? curSelection.to()
+                                              : curSelection.from();
+            setSelection(Score::Selection(cursor, f));
+        }
+    }
+}
+
+void ScoreView::Private::setSelection(const Score::Selection& s)
+{
+    curSelection = s;
+    /** @todo refine refresh window for Score::Selection */
+    p->update();
 }
 
 void ScoreView::Private::clearCursor()
 {
-    setCursor(Score::Index(), false);
+    setCursor(Score::Index(), false, false);
 }
 
 void ScoreView::Private::updateStatus()
@@ -619,18 +679,12 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         switch (e->key())
         {
             case Qt::Key_Left:
-                if (isShift)
-                    cursor.prevBar();
-                else
-                    cursor.prevNote();
+                cursor.prevNote();
             break;
             case Qt::Key_Right:
-                if (isShift)
-                    cursor.nextBar();
-                else
-                    cursor.nextNote();
+                cursor.nextNote();
             break;
-            case Qt::Key_Tab: cursor.nextBar(); break;
+            //case Qt::Key_Tab: cursor.nextBar(); break;
             case Qt::Key_Up:
                 cursor = p_->document->goToPrevRow(cursor); break;
             case Qt::Key_Down:
@@ -645,7 +699,7 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         {
             if (cursor.isValid() && cursor != p_->cursor)
             {
-                p_->setCursor(cursor, true);
+                p_->setCursor(cursor, true, isShift);
             }
             return;
         }
@@ -793,7 +847,7 @@ void ScoreView::mousePressEvent(QMouseEvent* e)
     {
         if (idx.isValid())
         {
-            p_->setCursor(idx, false);
+            p_->setCursor(idx, false, e->modifiers() & Qt::SHIFT);
             p_->setAction(Private::A_ENTER_NOTE);
             return;
         }
@@ -1027,6 +1081,17 @@ void ScoreView::Private::paintScore(
         p->setPen(penCursor);
         p->setBrush(Qt::NoBrush);
         p->drawRect(item->boundingBox());
+    }
+
+    if (curSelection.isValid())
+    {
+        auto i1 = document->getScoreItem(curSelection.from()),
+             i2 = document->getScoreItem(curSelection.to());
+        if (i1 && i2)
+        {
+            QRectF r = i1->boundingBox() | i2->boundingBox();
+            p->fillRect(r, brushSelection);
+        }
     }
 }
 

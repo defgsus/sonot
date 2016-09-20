@@ -106,6 +106,8 @@ public slots:
     void editAccidentialUp(int steps = 1);
     void editAccidentialDown(int steps = 1);
 
+    void editSelectNext();
+
 protected:
 
     void keyPressEvent(QKeyEvent*) override;

@@ -93,6 +93,9 @@ public:
     double barLengthSeconds(size_t barIdx) const;
 
     /** Read reference to @p idx'th Bar */
+    const Bar& bar(size_t barIdx) const;
+
+    /** Read reference to @p row'th Notes in the @p idx'th Bar */
     const Notes& notes(size_t barIdx, size_t row) const;
 
     /** Returns Note from Bar */

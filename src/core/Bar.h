@@ -61,6 +61,8 @@ public:
 
     const Notes& operator[](size_t i) const;
 
+    QString toString() const;
+
     // -- setter --
 
     Iter begin();

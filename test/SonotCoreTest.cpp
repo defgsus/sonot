@@ -38,6 +38,7 @@ public:
 
     static Notes createRandomNotes(size_t length);
     static QList<Notes> createRandomBar(size_t length, size_t rows);
+    static Score createRandomScore(int mi=1, int ma=20);
     static Score createScoreForIndexTest();
 
 private slots:
@@ -54,7 +55,10 @@ private slots:
     void testJsonScore();
     void testScoreIndexNextNote();
     void testScoreIndexPrevNote();
+    void testScoreSelection();
 };
+
+namespace { int randi(int mi, int ma) { return (rand()%(ma-mi)) + mi; } }
 
 Notes SonotCoreTest::createRandomNotes(size_t length)
 {
@@ -246,7 +250,7 @@ void SonotCoreTest::testResize()
     lead to valid positions. */
 void SonotCoreTest::testRandomCursor()
 {
-    for (int iter=0; iter<500; ++iter)
+    for (int iter=0; iter<300; ++iter)
     {
         Score s;
         for (int i=0; i<5 + rand()%20; ++i)
@@ -268,7 +272,7 @@ void SonotCoreTest::testRandomCursor()
         auto c = s.index(0,0,0,0), cprev = c;
         QVERIFY(c.isValid());
 
-        for (int i=0; i<1000; ++i)
+        for (int i=0; i<300; ++i)
         {
             QString cmd;
             try
@@ -363,6 +367,18 @@ void SonotCoreTest::testJsonScore()
     //qDebug() << score2.toJsonString();
 }
 
+Score SonotCoreTest::createRandomScore(int mi, int ma)
+{
+    Score score;
+    for (int i=0; i<9; ++i)
+    {
+        NoteStream s;
+        for (int j=0; j<randi(mi,ma); ++j)
+            s.appendBar( createRandomBar(randi(mi,ma), randi(mi,ma)) );
+        score.appendNoteStream(s);
+    }
+    return score;
+}
 
 Score SonotCoreTest::createScoreForIndexTest()
 {
@@ -455,7 +471,21 @@ void SonotCoreTest::testScoreIndexNextNote()
     QCOMPARE(cnt, 21);
 }
 
+void SonotCoreTest::testScoreSelection()
+{
+    Score score = createRandomScore(2, 20);
 
+    Score::Selection s1(score.index(0,0,0,0));
+
+    QCOMPARE( s1.isSingleNote(), true);
+    QCOMPARE( s1.isSingleStream(), true);
+    QCOMPARE( s1.unified(score.index(1,0,0,0)).isSingleStream(), false);
+    QCOMPARE( s1.unified(score.index(0,0,1,0)).isSingleColumn(), true);
+    QCOMPARE( s1.unified(score.index(0,0,0,1)).isSingleRow(), true);
+
+
+    Score::Selection s2 = Score::Selection::fromBar(s1.from());
+}
 
 
 

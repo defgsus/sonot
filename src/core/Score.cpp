@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "Score.h"
 #include "NoteStream.h"
+#include "Bar.h"
 #include "QProps/JsonInterfaceHelper.h"
 #include "QProps/error.h"
 
@@ -192,7 +193,10 @@ void Score::removeNoteStream(size_t idx)
 }
 
 
-// ----------------------- index ------------------------------
+
+
+
+// ####################### index ##############################
 
 Score::Index Score::index(
         size_t stream, size_t bar, size_t row, size_t column) const
@@ -226,6 +230,10 @@ bool Score::Index::operator == (const Index& rhs) const
 
 bool Score::Index::operator < (const Index& o) const
 {
+    if (!o.isValid())
+        return true;
+    QPROPS_ASSERT(score() == o.score(), "comparing Score::Index from "
+                                        "different scores");
     return p_stream == o.p_stream
              ? p_bar == o.p_bar
                ? p_row == o.p_row
@@ -304,6 +312,12 @@ const NoteStream& Score::Index::getStream() const
     return score()->noteStream(stream());
 }
 
+const Bar& Score::Index::getBar() const
+{
+    QPROPS_ASSERT(isValid(), "in Score::Index::getBar()");
+    return score()->noteStream(stream()).bar(bar());
+}
+
 const Notes& Score::Index::getNotes(int row_) const
 {
     row_ += row();
@@ -362,6 +376,85 @@ namespace {
     {
         return x < end ? x : end > 0 ? end - 1 : 0;
     }
+}
+
+Score::Index Score::Index::right() const
+{
+    QPROPS_ASSERT(isValid(), "in Score::Index::right()");
+    auto& b = getBar();
+    int len = b[row()].length(),
+        col = get_limit(len, len);
+    return score()->index(stream(), bar(), row(), col);
+}
+
+Score::Index Score::Index::bottom() const
+{
+    QPROPS_ASSERT(isValid(), "in Score::Index::bottom()");
+    auto& b = getBar();
+    int row = get_limit(b.numRows(), b.numRows());
+    return score()->index(stream(), bar(), row, column());
+}
+
+Score::Index Score::Index::bottomRight() const
+{
+    QPROPS_ASSERT(isValid(), "in Score::Index::bottomRight()");
+    auto& b = getBar();
+    int row = get_limit(b.numRows(), b.numRows()),
+        len = b[row].length(),
+        col = get_limit(len, len);
+    return score()->index(stream(), bar(), row, col);
+}
+
+Score::Index Score::Index::streamBottomRight() const
+{
+    QPROPS_ASSERT(isValid(), "in Score::Index::streamBottomRight()");
+    auto& s = getStream();
+    int bar = get_limit(s.numBars(), s.numBars());
+    auto& b = s.bar(bar);
+    int row = get_limit(b.numRows(), b.numRows()),
+        len = b[row].length(),
+        col = get_limit(len, len);
+    return score()->index(stream(), bar, row, col);
+}
+
+Score::Index Score::Index::closest(const Index &i1,
+                                   const Index &i2) const
+{
+    int64_t
+    d1 = std::abs((int64_t)stream() - (int64_t)i1.stream()),
+    d2 = std::abs((int64_t)stream() - (int64_t)i2.stream());
+    if (d1 < d2) return i1;
+    if (d2 < d1) return i2;
+    d1 = std::abs((int64_t)bar() - (int64_t)i1.bar());
+    d2 = std::abs((int64_t)bar() - (int64_t)i2.bar());
+    if (d1 < d2) return i1;
+    if (d2 < d1) return i2;
+    d1 = std::abs((int64_t)row() - (int64_t)i1.row());
+    d2 = std::abs((int64_t)row() - (int64_t)i2.row());
+    if (d1 < d2) return i1;
+    if (d2 < d1) return i2;
+    d1 = std::abs((int64_t)column() - (int64_t)i1.column());
+    d2 = std::abs((int64_t)column() - (int64_t)i2.column());
+    return d1 < d2 ? i1 : i2;
+}
+
+Score::Index Score::Index::closestManhatten(const Index &i1,
+                                            const Index &i2) const
+{
+    int64_t
+    d1 = std::abs((int64_t)stream() - (int64_t)i1.stream()),
+    d2 = std::abs((int64_t)stream() - (int64_t)i2.stream());
+    if (d1 < d2) return i1;
+    if (d2 < d1) return i2;
+    d1 = std::abs((int64_t)bar() - (int64_t)i1.bar());
+    d2 = std::abs((int64_t)bar() - (int64_t)i2.bar());
+    if (d1 < d2) return i1;
+    if (d2 < d1) return i2;
+    d1 = std::abs((int64_t)row() - (int64_t)i1.row());
+    d2 = std::abs((int64_t)row() - (int64_t)i2.row());
+    d1 += std::abs((int64_t)column() - (int64_t)i1.column());
+    d2 += std::abs((int64_t)column() - (int64_t)i2.column());
+    return d1 < d2 ? i1 : i2;
 }
 
 Score::Index Score::Index::limitRight() const
@@ -528,6 +621,101 @@ bool Score::Index::prevRow()
     --p_row;
     p_column = get_limit(p_column, st.notes(bar(), row()).length());
     return true;
+}
+
+
+
+// ####################### Selection ##############################
+
+Score::Selection::Selection(const Index& i1, const Index& i2)
+    : p_from    (std::min(i1, i2))
+    , p_to      (std::max(i1, i2))
+{
+
+}
+
+QString Score::Selection::toString() const
+{
+    return QString("(%1 %2)").arg(p_from.toString()).arg(p_to.toString());
+}
+
+Score* Score::Selection::score() const { return p_from.score(); }
+
+bool Score::Selection::isValid() const
+    { return p_from.isValid() && p_to.isValid(); }
+
+bool Score::Selection::isSingleNote() const
+    { return isSingleRow() && isSingleColumn(); }
+
+bool Score::Selection::isSingleRow() const
+    { return p_from.row() == p_to.row(); }
+
+bool Score::Selection::isSingleColumn() const
+    { return p_from.column() == p_to.column() && isSingleBar(); }
+
+bool Score::Selection::isSingleBar() const
+    { return p_from.bar() == p_to.bar() && isSingleStream(); }
+
+bool Score::Selection::isSingleStream() const
+    { return p_from.stream() == p_to.stream(); }
+
+bool Score::Selection::contains(const Index &idx) const
+{
+    return isValid()
+            && idx.stream() >= from().stream() && idx.stream() <= to().stream()
+            && idx.bar() >= from().bar() && idx.bar() <= to().bar()
+            && idx.column() >= from().column() && idx.column() <= to().column()
+            && idx.row() >= from().row() && idx.row() <= to().row();
+}
+
+
+void Score::Selection::set(const Index& idx)
+{
+    p_from = p_to = idx;
+}
+
+/** expand current selection */
+Score::Selection& Score::Selection::unifyWith(const Index& idx)
+{
+    //qDebug() << toString() << " | " << idx.toString();
+    p_from = std::min(p_from, idx);
+    p_to = std::max(p_to, idx);
+    //qDebug() << "=" << toString();
+    return *this;
+}
+
+Score::Selection Score::Selection::unified(const Index& idx) const
+{
+    auto s = *this;
+    return s.unifyWith(idx);
+}
+
+Score::Selection Score::Selection::fromNotes(const Index& i)
+{
+    if (!i.isValid())
+        return Selection();
+    return Selection(i.left(), i.right());
+}
+
+Score::Selection Score::Selection::fromColumn(const Index& i)
+{
+    if (!i.isValid())
+        return Selection();
+    return Selection(i.top(), i.bottom());
+}
+
+Score::Selection Score::Selection::fromBar(const Index& i)
+{
+    if (!i.isValid())
+        return Selection();
+    return Selection(i.topLeft(), i.bottomRight());
+}
+
+Score::Selection Score::Selection::fromStream(const Index& i)
+{
+    if (!i.isValid())
+        return Selection();
+    return Selection(i.streamTopLeft(), i.streamBottomRight());
 }
 
 } // namespace Sonot
