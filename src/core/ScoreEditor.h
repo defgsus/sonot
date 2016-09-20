@@ -94,6 +94,8 @@ signals:
     void barsDeleted(const IndexList&);
     void notesDeleted(const IndexList&);
 
+    void pasted(const Score::Selection&);
+
 public slots:
 private:
     struct Private;

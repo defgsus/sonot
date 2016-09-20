@@ -41,7 +41,9 @@ struct ScoreEditor::Private
     /** Returns writeable NoteStream */
     NoteStream* getStream(const Score::Index& i);
     /** Returns writeable Bar */
-    Notes* getBar(const Score::Index& i);
+    Bar* getBar(const Score::Index& i);
+    /** Returns writeable Notes */
+    Notes* getNotes(const Score::Index& i);
 
     ScoreEditor* p;
 
@@ -102,7 +104,7 @@ bool ScoreEditor::insertNote(
     SONOT__CHECK_INDEX(idx, false);
     if (!allRows)
     {
-        if (Notes* bar = p_->getBar(idx))
+        if (Notes* bar = p_->getNotes(idx))
         {
             bar->insertNote(idx.column(), n);
             emit barsChanged(IndexList() << idx);
@@ -121,7 +123,7 @@ bool ScoreEditor::insertNote(
                                     i,
                                     idx.column());
             x = x.limitRight();
-            if (Notes* bar = p_->getBar(x))
+            if (Notes* bar = p_->getNotes(x))
             {
                 bar->insertNote(idx.column(), n);
                 changed = true;
@@ -241,7 +243,7 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
 bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (Notes* bar = p_->getBar(idx))
+    if (Notes* bar = p_->getNotes(idx))
     {
         bar->setNote(idx.column(), n);
         emit noteValuesChanged(IndexList() << idx);
@@ -254,7 +256,7 @@ bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
 bool ScoreEditor::changeBar(const Score::Index& idx, const Notes& b)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (Notes* bar = p_->getBar(idx))
+    if (Notes* bar = p_->getNotes(idx))
     {
         *bar = b;
         emit barsChanged(IndexList() << idx);
@@ -267,7 +269,7 @@ bool ScoreEditor::changeBar(const Score::Index& idx, const Notes& b)
 bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (Notes* bar = p_->getBar(idx))
+    if (Notes* bar = p_->getNotes(idx))
     {
         IndexList list;
         if (!allRows)
@@ -283,12 +285,12 @@ bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
             {
                 auto x = score()->index(idx.stream(), idx.bar(),
                                         i, idx.column());
-                if (p_->getBar(x))
+                if (p_->getNotes(x))
                     list << x;
             }
             emit notesAboutToBeDeleted(list);
             for (auto& x : list)
-            if (Notes* b = p_->getBar(x))
+            if (Notes* b = p_->getNotes(x))
             {
                 b->removeNote(x.column());
             }
@@ -360,7 +362,14 @@ NoteStream* ScoreEditor::Private::getStream(const Score::Index& idx)
     return const_cast<NoteStream*>(&score_->noteStreams()[idx.stream()]);
 }
 
-Notes* ScoreEditor::Private::getBar(const Score::Index& idx)
+Bar* ScoreEditor::Private::getBar(const Score::Index& idx)
+{
+    SONOT__CHECK_INDEX(idx, nullptr);
+    return const_cast<Bar*>(&score_->noteStreams()[idx.stream()]
+                            .bar(idx.bar()));
+}
+
+Notes* ScoreEditor::Private::getNotes(const Score::Index& idx)
 {
     SONOT__CHECK_INDEX(idx, nullptr);
     return const_cast<Notes*>(&score_->noteStreams()[idx.stream()]
@@ -380,22 +389,93 @@ bool ScoreEditor::pasteMimeData(const Score::Index& idx,
 
     QJsonObject o = doc.object();
 
-    int startRow = o.value("row-start").toInt(-1),
-        endRow = o.value("row-end").toInt(-1),
-        startCol = o.value("col-start").toInt(-1),
-        endCol = o.value("col-end").toInt(-1);
-
     if (o.contains("bar"))
     {
         Bar bar;
         bar.fromJson( json.expectChildObject(o, "bar") );
-        return insertBar(idx, bar, after);
+
+        int startRow = o.value("row-start").toInt(-1),
+            endRow = o.value("row-end").toInt(-1),
+            startCol = o.value("col-start").toInt(-1),
+            endCol = o.value("col-end").toInt(-1);
+        QPROPS_ASSERT(startRow < 0 || endRow >= 0, "range not fully set");
+        QPROPS_ASSERT(startCol < 0 || endCol >= 0, "range not fully set");
+        qDebug() << startRow << endRow << startCol << endCol;
+        if (startRow >= 0 && endRow >= 0
+         && startCol >= 0 && endCol >= 0)
+        {
+            QPROPS_ASSERT_LT((size_t)startRow, bar.numRows(), "");
+            QPROPS_ASSERT_LT((size_t)endRow, bar.numRows(), "");
+            Bar* dst = p_->getBar(idx);
+            if (!dst)
+                return false;
+            int maRow = -1, maCol = -1;
+            for (int r=startRow; r<=endRow; ++r)
+            {
+                int row = idx.row() + r - startRow;
+                if (row >= 0 && (size_t)row < dst->numRows())
+                {
+                    QPROPS_ASSERT_LT((size_t)startCol, bar[r].length(), "");
+                    QPROPS_ASSERT_LT((size_t)endCol, bar[r].length(), "");
+                    maRow = std::max(maRow, row);
+                    Notes n = (*dst)[row];
+                    for (int c=startCol; c<=endCol; ++c)
+                    {
+                        int col = idx.column() + c - startCol;
+                        if (col >= 0 && (size_t)col < n.length())
+                        {
+                            maCol = std::max(maCol, col);
+                            n.setNote(col, bar[r].note(c));
+                        }
+                    }
+                    dst->setNotes(row, n);
+                }
+            }
+            if (maRow >= 0 && maCol >= 0)
+            {
+                emit barsChanged(IndexList() << idx);
+                emit documentChanged();
+                emit pasted(Score::Selection(
+                                idx, score()->index(idx.stream(),
+                                                    idx.bar(), maRow, maCol)));
+                return true;
+            }
+            return false;
+        }
+        else
+        {
+            if (insertBar(idx, bar, after))
+            {
+                auto k = idx;
+                if (after)
+                    k.nextBar();
+                if (k.isValid())
+                {
+                    auto i1 = Score::Selection::fromBar(k);
+                    if (i1.isValid())
+                        emit pasted(i1);
+                }
+                return true;
+            }
+            return false;
+        }
+
     }
     else if (o.contains("bars"))
     {
         NoteStream s;
         s.fromJson( json.expectChildObject(o, "bars") );
-        return insertBars(idx, s, after);
+        if (insertBars(idx, s, after))
+        {
+            auto i1 = idx.streamTopLeft();
+            if (after)
+                i1.nextStream();
+            auto s1 = Score::Selection::fromStream(i1);
+            if (s1.isValid())
+                emit pasted(s1);
+            return true;
+        }
+        return false;
     }
     else if (o.contains("stream"))
     {

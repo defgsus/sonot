@@ -45,13 +45,10 @@ SelectionMimeData* SelectionMimeData::fromSelection(
     if (s.isSingleBar())
     {
         o.insert("bar", s.from().getBar().toJson());
-        if (!s.isCompleteRow())
+        if (!s.isCompleteRow() || !s.isCompleteColumn())
         {
             o.insert("col-start", (int)s.from().column());
             o.insert("col-end", (int)s.to().column());
-        }
-        if (!s.isCompleteColumn())
-        {
             o.insert("row-start", (int)s.from().row());
             o.insert("row-end", (int)s.to().row());
         }

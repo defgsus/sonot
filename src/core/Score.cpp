@@ -269,14 +269,14 @@ bool Score::Index::isRight() const
 {
     if (!isValid())
         return false;
-    return column() < getNotes().length();
+    return column() + 1 == getNotes().length();
 }
 
 bool Score::Index::isBottom() const
 {
     if (!isValid())
         return false;
-    return row() < getBar().numRows();
+    return row() + 1 == getBar().numRows();
 }
 
 bool Score::Index::isInserter() const

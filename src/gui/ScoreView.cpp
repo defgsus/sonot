@@ -593,7 +593,10 @@ void ScoreView::Private::connectEditor(ScoreEditor* editor)
     {
         p->update();
     });
-
+    connect(editor, &ScoreEditor::pasted, [=](const Score::Selection& sel)
+    {
+        setSelection(sel);
+    });
 }
 
 void ScoreView::Private::setAction(Action a)
