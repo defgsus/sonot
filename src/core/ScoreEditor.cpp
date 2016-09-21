@@ -76,6 +76,10 @@ Score* ScoreEditor::score() const { return p_->score_; }
      "invalid index" << i__.toString() << "used with ScoreEditor"); \
     if (!i__.isValid() || i__.score() != score()) return ret__;
 
+#define SONOT__CHECK_SELECTION(i__, ret__) \
+    SONOT__CHECK_INDEX(i__.from(), ret__); \
+    SONOT__CHECK_INDEX(i__.to(), ret__);
+
 
 void ScoreEditor::setScore(const Score& s)
 {
@@ -243,9 +247,9 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
 bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (Notes* bar = p_->getNotes(idx))
+    if (Notes* notes = p_->getNotes(idx))
     {
-        bar->setNote(idx.column(), n);
+        notes->setNote(idx.column(), n);
         emit noteValuesChanged(IndexList() << idx);
         emit documentChanged();
         return true;
@@ -265,6 +269,25 @@ bool ScoreEditor::changeBar(const Score::Index& idx, const Notes& b)
     }
     return false;
 }
+
+bool ScoreEditor::transpose(const Score::Selection& sel, int steps)
+{
+    SONOT__CHECK_SELECTION(sel, false);
+    if (steps == 0)
+        return false;
+    auto indices = sel.containedIndices();
+    if (indices.isEmpty())
+        return false;
+    for (Score::Index& idx : indices)
+    {
+        idx.setNote( idx.getNote().transposed(steps) );
+    }
+    emit noteValuesChanged(indices);
+    emit documentChanged();
+    return true;
+}
+
+
 
 bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
 {

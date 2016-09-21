@@ -129,6 +129,12 @@ const Bar& NoteStream::bar(size_t idx) const
     return p_data_[idx];
 }
 
+Bar& NoteStream::bar(size_t idx)
+{
+    QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");
+    return p_data_[idx];
+}
+
 const Notes& NoteStream::notes(size_t idx, size_t row) const
 {
     QPROPS_ASSERT_LT(idx, numBars(), "in NoteStream::bar()");

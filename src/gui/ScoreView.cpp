@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QBrush>
 #include <QClipboard>
 #include <QApplication>
+#include <QMenu>
 
 #include "QProps/error.h"
 
@@ -147,6 +148,7 @@ ScoreView::~ScoreView()
     delete p_;
 }
 
+bool ScoreView::isSelection() const { return p_->curSelection.isValid(); }
 const Score* ScoreView::score() const
     { return p_->document ? p_->document->score() : nullptr; }
 ScoreDocument* ScoreView::scoreDocument() const { return p_->document; }
@@ -285,67 +287,67 @@ QRectF ScoreView::mapToDocument(const QRect& r)
 
 // ##################### EDIT ACTIONS #############################
 
-QList<QAction*> ScoreView::createEditActions()
+void ScoreView::createEditActions(QMenu* menu)
 {
-    auto par = this;
     QAction* a;
-    QList<QAction*> list;
-
-    list << (a = new QAction(tr("insert new part"), par));
+    a = menu->addAction(tr("insert new part"));
     //a->setShortcut(Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertStream(false); });
 
-    list << (a = new QAction(tr("insert new part (after bar)"), par));
+    a = menu->addAction(tr("insert new part (after bar)"));
     a->setShortcut(Qt::ALT + Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertStream(true); });
 
-    list << (a = new QAction(tr("insert bar"), par));
+    a = menu->addAction(tr("insert bar"));
     a->setShortcut(Qt::ALT + Qt::Key_B);
     connect(a, &QAction::triggered, [=](){ editInsertBar(false); });
 
-    list << (a = new QAction(tr("insert row"), par));
+    a = menu->addAction(tr("insert row"));
     a->setShortcut(Qt::ALT + Qt::Key_R);
     connect(a, &QAction::triggered, [=](){ editInsertRow(false); });
 
-    list << (a = new QAction(tr("insert note"), par));
+    a = menu->addAction(tr("insert note"));
     a->setShortcut(Qt::ALT + Qt::Key_N);
     connect(a, &QAction::triggered, [=](){ editInsertNote(); });
 
-    list << (a = new QAction(tr("duplicate bar"), par));
+    a = menu->addAction(tr("duplicate bar"));
     a->setShortcut(Qt::ALT + Qt::Key_D);
     connect(a, &QAction::triggered, [=](){ editDuplicateBar(); });
 
-    list << (a = new QAction(tr("split part"), par));
+    a = menu->addAction(tr("split part"));
     a->setStatusTip(tr("Splits the current part into two, "
                        "after the current bar"));
     //a->setShortcut(Qt::);
     connect(a, &QAction::triggered, [=](){ editSplitStream(); });
 
-    list << (a = new QAction(tr("delete bar"), par));
-    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_B);
-    connect(a, &QAction::triggered, [=](){ editDeleteBar(); });
+    menu->addSeparator();
 
-    list << (a = new QAction(tr("delete row"), par));
-    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_R);
-    connect(a, &QAction::triggered, [=](){ editDeleteRow(); });
-
-    list << (a = new QAction(tr("delete note"), par));
-    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_N);
-    connect(a, &QAction::triggered, [=](){ editDeleteNote(); });
-
-    list << (a = new QAction(tr("select notes"), par));
+    a = menu->addAction(tr("select notes"));
     a->setShortcut(Qt::ALT + Qt::Key_S);
     connect(a, &QAction::triggered, [=](){ editSelectNext(); });
 
-    list << (a = new QAction(tr("copy selection"), par));
+    a = menu->addAction(tr("copy selection"));
     a->setShortcut(Qt::CTRL + Qt::Key_C);
     connect(a, &QAction::triggered, [=](){ editCopySel(); });
 
-    list << (a = new QAction(tr("paste selection"), par));
+    a = menu->addAction(tr("paste selection"));
     a->setShortcut(Qt::CTRL + Qt::Key_V);
     connect(a, &QAction::triggered, [=](){ editPaste(); });
 
-    return list;
+    menu->addSeparator();
+
+    a = menu->addAction(tr("delete bar"));
+    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_B);
+    connect(a, &QAction::triggered, [=](){ editDeleteBar(); });
+
+    a = menu->addAction(tr("delete row"));
+    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_R);
+    connect(a, &QAction::triggered, [=](){ editDeleteRow(); });
+
+    a = menu->addAction(tr("delete note"));
+    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_N);
+    connect(a, &QAction::triggered, [=](){ editDeleteNote(); });
+
 }
 
 void ScoreView::editInsertStream(bool after)
@@ -477,11 +479,18 @@ void ScoreView::editTransposeUp(int steps)
 {
     if (!isAssigned() || !p_->cursor.isValid())
         return;
-    Note n = p_->cursor.getNote();
-    if (n.isNote())
+    if (!isSelection())
     {
-        n.transpose(steps);
-        editor()->changeNote(p_->cursor, n);
+        Note n = p_->cursor.getNote();
+        if (n.isNote())
+        {
+            n.transpose(steps);
+            editor()->changeNote(p_->cursor, n);
+        }
+    }
+    else
+    {
+        editor()->transpose(p_->curSelection, steps);
     }
 }
 
@@ -529,7 +538,10 @@ void ScoreView::editSelectNext()
                 p_->setSelection(s);
                 return;
             }
-            p_->setSelection(Score::Selection::fromStream(p_->cursor));
+            s = Score::Selection::fromStream(p_->cursor);
+            if (s == p_->curSelection)
+                s = Score::Selection();
+            p_->setSelection(s);
         }
     }
 }
@@ -595,6 +607,7 @@ void ScoreView::Private::connectEditor(ScoreEditor* editor)
     });
     connect(editor, &ScoreEditor::pasted, [=](const Score::Selection& sel)
     {
+        setCursor(sel.from(), true, false);
         setSelection(sel);
     });
 }
@@ -786,13 +799,29 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
                     editInsertBar(true);
             break;
 
-            case '+':
             case '-':
+            case '+':
                 if (e->key() == '+')
+                    editTransposeUp();
+                else
+                    editTransposeDown();
+                if (!isSelection() && p_->cursor.isValid()
+                        && p_->cursor.getNote().isNote())
+                {
+                    emit noteEntered(p_->cursor.getNote());
+                    //p_->curOctave = p_->cursor.getNote().octaveSpanish();
+                    p_->updateStatus();
+                }
+            break;
+
+            case '8':
+            case '9':
+                if (e->key() == '9')
                     editAccidentialUp();
                 else
                     editAccidentialDown();
-                if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
+                if (!isSelection() && p_->cursor.isValid()
+                        && p_->cursor.getNote().isNote())
                 {
                     emit noteEntered(p_->cursor.getNote());
                     //p_->curOctave = p_->cursor.getNote().octaveSpanish();

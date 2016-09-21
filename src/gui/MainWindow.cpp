@@ -236,7 +236,7 @@ void MainWindow::Private::createMenu()
     });
 
     menu = menuEdit = p->menuBar()->addMenu(tr("Edit"));
-    menu->addActions( scoreView->createEditActions() );
+    scoreView->createEditActions(menu);
 
     menu = p->menuBar()->addMenu(tr("Playback"));
 

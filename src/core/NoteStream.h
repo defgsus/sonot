@@ -119,6 +119,9 @@ public:
 
     void clear() { p_data_.clear(); }
 
+    /** Write-reference to @p idx'th Bar */
+    Bar& bar(size_t barIdx);
+
     /** Overwrite specific Note from Bar */
     void setNote(size_t barIdx, size_t row, size_t column, const Note& n);
 

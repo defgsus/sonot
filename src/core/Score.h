@@ -128,6 +128,10 @@ public:
 
         QString toString() const;
 
+        // --- setters ---
+
+        void setNote(const Note&);
+
         // --- iterators ---
 
         bool nextStream();
@@ -186,6 +190,8 @@ public:
         const Index& to() const { return p_to; }
 
         bool contains(const Index& idx) const;
+
+        QList<Index> containedIndices() const;
 
         QString toString() const;
 
@@ -261,7 +267,7 @@ public:
     void clearProperties();
     void clearScore();
 
-
+    NoteStream& noteStream(size_t idx);
     void setNoteStream(size_t idx, const NoteStream&);
     void appendNoteStream(const NoteStream&);
     void insertNoteStream(size_t idx, const NoteStream&);

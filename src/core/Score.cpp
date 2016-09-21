@@ -144,6 +144,12 @@ const NoteStream& Score::noteStream(size_t idx) const
     return p_->streams.at(idx);
 }
 
+NoteStream& Score::noteStream(size_t idx)
+{
+    QPROPS_ASSERT_LT(idx, size_t(p_->streams.size()), "in Score::noteStream()");
+    return p_->streams[idx];
+}
+
 const QList<NoteStream>& Score::noteStreams() const
 {
     return p_->streams;
@@ -656,6 +662,15 @@ bool Score::Index::prevRow()
     return true;
 }
 
+// ------- setter --------
+
+void Score::Index::setNote(const Note& n)
+{
+    QPROPS_ASSERT(isValid(), "in Score::Index::setNote()");
+    score()->noteStream(stream())
+             .bar(bar()).notes(row()).setNote(column(), n);
+}
+
 
 
 // ####################### Selection ##############################
@@ -738,6 +753,29 @@ bool Score::Selection::contains(const Index &idx) const
     return true;
 }
 
+QList<Score::Index> Score::Selection::containedIndices() const
+{
+    QList<Index> list;
+    if (!isValid())
+        return list;
+    for (size_t rw=from().row(); rw<=to().row(); ++rw)
+    {
+        Index cursor = score()->index(from().stream(),
+                                      from().bar(),
+                                      rw,
+                                      from().column());
+        while (cursor.isValid())
+        {
+            list << cursor;
+            if (cursor.stream() == to().stream()
+             && cursor.bar() == to().bar()
+             && cursor.column() == to().column())
+                break;
+            cursor.nextNote();
+        }
+    }
+    return list;
+}
 
 void Score::Selection::set(const Index& idx)
 {

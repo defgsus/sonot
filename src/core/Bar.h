@@ -59,6 +59,7 @@ public:
     ConstIter begin() const;
     ConstIter end() const;
 
+    const Notes& notes(size_t i) const { return (*this)[i]; }
     const Notes& operator[](size_t i) const;
 
     QString toString() const;
@@ -75,6 +76,7 @@ public:
     void insert(size_t idx, const Notes& n);
     void remove(size_t idx);
 
+    Notes& notes(size_t i) { return (*this)[i]; }
     Notes& operator[](size_t i);
 
 private:

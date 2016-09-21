@@ -26,6 +26,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/Score.h"
 #include "core/Note.h"
 
+class QMenu;
+
 namespace Sonot {
 
 class Note;
@@ -42,6 +44,7 @@ public:
     // ----- getter -----
 
     bool isAssigned() const { return scoreDocument() != nullptr; }
+    bool isSelection() const;
 
     const Score* score() const;
     ScoreDocument* scoreDocument() const;
@@ -51,7 +54,7 @@ public:
     QRect mapFromDocument(const QRectF& docSpace);
     QRectF mapToDocument(const QRect& widgetSpace);
 
-    QList<QAction*> createEditActions();
+    void createEditActions(QMenu*);
 
     // ----- setter -----
 

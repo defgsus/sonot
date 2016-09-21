@@ -63,6 +63,8 @@ public:
     bool deleteRow(const Score::Index&);
     bool deleteStream(const Score::Index&);
 
+    bool transpose(const Score::Selection&, int steps);
+
     /** Splits a stream at the given Bar.
         The second stream will start with the next Bar.
         Does nothing on the last Bar of a stream. */
@@ -94,6 +96,8 @@ signals:
     void barsDeleted(const IndexList&);
     void notesDeleted(const IndexList&);
 
+    /** Stuff has been pasted (notes, bars, streams).
+        The selection contains the actual bounds */
     void pasted(const Score::Selection&);
 
 public slots:
