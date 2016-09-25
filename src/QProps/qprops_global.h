@@ -29,4 +29,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #  define QPROPS_SHARED_EXPORT Q_DECL_IMPORT
 #endif
 
+#define QPROPS_32_BIT
+
 #endif // QPROPS_GLOBAL_H

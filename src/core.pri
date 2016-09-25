@@ -1,6 +1,5 @@
 
 HEADERS += \
-    src/io/error.h \
     src/core/Note.h \
     src/core/NoteStream.h \
     src/core/Score.h \

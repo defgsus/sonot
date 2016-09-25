@@ -38,7 +38,8 @@ namespace QProps {
 /** Collection of helper functions for json value conversion.
     Most functions throw QProps::Exception with the className
     defined in the constructor */
-class QPROPS_SHARED_EXPORT JsonInterfaceHelper
+class // QPROPS_SHARED_EXPORT XXX not working yet
+        JsonInterfaceHelper
 {
 public:
 
