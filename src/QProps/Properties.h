@@ -263,7 +263,7 @@ public:
     int getSubType(const QString& id) const;
 
     /** Returns true, when there is a property named @p id */
-    bool has(const QString& id) const { return p_map_.contains(id); }
+    bool contains(const QString& id) const { return p_map_.contains(id); }
 
     /** Returns the default value for the property, or an invalid QVariant */
     bool hasDefault(const QString& id) const

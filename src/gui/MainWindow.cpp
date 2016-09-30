@@ -517,7 +517,20 @@ QString MainWindow::getScoreFilename(bool forSave)
         fn = QFileDialog::getOpenFileName(this, tr("load score"),
                                  dir, filter, &filter);
     if (!fn.isEmpty() && !fn.endsWith(".sonot.json"))
+    {
         fn.append( ".sonot.json" );
+        if (forSave && QFileInfo(fn).exists())
+        {
+            int r = QMessageBox::question(this, tr("Replace score"),
+                    tr("The file %1 already exists\n").arg(fn),
+                    tr("Change name"), tr("Overwrite"), tr("Cancel"));
+            if (r == 0)
+                return getScoreFilename(true);
+            if (r == 1)
+                return fn;
+            return QString();
+        }
+    }
     return fn;
 }
 

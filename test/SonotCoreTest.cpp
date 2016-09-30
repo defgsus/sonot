@@ -39,7 +39,7 @@ public:
 
     static Notes createRandomNotes(size_t length);
     static Bar createRandomBar(size_t length, size_t rows);
-    static Score createRandomScore(int mi=1, int ma=20);
+    static Score createRandomScore(int mi=1, int ma=20, int numStreams=9);
     static Score createScoreForIndexTest();
 
 private slots:
@@ -371,16 +371,19 @@ void SonotCoreTest::testJsonScore()
     //qDebug() << score2.toJsonString();
 }
 
-Score SonotCoreTest::createRandomScore(int mi, int ma)
+Score SonotCoreTest::createRandomScore(int mi, int ma, int numStreams)
 {
     Score score;
-    for (int i=0; i<9; ++i)
+    for (int i=0; i<numStreams; ++i)
     {
         NoteStream s;
         for (int j=0; j<randi(mi,ma); ++j)
             s.appendBar( createRandomBar(randi(mi,ma), randi(mi,ma)) );
         score.appendNoteStream(s);
     }
+    score.setTitle("Amazing Haze");
+    score.setAuthor("Convenieous Bar");
+    score.setCopyright("(c) 1964");
     return score;
 }
 
@@ -497,9 +500,9 @@ void SonotCoreTest::testScoreSelection()
 
 void SonotCoreTest::testExportMusicXML()
 {
-    Score score = createRandomScore(2, 10);
+    Score score = createRandomScore(2, 10, 1);
     ExportMusicXML exp(score);
-    //qDebug().noquote().nospace() << exp.toString();
+    qDebug().noquote().nospace() << "\n" << exp.toString();
 }
 
 

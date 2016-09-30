@@ -32,16 +32,21 @@ struct ExportMusicXML::Private
 {
     Private(ExportMusicXML* p)
         : p         (p)
-        , stream    (&xmlString)
+        , xml    (&xmlString)
     { }
 
     ExportMusicXML* p;
 
+    void exportAll();
+
+    void exportHeader();
+    void exportFooter();
     void exportWork();
+    void exportPart(const NoteStream& xml);
 
     Score score;
     QString xmlString;
-    QTextStream stream;
+    QTextStream xml;
 };
 
 ExportMusicXML::ExportMusicXML(const Score& s)
@@ -58,40 +63,94 @@ ExportMusicXML::~ExportMusicXML()
 QString ExportMusicXML::toString()
 {
     p_->xmlString.clear();
-    p_->exportWork();
+    p_->exportAll();
     return p_->xmlString;
+}
+
+void ExportMusicXML::Private::exportAll()
+{
+    exportHeader();
+    exportWork();
+    for (const NoteStream& s : score.noteStreams())
+        exportPart(s);
+}
+
+void ExportMusicXML::Private::exportHeader()
+{
+    xml <<
+    "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+    "<!DOCTYPE score-partwise PUBLIC\n"
+    "    \"-//Recordare//DTD MusicXML 3.0 Partwise//EN\n"
+    "    \"http://www.musicxml.org/dtds/partwise.dtd\">\n"
+    "<score-partwise>\n";
+}
+
+void ExportMusicXML::Private::exportFooter()
+{
+    xml <<
+    "</score-partwise>\n";
 }
 
 void ExportMusicXML::Private::exportWork()
 {
-    stream
-    << "<work>\n"
-    << "  <work-number>D. 911</work-number>\n"
-    << "  <work-title>Winterreise</work-title>\n"
-    << "</work>\n"
-    //<movement-number>22</movement-number>
-    //<movement-title>Mut</movement-title>
-    << "<identification>\n"
-    << "  <creator type=\"composer\">Franz Schubert</creator>\n"
-    << "  <creator type=\"poet\">Wilhelm Müller</creator>\n"
-    << "  <rights>Copyright © 2001 Recordare LLC</rights>\n"
-    << "  <encoding>\n"
-    << "    <encoding-date>2002-02-16</encoding-date>\n"
-    << "    <encoder>Michael Good</encoder>\n"
-    << "    <software>Finale 2002 for Windows</software>\n"
-    << "    <encoding-description>MusicXML 1.0 example</encoding-description>\n"
-    << "  </encoding>\n"
-    << "  <source>Based on Breitkopf &amp; Härtel edition of 1895</source>\n"
-    << "</identification>\n"
-    << "<part-list>\n"
-    << "  <score-part id=\"P1\">\n"
-    << "    <part-name>Singstimme.</part-name>\n"
-    << "  </score-part>\n"
-    << "  <score-part id=\"P2\">\n"
-    << "    <part-name>Pianoforte.</part-name>\n"
-    << "  </score-part>\n"
-    << "</part-list>\n"
+    xml << "<work>\n"
+        << "  <work-number>1</work-number>\n"
+        << "  <work-title>" << score.title() << "</work-title>\n"
+        << "</work>\n"
+        //<movement-number>22</movement-number>
+        //<movement-title>Mut</movement-title>
+        << "<identification>\n"
+        << "  <creator type=\"composer\">"
+                << score.author() << "</creator>\n";
+
+    if (score.props().contains("poet"))
+        xml
+        << "  <creator type=\"poet\">"
+        << score.props().get("poet").toString() << "</creator>\n";
+
+    xml << "  <rights>" << score.copyright() << "</rights>\n"
+        << "  <encoding>\n"
+        //<< "    <encoding-date>2002-02-16</encoding-date>\n"
+        //<< "    <encoder>Michael Good</encoder>\n"
+        << "    <software>Sonot</software>\n"
+        << "    <encoding-description>Sonot export"
+                "</encoding-description>\n"
+        << "  </encoding>\n"
+        //<< "  <source></source>\n"
+        << "</identification>\n"
+        << "<part-list>\n"
+        << "  <score-part id=\"P1\">\n"
+        << "    <part-name>Singstimme.</part-name>\n"
+        << "  </score-part>\n"
+        << "  <score-part id=\"P2\">\n"
+        << "    <part-name>Pianoforte.</part-name>\n"
+        << "  </score-part>\n"
+        << "</part-list>\n"
     ;
+}
+
+void ExportMusicXML::Private::exportPart(const NoteStream &stream)
+{
+    xml << "<part>\n"
+        << "  <attributes>\n"
+        << "    <divisions>24</divisions>\n";
+
+/*
+        << "    <key>\n"
+        << "      <fifths>-3</fifths>\n"
+        << "      <mode>minor</mode>\n"
+        << "    </key>\n"
+*/
+    xml << "    <time>\n"
+        << "      <beats>4</beats>\n"
+        << "      <beat-type>4</beat-type>\n"
+        << "    </time>\n";
+
+    xml << "  </attributes>\n";
+
+    //xml << "  <note><pitch>"
+
+    xml << "</part>\n";
 }
 
 } // namespace Sonot
