@@ -8,7 +8,8 @@ HEADERS += \
     $$PWD/core/Notes.h \
     $$PWD/core/Bar.h \
     $$PWD/core/KeySignature.h \
-    $$PWD/core/SelectionMimeData.h
+    $$PWD/core/SelectionMimeData.h \
+    $$PWD/core/ExportMusicXML.h
 
 SOURCES += \
     src/core/Note.cpp \
@@ -18,4 +19,5 @@ SOURCES += \
     $$PWD/core/Notes.cpp \
     $$PWD/core/Bar.cpp \
     $$PWD/core/KeySignature.cpp \
-    $$PWD/core/SelectionMimeData.cpp
+    $$PWD/core/SelectionMimeData.cpp \
+    $$PWD/core/ExportMusicXML.cpp

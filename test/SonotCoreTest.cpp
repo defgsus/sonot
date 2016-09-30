@@ -24,6 +24,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/KeySignature.h"
 #include "core/NoteStream.h"
 #include "core/Score.h"
+#include "core/ExportMusicXML.h"
 #include "QProps/Properties.h"
 #include "QProps/error.h"
 
@@ -37,7 +38,7 @@ public:
     SonotCoreTest() { }
 
     static Notes createRandomNotes(size_t length);
-    static QList<Notes> createRandomBar(size_t length, size_t rows);
+    static Bar createRandomBar(size_t length, size_t rows);
     static Score createRandomScore(int mi=1, int ma=20);
     static Score createScoreForIndexTest();
 
@@ -56,6 +57,8 @@ private slots:
     void testScoreIndexNextNote();
     void testScoreIndexPrevNote();
     void testScoreSelection();
+
+    void testExportMusicXML();
 };
 
 namespace { int randi(int mi, int ma) { return (rand()%(ma-mi)) + mi; } }
@@ -77,12 +80,12 @@ Notes SonotCoreTest::createRandomNotes(size_t length)
     return b;
 }
 
-QList<Notes> SonotCoreTest::createRandomBar(size_t length, size_t rows)
+Bar SonotCoreTest::createRandomBar(size_t length, size_t rows)
 {
-    QList<Notes> l;
+    Bar b;
     for (size_t i=0; i<rows; ++i)
-        l << createRandomNotes(length);
-    return l;
+        b.append( createRandomNotes(length) );
+    return b;
 }
 
 namespace QTest {
@@ -259,11 +262,12 @@ void SonotCoreTest::testRandomCursor()
             int jc = i == 0 ? 4 : (rand()%20);
             for (int j=0; j<jc; ++j)
             {
-                QList<Notes> rows;
+                Bar bar;
                 int kc = i == 0 ? 4 : (rand()%10);
                 for (int k=0; k<kc; ++k)
-                    rows << createRandomNotes(i == 0 ? 4 : (rand()%17));
-                n.appendBar(rows);
+                    bar.append(
+                        createRandomNotes(i == 0 ? 4 : (rand()%17)));
+                n.appendBar(bar);
             }
             //qDebug().noquote() << ("\n" + n.toInfoString());
             s.appendNoteStream(n);
@@ -272,7 +276,7 @@ void SonotCoreTest::testRandomCursor()
         auto c = s.index(0,0,0,0), cprev = c;
         QVERIFY(c.isValid());
 
-        for (int i=0; i<300; ++i)
+        for (int i=0; i<00; ++i)
         {
             QString cmd;
             try
@@ -445,7 +449,11 @@ void SonotCoreTest::testScoreIndexPrevNote()
 void SonotCoreTest::testScoreIndexNextNote()
 {
     Score score = createScoreForIndexTest();
-
+#if 0
+    qDebug().noquote().nospace()
+            << "\n" << score.noteStream(0).toTabString()
+            << "\n" << score.noteStream(1).toTabString();
+#endif
     Score::Index idx = score.index(0,0,0,0);
     QVERIFY(idx.isValid());
     int cnt = 1;
@@ -484,10 +492,15 @@ void SonotCoreTest::testScoreSelection()
     QCOMPARE( s1.unified(score.index(0,0,0,1)).isSingleRow(), true);
 
 
-    Score::Selection s2 = Score::Selection::fromBar(s1.from());
+    //Score::Selection s2 = Score::Selection::fromBar(s1.from());
 }
 
-
+void SonotCoreTest::testExportMusicXML()
+{
+    Score score = createRandomScore(2, 10);
+    ExportMusicXML exp(score);
+    //qDebug().noquote().nospace() << exp.toString();
+}
 
 
 QTEST_APPLESS_MAIN(SonotCoreTest)

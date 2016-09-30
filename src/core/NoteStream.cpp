@@ -248,7 +248,13 @@ void NoteStream::insertBar(size_t idx, const Bar& barIn)
     Bar bar(barIn);
 
     if (bar.numRows() != numRows())
-        bar.resize(bar.numRows());
+    {
+        if (bar.numRows() < numRows())
+            bar.resize(numRows());
+        else
+        for (Bar& b : p_data_)
+            b.resize(bar.numRows());
+    }
 
     if (idx < numBars())
         p_data_.insert(p_data_.begin() + idx, bar);
@@ -298,11 +304,13 @@ QString NoteStream::toTabString() const
         for (size_t y=0; y<numRows(); ++y)
         {
             const Notes& b = notes(barIdx, y);
-            Note n(Note::Space);
+            Note n(Note::Invalid);
             if (i < b.length())
                 n = b.note(i);
             if (n.isNote())
                 s[uint(y*w + x + i)] = n.to3String()[0];
+            else if (!n.isValid())
+                s[uint(y*w + x + i)] = '_';
         }
         x += blength;
     }

@@ -94,7 +94,12 @@ Notes& Bar::operator[](size_t i)
 
 void Bar::resize(size_t numRows)
 {
-    p_->rows.resize(numRows);
+    if (numRows < p_->rows.size())
+        p_->rows.resize(numRows);
+    {
+        for (size_t i = p_->rows.size(); i<numRows; ++i)
+            p_->rows.push_back(Notes(1));
+    }
 }
 
 void Bar::setNotes(size_t row, const Notes &n)

@@ -224,15 +224,15 @@ bool SynthDevice::Private::fillBuffer()
             // send all notes in bar window to synth
             for (size_t r=0; r<cursor.getStream().numRows(); ++r)
             {
-                const Notes& bar = cursor.getNotes(r);
-                for (size_t c=0; c<bar.length(); ++c)
+                const Notes& notes = cursor.getNotes(r);
+                for (size_t c=0; c<notes.length(); ++c)
                 {
-                    Note n = keysig.transform(bar.note(c));
+                    Note n = keysig.transform(notes.note(c));
                     if (!n.isValid())
                         continue;
 
                     // window-local time
-                    double ltime = barLength * bar.columnTime(c) - curBarTime;
+                    double ltime = barLength * notes.columnTime(c) - curBarTime;
                     if (ltime >= 0 && ltime < windowLength)
                     {
                         size_t samplePos = (procTime + ltime) * p->sampleRate();
