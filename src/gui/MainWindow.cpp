@@ -53,6 +53,7 @@ struct MainWindow::Private
         : p         (w)
         , document  (nullptr)
         , isChanged (false)
+        , isSynthChanged (false)
         , player    (nullptr)
         , synthStream(nullptr)
     { }
@@ -67,6 +68,7 @@ struct MainWindow::Private
     void createMenu();
 
     bool isSaveToDiscard();
+    bool isSaveToDiscardSynth();
     bool setChanged(bool c);
     void updateWindowTitle();
     void updateActions();
@@ -74,6 +76,9 @@ struct MainWindow::Private
     bool loadScore(const QString& fn);
     bool saveScore(const QString& fn);
     Score createNewScore();
+
+    bool loadSynth(const QString& fn);
+    bool saveSynth(const QString& fn);
 
     //void setEditProperties(const QString& s);
     //void applyProperties();
@@ -85,8 +90,8 @@ struct MainWindow::Private
     ScoreDocument* document;
     AllPropertiesView* propsView;
 
-    QString curPropId, curFilename;
-    bool isChanged;
+    QString curPropId, curFilename, curSynthFilename;
+    bool isChanged, isSynthChanged;
 
     SamplePlayer* player;
     SynthDevice* synthStream;
@@ -164,6 +169,8 @@ void MainWindow::Private::createWidgets()
         propsView->setVisible(false);
         lh->addWidget(propsView);
 
+        connect(propsView, &AllPropertiesView::synthChanged,
+                [=](){ isSynthChanged = true; });
 }
 
 void MainWindow::Private::createObjects()
@@ -235,6 +242,26 @@ void MainWindow::Private::createMenu()
             saveScore(fn);
     });
 
+    menu->addSeparator();
+
+    a = menu->addAction(tr("Load Synth settings"));
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        if (!isSaveToDiscardSynth())
+            return;
+        QString fn = p->getSynthFilename(false);
+        if (!fn.isEmpty())
+            loadSynth(fn);
+    });
+
+    a = menu->addAction(tr("Save Synth settings as"));
+    a->connect(a, &QAction::triggered, [=]()
+    {
+        QString fn = p->getSynthFilename(true);
+        if (!fn.isEmpty())
+            saveSynth(fn);
+    });
+
     menu = menuEdit = p->menuBar()->addMenu(tr("Edit"));
     scoreView->createEditActions(menu);
 
@@ -299,7 +326,7 @@ void MainWindow::showEvent(QShowEvent*)
 
 void MainWindow::closeEvent(QCloseEvent* e)
 {
-    if (!p_->isSaveToDiscard())
+    if (!p_->isSaveToDiscard() || !p_->isSaveToDiscardSynth())
         e->ignore();
 }
 
@@ -326,6 +353,26 @@ bool MainWindow::Private::isSaveToDiscard()
     if (fn.isEmpty())
         return false;
     return saveScore(fn);
+}
+
+
+bool MainWindow::Private::isSaveToDiscardSynth()
+{
+    if (!isSynthChanged)
+        return true;
+
+    int ret = QMessageBox::question(p, tr("unsaved changes"),
+                tr("The current synth settings will be lost in time,\n"
+                   "like tears in the rain.\n"),
+                tr("Save as"), tr("Throw away"), tr("Cancel"));
+    if (ret == 1)
+        return true;
+    if (ret == 2)
+        return false;
+    QString fn = p->getSynthFilename(true);
+    if (fn.isEmpty())
+        return false;
+    return saveSynth(fn);
 }
 
 bool MainWindow::Private::setChanged(bool c)
@@ -407,6 +454,44 @@ Score MainWindow::Private::createNewScore()
     return s;
 }
 
+bool MainWindow::Private::loadSynth(const QString& fn)
+{
+    try
+    {
+        synthStream->loadJsonFile(fn);
+        curSynthFilename = fn;
+        isSynthChanged = false;
+        propsView->setSynthStream(synthStream);
+        return true;
+    }
+    catch (QProps::Exception e)
+    {
+        QMessageBox::critical(p, tr("load synth"),
+                              tr("Could not load synth from\n%1\n%2")
+                              .arg(fn).arg(e.what()));
+    }
+    return false;
+}
+
+bool MainWindow::Private::saveSynth(const QString& fn)
+{
+    try
+    {
+        synthStream->saveJsonFile(fn);
+        curSynthFilename = fn;
+        isSynthChanged = false;
+        return true;
+    }
+    catch (QProps::Exception e)
+    {
+        QMessageBox::critical(p, tr("save synth"),
+                              tr("Could not save synth to\n%1\n%2")
+                              .arg(fn).arg(e.what()));
+    }
+    return false;
+}
+
+
 QString MainWindow::getScoreFilename(bool forSave)
 {
     QString dir = "../sonot/score",
@@ -437,6 +522,34 @@ QString MainWindow::getScoreFilename(bool forSave)
 }
 
 
+QString MainWindow::getSynthFilename(bool forSave)
+{
+    QString dir = "../sonot/synth",
+            filter = "*.sonot.json";
+    QString fn;
+    if (forSave)
+        fn = QFileDialog::getSaveFileName(this, tr("save synth"),
+                                 dir, filter, &filter);
+    else
+        fn = QFileDialog::getOpenFileName(this, tr("load synth"),
+                                 dir, filter, &filter);
+    if (!fn.isEmpty() && !fn.endsWith(".sonot.json"))
+    {
+        fn.append( ".sonot.json" );
+        if (forSave && QFileInfo(fn).exists())
+        {
+            int r = QMessageBox::question(this, tr("Replace synth"),
+                    tr("The file %1 already exists\n").arg(fn),
+                    tr("Change name"), tr("Overwrite"), tr("Cancel"));
+            if (r == 0)
+                return getSynthFilename(true);
+            if (r == 1)
+                return fn;
+            return QString();
+        }
+    }
+    return fn;
+}
 
 
 

@@ -19,6 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ****************************************************************************/
 
 #include "QProps/error.h"
+#include "QProps/JsonInterfaceHelper.h"
 
 #include "Synth.h"
 
@@ -597,6 +598,9 @@ SynthVoice * Synth::Private::noteOn(
         fm.modAm = p->modAm(i);
         fm.modFreq = p->modFm(i);
         fm.modPhase = p->modPm(i);
+        fm.modSelfAm = p->modSelfAm(i);
+        fm.modSelfFreq = p->modSelfFm(i);
+        fm.modSelfPhase = p->modSelfPm(i);
         fm.phase = 0.;
         fm.velo = velocity * p->modAmount(i);
     }
@@ -981,5 +985,34 @@ void Synth::process(float ** output, size_t bufferLength)
     p_->process(output, bufferLength);
 }
 
+QJsonObject Synth::toJson() const
+{
+    QJsonObject o;
+    o.insert("master", props().toJson());
+    for (size_t i=0; i<numberModVoices(); ++i)
+        o.insert(QString("mod-%1").arg(i),
+                 modProps(i).toJson());
+    return o;
+}
+
+void Synth::fromJson(const QJsonObject& o)
+{
+    QProps::JsonInterfaceHelper json("Synth");
+    QProps::Properties master(props());
+    master.fromJson( json.expectChildObject(o, "master") );
+
+    std::vector<QProps::Properties> mods;
+    for (int i=0; i<master.get("number-mod-voices").toInt(); ++i)
+    {
+        QProps::Properties mod(p_->modPropsDef);
+        mod.fromJson( json.expectChildObject(
+                          o, QString("mod-%1").arg(i)) );
+        mods.push_back(mod);
+    }
+
+    setProperties(master);
+    for (size_t i=0; i<numberModVoices(); ++i)
+        setModProperties(i, mods[i]);
+}
 
 } // namespace Sonot

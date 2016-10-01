@@ -36,6 +36,7 @@ public:
     ~MainWindow();
 
     QString getScoreFilename(bool forSave);
+    QString getSynthFilename(bool forSave);
 
 public slots:
 

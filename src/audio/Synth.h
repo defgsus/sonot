@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QtCore>
 
 #include "QProps/Properties.h"
+#include "QProps/JsonInterface.h"
 
 #include "EnvelopeGenerator.h"
 #include "NoteFreq.h"
@@ -98,7 +99,7 @@ private:
 
 
 /** A stand-alone polyphonic synthesizer */
-class Synth
+class Synth : public QProps::JsonInterface
 {
     Q_DECLARE_TR_FUNCTIONS(Synth)
 public:
@@ -125,6 +126,11 @@ public:
 
     Synth();
     ~Synth();
+
+    // ------------ io -------------
+
+    QJsonObject toJson() const override;
+    void fromJson(const QJsonObject&) override;
 
     // ------------ getter ----------------
 

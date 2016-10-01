@@ -42,6 +42,8 @@ public:
     void setScoreIndex(const Score::Index&);
 signals:
 
+    void synthChanged();
+
 public slots:
 
 private:

@@ -18,6 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include "QProps/JsonInterfaceHelper.h"
+
 #include "SynthDevice.h"
 #include "core/Notes.h"
 #include "core/NoteStream.h"
@@ -192,13 +194,14 @@ bool SynthDevice::Private::fillBuffer()
             if (curBarTime >= barLength)
             {
                 SONOT_DEBUG_SYNTH("next bar");
-                bool doPause = index.isStreamRight();
+                bool enablePause = index.getStream().isPauseOnEnd(),
+                        doPause = index.isStreamRight() && enablePause;
                 size_t numRows = index.numRows();
                 if (!index.nextBar())
                 {
                     // start again
                     index = score->index(0,0,0,0);
-                    doPause = true;
+                    doPause = enablePause;
                 }
                 // note-off at stream end
                 /// @todo this is not timed within the dsp-block!
@@ -295,6 +298,19 @@ bool SynthDevice::Private::fillBuffer()
     curSample += p->bufferSize();
 
     return true;
+}
+
+QJsonObject SynthDevice::toJson() const
+{
+    QJsonObject o;
+    o.insert("synth", p_->synth.toJson());
+    return o;
+}
+
+void SynthDevice::fromJson(const QJsonObject& o)
+{
+    QProps::JsonInterfaceHelper json("SynthDevice");
+    p_->synth.fromJson( json.expectChildObject(o, "synth") );
 }
 
 

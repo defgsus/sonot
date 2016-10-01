@@ -25,23 +25,33 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QIODevice>
 
+#include "QProps/JsonInterface.h"
+
 #include "Synth.h"
 #include "core/Score.h"
 
 namespace Sonot {
 
 class SynthDevice : public QIODevice
+                  , public QProps::JsonInterface
 {
     Q_OBJECT
 public:
     SynthDevice(QObject* parent = nullptr);
     ~SynthDevice();
 
+    // ------ QIODevice interface ------
+
     bool isSequential() const override { return true; }
 
     qint64 readData(char *data, qint64 maxlen) override;
     qint64 writeData(const char*, qint64 ) override { return 0; }
 
+
+    // ------------ io -------------
+
+    QJsonObject toJson() const override;
+    void fromJson(const QJsonObject&) override;
 
     const Synth& synth() const;
     const Score* score() const;

@@ -73,7 +73,8 @@ public:
     KeySignature keySignature() const;
 
     bool isEmpty() const { return p_data_.empty(); }
-
+    bool isPauseOnEnd() const
+        { return props().get("pause-on-end").toBool(); }
     /** Number of Bars in this collection */
     size_t numBars() const { return p_data_.size(); }
 

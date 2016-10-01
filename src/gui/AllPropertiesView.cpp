@@ -246,6 +246,7 @@ void AllPropertiesView::Private::updatePropsFromView()
             if (idx < (int)synth->synth().numberModVoices())
                 synth->setSynthModProperties(idx, propsView->properties());
         }
+        emit p->synthChanged();
         return;
     }
     if (!document)

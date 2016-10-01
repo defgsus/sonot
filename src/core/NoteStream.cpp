@@ -39,8 +39,12 @@ NoteStream::NoteStream()
     p_props_.setMin("bpm", 1.);
 
     p_props_.set("keysig", tr("key signature"),
-                 tr("a list of keys applying to this part"),
+                 tr("A list of keys applying to this part"),
                  QString());
+
+    p_props_.set("pause-on-end", tr("pause on end"),
+                 tr("Pause playback on end of this part"),
+                 true);
 
     p_props_.set("title", tr("title"),
                  tr("The title of this part"),
