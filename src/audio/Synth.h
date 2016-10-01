@@ -170,6 +170,9 @@ public:
     double modFm(size_t idx) const { return modProps(idx).get("mod-fm").toDouble(); }
     double modPm(size_t idx) const { return modProps(idx).get("mod-pm").toDouble(); }
     double modFreqMul(size_t idx) const { return modProps(idx).get("freq-mul").toDouble(); }
+    double modSelfAm(size_t idx) const { return modProps(idx).get("mod-self-am").toDouble(); }
+    double modSelfFm(size_t idx) const { return modProps(idx).get("mod-self-fm").toDouble(); }
+    double modSelfPm(size_t idx) const { return modProps(idx).get("mod-self-pm").toDouble(); }
 
     // ----------- setter -----------------
 

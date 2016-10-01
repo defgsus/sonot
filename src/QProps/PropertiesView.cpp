@@ -71,7 +71,7 @@ void PropertiesView::setProperties(const Properties & p)
     p_->createWidgtes();
 }
 
-void PropertiesView::setProperties(const QList<Properties>& list)
+void PropertiesView::setPropertiesUnion(const QList<Properties>& list)
 {
     p_->props.clear();
     for (auto & p : list)

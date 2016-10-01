@@ -72,6 +72,7 @@ class SynthVoice::Private
         double
             velo, freqMul, phase,
             modFreq, modPhase, modAm, modAdd,
+            modSelfFreq, modSelfPhase, modSelfAm,
             sample;
         EnvelopeGenerator<double> env;
     };
@@ -154,27 +155,39 @@ double SynthVoice::Private::calcSample()
     {
         double phaseMod = 0.,
                freqMod = 0.,
-               ampMod = 0.;
+               ampMod = 0.,
+               addMod = 0.;
         for (FMVoice& fm : fmVoices)
         {
             // proc modulator envelope
             fm.env.next();
-            fm.phase += freq_c[0] * fm.freqMul;
+            // modulation from previous stage
+            fm.phase += fm.modSelfPhase * phaseMod;
+            double freq = freq_c[0] * fm.freqMul;
+            freq += fm.modSelfFreq * freqMod;
+            // get modulator's sample
+            fm.phase += freq;
             fm.sample = fm.velo * fm.env.value() * waveform(fm.phase);
+            fm.sample += fm.modSelfAm * ampMod
+                            * (fm.sample*ampMod - fm.sample);
+            // add to modulation
             phaseMod += fm.sample * fm.modPhase;
             freqMod += fm.sample * fm.modFreq;
             ampMod += fm.sample * fm.modAm;
+            addMod += fm.sample * fm.modAdd;
         }
 
         // for each combined unisono voice
         for (size_t j = 0; j<phase.size(); ++j)
         {
             // advance phase counter
-            phase[j] += freq_c[j] * (1. + freqMod);
+            double freq = freq_c[j];
+            freq += freq * freqMod;
+            phase[j] += freq;
 
             double sam = waveform(phase[j] + phaseMod);
             sam += ampMod * (ampMod*sam - sam);
-            s += sam;
+            s += sam + addMod;
         }
     }
     return s;
@@ -387,6 +400,7 @@ void Synth::Private::createProperties()
               1.);
     modPropsDef.setStep("mod-pm", 0.01);
 
+
     modPropsDef.set("attack", tr("attack"),
               tr("Attack time of envelope in seconds"),
               0.02, 0., 10000., 0.01);
@@ -403,6 +417,21 @@ void Synth::Private::createProperties()
     modPropsDef.set("release", tr("release"),
               tr("Release time of envelope in seconds"),
               .6, 0., 10000., 0.01);
+
+    modPropsDef.set("mod-self-am", tr("self amplitude modulation"),
+              tr("Amount of amplitude modulation from previous stage"),
+              0.);
+    modPropsDef.setStep("mod-self-am", 0.01);
+
+    modPropsDef.set("mod-self-fm", tr("self frequency modulation"),
+              tr("Amount of frequency modulation from previous stage"),
+              0.);
+    modPropsDef.setStep("mod-self-fm", .01);
+
+    modPropsDef.set("mod-self-pm", tr("self phase modulation"),
+              tr("Amount of phase modulation from previous stage"),
+              1.);
+    modPropsDef.setStep("mod-self-pm", 0.01);
 }
 
 

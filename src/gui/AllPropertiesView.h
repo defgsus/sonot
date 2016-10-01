@@ -23,9 +23,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <QWidget>
 
+#include "core/Score.h"
+
 namespace Sonot {
 
 class ScoreDocument;
+class SynthDevice;
 
 class AllPropertiesView : public QWidget
 {
@@ -35,7 +38,8 @@ public:
     ~AllPropertiesView();
 
     void setDocument(ScoreDocument*);
-
+    void setSynthStream(SynthDevice*);
+    void setScoreIndex(const Score::Index&);
 signals:
 
 public slots:

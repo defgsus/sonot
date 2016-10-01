@@ -38,6 +38,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "PageLayout.h"
 #include "PageLayout.h"
 #include "TextItem.h"
+#include "AllPropertiesView.h"
 #include "audio/SamplePlayer.h"
 #include "audio/SynthDevice.h"
 #include "core/NoteStream.h"
@@ -74,15 +75,15 @@ struct MainWindow::Private
     bool saveScore(const QString& fn);
     Score createNewScore();
 
-    void setEditProperties(const QString& s);
-    void applyProperties();
+    //void setEditProperties(const QString& s);
+    //void applyProperties();
 
 
     MainWindow* p;
 
     ScoreView* scoreView;
     ScoreDocument* document;
-    QProps::PropertiesView* propsView;
+    AllPropertiesView* propsView;
 
     QString curPropId, curFilename;
     bool isChanged;
@@ -143,8 +144,8 @@ void MainWindow::Private::createWidgets()
                 [=](const Score::Index& newIdx, const Score::Index& oldIdx)
         {
             // update stream property view on stream change
-            if (curPropId == "stream" && newIdx.stream() != oldIdx.stream())
-                setEditProperties(curPropId);
+            if (newIdx.stream() != oldIdx.stream())
+                propsView->setScoreIndex(newIdx);
         });
 
         connect(synthStream, &SynthDevice::indexChanged,
@@ -155,15 +156,14 @@ void MainWindow::Private::createWidgets()
                 scoreView->ensureIndexVisible(idx);
         });
 
-        propsView = new QProps::PropertiesView(p);
-        propsView->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Expanding);
+        propsView = new AllPropertiesView(p);
+        propsView->setSizePolicy(
+                    QSizePolicy::Minimum, QSizePolicy::Expanding);
+        propsView->setSynthStream(synthStream);
+        propsView->setDocument(document);
         propsView->setVisible(false);
         lh->addWidget(propsView);
 
-        connect(propsView, &QProps::PropertiesView::propertyChanged, [=]()
-        {
-            applyProperties();
-        });
 }
 
 void MainWindow::Private::createObjects()
@@ -257,7 +257,8 @@ void MainWindow::Private::createMenu()
     a->connect(a, &QAction::triggered, [=]()
     {
         auto idx = scoreView->currentIndex();
-        synthStream->setIndex(synthStream->score()->index(idx.stream(),0,0,0));
+        synthStream->setIndex(synthStream->score()->index(
+                                            idx.stream(),0,0,0));
         synthStream->setPlaying(true);
     });
 
@@ -280,126 +281,16 @@ void MainWindow::Private::createMenu()
     });
 
 
-    menu = p->menuBar()->addMenu(tr("Options"));
+    menu = p->menuBar()->addMenu(tr("Settings"));
 
-    auto group = new QActionGroup(menu);
-#define SONOT__CREATE_PROP(text__, id__) \
-    a = menu->addAction(text__); \
-    a->setCheckable(true); \
-    a->connect(a, &QAction::triggered, [=](bool e) { \
-        if (e) setEditProperties(id__); }); \
-    group->addAction(a);
-
-    SONOT__CREATE_PROP(tr("Hidden"), "hidden");
-    a->setChecked(true);
-    SONOT__CREATE_PROP(tr("Synth"), "synth");
-    SONOT__CREATE_PROP(tr("Synth Mod"), "synth-mod-0");
-    SONOT__CREATE_PROP(tr("Score"), "score");
-    SONOT__CREATE_PROP(tr("Part"), "stream");
-    SONOT__CREATE_PROP(tr("Document"), "document");
-    SONOT__CREATE_PROP(tr("Page layout (title)"), "page-layout-title");
-    SONOT__CREATE_PROP(tr("Page layout (left)"), "page-layout-left");
-    SONOT__CREATE_PROP(tr("Page layout (right)"), "page-layout-right");
-    SONOT__CREATE_PROP(tr("Score layout (title)"), "score-layout-title");
-    SONOT__CREATE_PROP(tr("Score layout (left)"), "score-layout-left");
-    SONOT__CREATE_PROP(tr("Score layout (right)"), "score-layout-right");
-#undef SONOT__CREATE_PROP
-
+    a = menu->addAction(tr("Visible"));
+    a->setCheckable(true);
+    a->connect(a, &QAction::triggered, [=](bool e)
+    {
+        propsView->setVisible(e);
+    });
 }
 
-void MainWindow::Private::setEditProperties(const QString &s)
-{
-    curPropId = s;
-    if (curPropId.startsWith("synth-mod-"))
-    {
-        int idx = curPropId.mid(10).toInt();
-        propsView->setProperties(synthStream->synth().modProps(idx));
-    }
-    else if (curPropId.startsWith("synth"))
-    {
-        propsView->setProperties(synthStream->synth().props());
-    }
-    else if (curPropId.startsWith("document"))
-    {
-        propsView->setProperties(document->props());
-    }
-    else if (curPropId.startsWith("page-layout-"))
-    {
-        QString sub = curPropId.mid(12);
-        propsView->setProperties(document->pageLayout(sub).margins());
-    }
-    else if (curPropId.startsWith("score-layout-"))
-    {
-        QString sub = curPropId.mid(13);
-        propsView->setProperties(document->scoreLayout(sub).props());
-    }
-    else if (curPropId.startsWith("score"))
-    {
-        propsView->setProperties(document->score()->props());
-    }
-    else if (curPropId.startsWith("stream"))
-    {
-        QProps::Properties p("tmp");
-        auto idx = scoreView->currentIndex();
-        if (idx.isValid())
-            p = idx.getStream().props();
-        propsView->setProperties(p);
-    }
-    else
-        propsView->clear();
-
-    propsView->setVisible(!propsView->isEmpty());
-}
-
-void MainWindow::Private::applyProperties()
-{
-    if (curPropId.startsWith("synth-mod-"))
-    {
-        int idx = curPropId.mid(10).toInt();
-        synthStream->setSynthModProperties(idx, propsView->properties());
-    }
-    else if (curPropId.startsWith("synth"))
-    {
-        synthStream->setSynthProperties(propsView->properties());
-    }
-    else if (curPropId.startsWith("document"))
-    {
-        document->setProperties(propsView->properties());
-    }
-    else if (curPropId.startsWith("page-layout-"))
-    {
-        QString sub = curPropId.mid(12);
-        auto l = document->pageLayout(sub);
-        l.setMargins(propsView->properties());
-        document->setPageLayout(sub, l);
-    }
-    else if (curPropId.startsWith("score-layout-"))
-    {
-        QString sub = curPropId.mid(13);
-        auto l = document->scoreLayout(sub);
-        l.setProperties(propsView->properties());
-        document->setScoreLayout(sub, l);
-    }
-    else if (curPropId.startsWith("score"))
-    {
-        document->setScoreProperties(propsView->properties());
-    }
-    else if (curPropId.startsWith("stream"))
-    {
-        auto idx = scoreView->currentIndex();
-        if (idx.isValid())
-        {
-            document->editor()->setStreamProperties(
-                        idx.stream(), propsView->properties());
-        }
-    }
-    /*
-    PageAnnotation anno = scoreView->scoreDocument().pageAnnotation(0);
-    anno.textItems()[0].setProperties(propsView->properties());
-    scoreView->scoreDocument().setPageAnnotation(0, anno);
-    scoreView->update();
-    */
-}
 
 void MainWindow::showEvent(QShowEvent*)
 {
@@ -475,7 +366,7 @@ bool MainWindow::Private::loadScore(const QString& fn)
         curFilename = fn;
         if (!setChanged(false))
             updateWindowTitle();
-        setEditProperties(curPropId);
+        propsView->setDocument(document);
         return true;
     }
     catch (QProps::Exception e)

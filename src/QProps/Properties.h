@@ -246,13 +246,15 @@ public:
     /** Returns the given property, or the given default value. */
     QVariant get(const QString& id, const QVariant& def) const;
 
-    /** Returns the default value for the property, or an invalid QVariant */
+    /** Returns the default value for the property,
+        or an invalid QVariant */
     QVariant getDefault(const QString& id) const;
     QVariant getMin(const QString& id) const;
     QVariant getMax(const QString& id) const;
     QVariant getStep(const QString& id) const;
     QString getName(const QString& id) const;
     QString getTip(const QString& id) const;
+
     /** Returns the subtype of the value.
         Some value types may have a associated sub-type:
         QString:
@@ -316,7 +318,8 @@ public:
     void set(const QString& id, const QVariant& v);
 
     template <class T>
-    void set(const QString& id, const QString& name, const QString& statusTip,
+    void set(const QString& id,
+             const QString& name, const QString& statusTip,
              const T& defaultValue);
 
     /** @{ */
@@ -324,15 +327,18 @@ public:
         supported compound types of integral or float/double */
 
     template <class T>
-    void set(const QString& id, const QString& name, const QString& statusTip,
+    void set(const QString& id,
+             const QString& name, const QString& statusTip,
              const T& defaultValue, const T& step);
 
     template <class T>
-    void set(const QString& id, const QString& name, const QString& statusTip,
+    void set(const QString& id,
+             const QString& name, const QString& statusTip,
              const T& defaultValue, const T& minimum, const T& maximum);
 
     template <class T>
-    void set(const QString& id, const QString& name, const QString& statusTip,
+    void set(const QString& id,
+             const QString& name, const QString& statusTip,
              const T& defaultValue, const T& minimum, const T& maximum,
              const T& step);
     /** @} */
@@ -342,7 +348,8 @@ public:
     /** NamedValues */
 
     template <class T>
-    void set(const QString& id, const QString& name, const QString& statusTip,
+    void set(const QString& id,
+             const QString& name, const QString& statusTip,
              const NamedValues& names, const T& v);
 
     /** Clears the flags of Property @p id
@@ -361,7 +368,8 @@ public:
     void setDefault(const QString& id, const QVariant& v);
     void setMin(const QString& id, const QVariant& v);
     void setMax(const QString& id, const QVariant& v);
-    void setRange(const QString& id, const QVariant& mi, const QVariant& ma);
+    void setRange(const QString& id,
+                  const QVariant& mi, const QVariant& ma);
     void setStep(const QString& id, const QVariant& v);
     void setName(const QString& id, const QString& name);
     void setTip(const QString& id, const QString& statusTip);
@@ -447,16 +455,13 @@ private:
     bool p_explicitJsonTypes_;
 };
 
-} // namespace QProps
 
 
-//Q_DECLARE_METATYPE(MO::Properties::NamedValues)
 
 
 
 // --------- templ impl. ------------------
 
-namespace QProps {
 
 template <class T>
 void Properties::set(
@@ -496,7 +501,8 @@ void Properties::set(
 template <class T>
 void Properties::set(
         const QString& id, const QString& name, const QString& statusTip,
-        const T& defaultValue, const T& minimum, const T& maximum, const T& step)
+        const T& defaultValue, const T& minimum, const T& maximum,
+        const T& step)
 {
     set(id, defaultValue);
     setDefault(id, defaultValue);
