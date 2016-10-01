@@ -19,6 +19,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ****************************************************************************/
 
 #include <cstddef>
+#include <typeinfo>
 
 #include <QJsonObject>
 #include <QJsonDocument>
@@ -53,7 +54,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 // ###################### supported types ############################
 
 /** Tuples of C-type, Qt-type and QMetaType::Type */
-#define QPROPS__FOR_EACH_PRIMITIVE_TYPE(F__) \
+#define QPROPS__FOR_EACH_PRIMITIVE_TYPE_32(F__) \
     F__(bool        , bool,           Bool       ) \
     F__(char        , char,           Char       ) \
     F__(int8_t      , signed char,    SChar      ) \
@@ -63,11 +64,22 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
     F__(int32_t     , int,            Int        ) \
     F__(uint32_t    , uint,           UInt       ) \
     F__(float       , float,          Float      ) \
+    F__(double      , double,         Double     )
+
+#define QPROPS__FOR_EACH_PRIMITIVE_TYPE_64(F__) \
     F__(int64_t     , long,           Long       ) \
     F__(uint64_t    , ulong,          ULong      ) \
     F__(int64_t     , qlonglong,      LongLong   ) \
-    F__(uint64_t    , qulonglong,     ULongLong  ) \
-    F__(double      , double,         Double     )
+    F__(uint64_t    , qulonglong,     ULongLong  )
+
+#ifdef QPROPS_32_BIT
+#   define QPROPS__FOR_EACH_PRIMITIVE_TYPE(F__) \
+            QPROPS__FOR_EACH_PRIMITIVE_TYPE_32(F__)
+#else
+#   define QPROPS__FOR_EACH_PRIMITIVE_TYPE(F__) \
+            QPROPS__FOR_EACH_PRIMITIVE_TYPE_32(F__) \
+            QPROPS__FOR_EACH_PRIMITIVE_TYPE_64(F__)
+#endif
 
 // All compound types supported by QVariant
 // that are excplicitly handled in code
@@ -267,8 +279,10 @@ namespace
     QJsonValue to_json(uint32_t v) { return QJsonValue((double)v); }
     QJsonValue to_json(int64_t v) { return QJsonValue(QString::number(v)); }
     QJsonValue to_json(uint64_t v) { return QJsonValue(QString::number(v)); }
+#ifndef QPROPS_32_BIT
     QJsonValue to_json(qlonglong v) { return QJsonValue(QString::number(v)); }
     QJsonValue to_json(qulonglong v) { return QJsonValue(QString::number(v)); }
+#endif
 
     // -- conversion of QVariant's compound types --
 
@@ -469,7 +483,7 @@ void JsonInterfaceHelper::p_expectArray_(
         QPROPS_JSON_ERROR("Expected json array (" << forType << "), got "
                          << typeName(src));
     auto ja = src.toArray();
-    if (ja.size() != size)
+    if ((size_t)ja.size() != size)
         QPROPS_JSON_ERROR("Expected json array of length 4, got length "
                          << ja.size());
     fromArray(dst, ja);
@@ -520,8 +534,10 @@ QPROPS__EXPECT_NUMBER(int64_t, toLongLong)
 QPROPS__EXPECT_NUMBER(uint64_t, toULongLong)
 //QPROPS__EXPECT_NUMBER(long, toLong)
 //QPROPS__EXPECT_NUMBER(ulong, toULong)
+#ifndef QPROPS_32_BIT
 QPROPS__EXPECT_NUMBER(qlonglong, toLongLong)
 QPROPS__EXPECT_NUMBER(qulonglong, toULongLong)
+#endif
 
 #undef QPROPS__EXPECT_NUMBER
 

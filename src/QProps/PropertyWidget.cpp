@@ -272,11 +272,13 @@ namespace {
         };
 
     QPROPS__LIMIT_SIGNED(int64_t);
-    QPROPS__LIMIT_SIGNED(qlonglong);
 
     QPROPS__LIMIT_UNSIGNED(uint32_t);
     QPROPS__LIMIT_UNSIGNED(uint64_t);
+#ifndef QPROPS_32_BIT
+    QPROPS__LIMIT_SIGNED(qlonglong);
     QPROPS__LIMIT_UNSIGNED(qulonglong);
+#endif
 
 #undef QPROPS__LIMIT_SIGNED
 #undef QPROPS__LIMIT_UNSIGNED

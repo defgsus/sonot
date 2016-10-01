@@ -36,7 +36,8 @@ namespace QProps {
     toJson() and fromJson() methods.
     This enables converting to/from json strings and file io.
 */
-class QPROPS_SHARED_EXPORT JsonInterface
+class //QPROPS_SHARED_EXPORT
+        JsonInterface
 {
 public:
 
