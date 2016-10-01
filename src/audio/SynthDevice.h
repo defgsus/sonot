@@ -59,6 +59,7 @@ public slots:
     void setPlaying(bool e);
 
     void setSynthProperties(const QProps::Properties& p);
+    void setSynthModProperties(size_t idx, const QProps::Properties& p);
 
     /** Play a single note as soon as possible */
     void playNote(int8_t note, double duration = 1.);

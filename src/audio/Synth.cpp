@@ -18,6 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include "QProps/error.h"
+
 #include "Synth.h"
 
 #if (0)
@@ -55,6 +57,8 @@ class SynthVoice::Private
     { }
 
     double curLevel() const { return velo * env.value(); }
+    double calcSample();
+    double waveform(double p) { return std::sin(p * 3.14159265*2.); }
 
     Synth * synth;
 
@@ -63,14 +67,26 @@ class SynthVoice::Private
     int note;
     size_t index, startSample, stopSample;
 
+    struct FMVoice
+    {
+        double
+            velo, freqMul, phase,
+            modFreq, modPhase, modAm, modAdd,
+            sample;
+        EnvelopeGenerator<double> env;
+    };
+
     double
         freq,
         velo,
         fenvAmt;
 
+    // per unisono voice
     std::vector<double>
         freq_c,
         phase;
+
+    std::vector<FMVoice> fmVoices;
 
     size_t lifetime;
 
@@ -110,6 +126,8 @@ double SynthVoice::attack() const { return p_->env.attack(); }
 double SynthVoice::decay() const { return p_->env.decay(); }
 double SynthVoice::sustain() const { return p_->env.sustain(); }
 double SynthVoice::release() const { return p_->env.release(); }
+size_t SynthVoice::numFmVoices() const { return p_->fmVoices.size(); }
+
 const EnvelopeGenerator<double>& SynthVoice::envelope() const { return p_->env; }
 SynthVoice * SynthVoice::nextUnisonVoice() const { return p_->nextUnison; }
 void * SynthVoice::userData() const { return p_->userData; }
@@ -118,7 +136,49 @@ int64_t SynthVoice::userIndex() const { return p_->userIndex; }
 void SynthVoice::setUserData(void *data) { p_->userData = data; }
 
 
+double SynthVoice::Private::calcSample()
+{
+    double s = 0.0;
+    if (fmVoices.empty())
+    {
+        // for each combined unisono voice
+        for (size_t j = 0; j<phase.size(); ++j)
+        {
+            // advance phase counter
+            phase[j] += freq_c[j];
 
+            s += waveform(phase[j]);
+        }
+    }
+    else
+    {
+        double phaseMod = 0.,
+               freqMod = 0.,
+               ampMod = 0.;
+        for (FMVoice& fm : fmVoices)
+        {
+            // proc modulator envelope
+            fm.env.next();
+            fm.phase += freq_c[0] * fm.freqMul;
+            fm.sample = fm.velo * fm.env.value() * waveform(fm.phase);
+            phaseMod += fm.sample * fm.modPhase;
+            freqMod += fm.sample * fm.modFreq;
+            ampMod += fm.sample * fm.modAm;
+        }
+
+        // for each combined unisono voice
+        for (size_t j = 0; j<phase.size(); ++j)
+        {
+            // advance phase counter
+            phase[j] += freq_c[j] * (1. + freqMod);
+
+            double sam = waveform(phase[j] + phaseMod);
+            sam += ampMod * (ampMod*sam - sam);
+            s += sam;
+        }
+    }
+    return s;
+}
 
 
 
@@ -134,6 +194,7 @@ public:
           voicePolicy   (Synth::VP_QUITEST),
           sampleRate    (44100),
           props         ("synth"),
+          modPropsDef   ("mod-voice"),
           cbStart_      (0),
           cbEnd_        (0)
     {
@@ -188,7 +249,8 @@ public:
 
     size_t sampleRate;
 
-    QProps::Properties props;
+    QProps::Properties props, modPropsDef;
+    std::vector<QProps::Properties> modProps;
 
     NoteFreq<double> noteFreq;
 
@@ -223,6 +285,7 @@ QProps::Properties::NamedValues Synth::voicePolicyNamedValues()
            (int)VP_LOUDEST);
     return nv;
 }
+
 
 void Synth::Private::createProperties()
 {
@@ -262,6 +325,10 @@ void Synth::Private::createProperties()
                  "unisono voice in cents (100 per full note)"),
               11.);
 
+    props.set("number-mod-voices", tr("modulation voices"),
+              tr("The number of modulator voices per voice"),
+              1);
+
     props.set("base-freq", tr("base frequency"),
               tr("The frequency in Hertz of the lowest C note"),
               noteFreq.baseFrequency());
@@ -285,6 +352,55 @@ void Synth::Private::createProperties()
     props.setStep("sustain", 0.01);
 
     props.set("release", tr("release"),
+              tr("Release time of envelope in seconds"),
+              .6, 0., 10000., 0.01);
+
+
+    modPropsDef.set("volume", tr("amount"),
+              tr("Master volume of modulator voice"),
+              1.);
+    modPropsDef.setMin("volume", 0.);
+    modPropsDef.setStep("volume", 0.01);
+
+    modPropsDef.set("freq-mul", tr("frequency factor"),
+              tr("Multiplier of the master frequency"),
+              1.);
+    modPropsDef.setStep("freq-mul", 0.001);
+
+    modPropsDef.set("mod-add", tr("additive"),
+              tr("How much to add the modulator to the output"),
+              0.);
+    modPropsDef.setStep("mod-add", 0.01);
+
+    modPropsDef.set("mod-am", tr("amplitude modulation"),
+              tr("Amount of amplitude modulation"),
+              0.);
+    modPropsDef.setStep("mod-am", 0.01);
+
+    modPropsDef.set("mod-fm", tr("frequency modulation"),
+              tr("Amount of frequency modulation"),
+              0.);
+    modPropsDef.setStep("mod-fm", .01);
+
+    modPropsDef.set("mod-pm", tr("phase modulation"),
+              tr("Amount of phase modulation"),
+              1.);
+    modPropsDef.setStep("mod-pm", 0.01);
+
+    modPropsDef.set("attack", tr("attack"),
+              tr("Attack time of envelope in seconds"),
+              0.02, 0., 10000., 0.01);
+
+    modPropsDef.set("decay", tr("decay"),
+              tr("Decay time of envelope in seconds"),
+              .3, 0., 10000., 0.01);
+
+    modPropsDef.set("sustain", tr("sustain"),
+              tr("Sustain level of envelope"),
+              0.3);
+    modPropsDef.setStep("sustain", 0.01);
+
+    modPropsDef.set("release", tr("release"),
               tr("Release time of envelope in seconds"),
               .6, 0., 10000., 0.01);
 }
@@ -437,6 +553,24 @@ SynthVoice * Synth::Private::noteOn(
     v->userData = userData;
     v->userIndex = userIndex;
     v->nextUnison = nullptr;
+    size_t numMod = p->numberModVoices();
+    v->fmVoices.resize(numMod);
+    for (size_t i=0; i<numMod; ++i)
+    {
+        SynthVoice::Private::FMVoice& fm = v->fmVoices[i];
+        fm.env.setSampleRate(sampleRate);
+        fm.env.setAttack(p->modAttack(i));
+        fm.env.setDecay(p->modDecay(i));
+        fm.env.setSustain(p->modSustain(i));
+        fm.env.setRelease(p->modRelease(i));
+        fm.freqMul = p->modFreqMul(i);
+        fm.modAdd = p->modAdd(i);
+        fm.modAm = p->modAm(i);
+        fm.modFreq = p->modFm(i);
+        fm.modPhase = p->modPm(i);
+        fm.phase = 0.;
+        fm.velo = velocity * p->modAmount(i);
+    }
 
     return *i;
 }
@@ -521,6 +655,8 @@ void Synth::Private::process(float *output, size_t bufferLength)
                 v->env.trigger();
                 v->active = true;
                 v->cued = false;
+                for (auto& fm : v->fmVoices)
+                    fm.env.trigger();
                 if (cbStart_)
                     cbStart_(i);
             }
@@ -531,7 +667,8 @@ void Synth::Private::process(float *output, size_t bufferLength)
             // count number of samples alive
             ++(v->lifetime);
 
-            float s = 0.0;
+            float s = v->calcSample();
+            /*
             for (size_t j = 0; j<v->phase.size(); ++j)
             {
                 // advance phase counter
@@ -539,13 +676,14 @@ void Synth::Private::process(float *output, size_t bufferLength)
                 // get sample
                 s += std::sin(v->phase[j] * 3.14159265 * 2.)
                      + .3 * std::sin(v->phase[j] * 3.14159265 * 2. * 4);
-            }
+            }*/
 
             // put into buffer
             *output += s * vol * v->velo * v->env.value();
 
             // process envelope
             v->env.next();
+
             // check for end of envelope
             if (!v->env.active())
             {
@@ -621,14 +759,7 @@ void Synth::Private::process(float ** outputs, size_t bufferLength)
         for (size_t sample = start; sample < bufferLength; ++sample, ++output)
         {
             // get oscillator sample
-            float s = 0.0;
-            for (size_t j = 0; j<v->phase.size(); ++j)
-            {
-                // advance phase counter
-                v->phase[j] += v->freq_c[j];
-                // get sample
-                s += std::sin(v->phase[j] * 3.14159265 * 2.);
-            }
+            float s = v->calcSample();
 
             // envelope before filter
             s *= v->env.value();
@@ -680,6 +811,11 @@ Synth::~Synth()
 size_t Synth::sampleRate() const { return p_->sampleRate; }
 
 const QProps::Properties& Synth::props() const { return p_->props; }
+const QProps::Properties& Synth::modProps(size_t idx) const
+{
+    QPROPS_ASSERT_LT(idx, p_->modProps.size(), "");
+    return p_->modProps[idx];
+}
 
 void Synth::setProperties(const QProps::Properties& p)
 {
@@ -689,6 +825,16 @@ void Synth::setProperties(const QProps::Properties& p)
     p_->voicePolicy = (VoicePolicy)p_->props.get("voice-policy").toInt();
     if (numberVoices() != p_->voices.size())
         p_->setNumVoices(numberVoices());
+    while (numberModVoices() < p_->modProps.size())
+        p_->modProps.pop_back();
+    while (numberModVoices() > p_->modProps.size())
+        p_->modProps.push_back(p_->modPropsDef);
+}
+
+void Synth::setModProperties(size_t idx, const QProps::Properties& p)
+{
+    QPROPS_ASSERT_LT(idx, p_->modProps.size(), "");
+    p_->modProps[idx] = p;
 }
 
 void Synth::setVoiceStartedCallback(std::function<void (SynthVoice *)> func) { p_->cbStart_ = func; }

@@ -61,6 +61,17 @@ public:
     double sustain() const;
     double release() const;
 
+    size_t numFmVoices() const;
+    /*
+    double fmFrequency(size_t idx) const;
+    double fmPhase(size_t idx) const;
+    double fmVelocity(size_t idx) const;
+    double fmAttack(size_t idx) const;
+    double fmDecay(size_t idx) const;
+    double fmSustain(size_t idx) const;
+    double fmRelease(size_t idx) const;
+    */
+
     const EnvelopeGenerator<double>& envelope() const;
 
     /** Returns the next unisono voice, or NULL */
@@ -110,7 +121,6 @@ public:
         /** Stop the loudest voice */
         VP_LOUDEST
     };
-
     static QProps::Properties::NamedValues voicePolicyNamedValues();
 
     Synth();
@@ -119,12 +129,14 @@ public:
     // ------------ getter ----------------
 
     const QProps::Properties& props() const;
+    const QProps::Properties& modProps(size_t idx) const;
 
     size_t sampleRate() const;
 
     size_t numberVoices() const { return props().get("number-voices").toUInt(); }
     VoicePolicy voicePolicy() const {
         return (VoicePolicy)props().get("voice-policy").toInt(); }
+    size_t numberModVoices() const { return props().get("number-mod-voices").toUInt(); }
 
     double volume() const { return props().get("volume").toDouble(); }
     bool combinedUnison() const
@@ -145,24 +157,40 @@ public:
     double notesPerOctave()
         { return props().get("notes-per-octave").toDouble(); }
 
+    // -- modulator voices --
+
+    double modAttack(size_t idx) const { return modProps(idx).get("attack").toDouble(); }
+    double modDecay(size_t idx) const { return modProps(idx).get("decay").toDouble(); }
+    double modSustain(size_t idx) const { return modProps(idx).get("sustain").toDouble(); }
+    double modRelease(size_t idx) const { return modProps(idx).get("release").toDouble(); }
+
+    double modAmount(size_t idx) const { return modProps(idx).get("volume").toDouble(); }
+    double modAdd(size_t idx) const { return modProps(idx).get("mod-add").toDouble(); }
+    double modAm(size_t idx) const { return modProps(idx).get("mod-am").toDouble(); }
+    double modFm(size_t idx) const { return modProps(idx).get("mod-fm").toDouble(); }
+    double modPm(size_t idx) const { return modProps(idx).get("mod-pm").toDouble(); }
+    double modFreqMul(size_t idx) const { return modProps(idx).get("freq-mul").toDouble(); }
+
     // ----------- setter -----------------
 
     /** Sets the sampling rate in Hertz. */
     void setSampleRate(size_t sr);
 
     void setProperties(const QProps::Properties& p);
+    void setModProperties(size_t idx, const QProps::Properties& p);
 
     // ---------- callbacks ---------------
 
     /** Supplies a function that should be called when a voice was started.
         The call is immediate and might come from the audio thread!
-        Actually the only function that can cause this callback is process(). */
+        Actually the only function that can cause this callback
+        is process(). */
     void setVoiceStartedCallback(std::function<void(SynthVoice*)> func);
 
     /** Supplies a function that should be called when a voice has ended.
         The call is immediate and might come from the audio thread!
-        Actually the only functions that can cause this callback are process(),
-        setNumberVoices() and the destructor. */
+        The only functions that can cause this callback are
+        process(), setNumberVoices() and the destructor. */
     void setVoiceEndedCallback(std::function<void(SynthVoice*)> func);
 
     // ---------- audio -------------------
@@ -173,11 +201,11 @@ public:
         For true unisono voices
         (when unisonVoices() > 1 and combinedUnison() == true),
         the additional voices are in SynthVoice::nextUnisonVoice().
-        If @p startSample > 0, the start of the voice will be delayed for the
-        given number of samples. The returned voice will be valid
-        but not active yet.
-        Note that startSample must be smaller than the bufferLength parameter
-        in process() to start the voice.
+        If @p startSample > 0, the start of the voice will be
+        delayed for the given number of samples.
+        The returned voice will be valid but not active yet.
+        Note that startSample must be smaller than the
+        bufferLength parameter in process() to start the voice.
         @p userData and @p userIndex is passed to the SynthVoice. */
     SynthVoice * noteOn(int note, double velocity,
                         size_t startSample = 0,

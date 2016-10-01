@@ -293,6 +293,7 @@ void MainWindow::Private::createMenu()
     SONOT__CREATE_PROP(tr("Hidden"), "hidden");
     a->setChecked(true);
     SONOT__CREATE_PROP(tr("Synth"), "synth");
+    SONOT__CREATE_PROP(tr("Synth Mod"), "synth-mod-0");
     SONOT__CREATE_PROP(tr("Score"), "score");
     SONOT__CREATE_PROP(tr("Part"), "stream");
     SONOT__CREATE_PROP(tr("Document"), "document");
@@ -309,7 +310,12 @@ void MainWindow::Private::createMenu()
 void MainWindow::Private::setEditProperties(const QString &s)
 {
     curPropId = s;
-    if (curPropId.startsWith("synth"))
+    if (curPropId.startsWith("synth-mod-"))
+    {
+        int idx = curPropId.mid(10).toInt();
+        propsView->setProperties(synthStream->synth().modProps(idx));
+    }
+    else if (curPropId.startsWith("synth"))
     {
         propsView->setProperties(synthStream->synth().props());
     }
@@ -347,7 +353,12 @@ void MainWindow::Private::setEditProperties(const QString &s)
 
 void MainWindow::Private::applyProperties()
 {
-    if (curPropId.startsWith("synth"))
+    if (curPropId.startsWith("synth-mod-"))
+    {
+        int idx = curPropId.mid(10).toInt();
+        synthStream->setSynthModProperties(idx, propsView->properties());
+    }
+    else if (curPropId.startsWith("synth"))
     {
         synthStream->setSynthProperties(propsView->properties());
     }

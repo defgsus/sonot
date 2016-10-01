@@ -151,6 +151,11 @@ void SynthDevice::setSynthProperties(const QProps::Properties& p)
     p_->synth.setProperties(p);
 }
 
+void SynthDevice::setSynthModProperties(size_t idx,
+                                        const QProps::Properties& p)
+{
+    p_->synth.setModProperties(idx, p);
+}
 
 void SynthDevice::playNote(int8_t note, double duration)
 {
