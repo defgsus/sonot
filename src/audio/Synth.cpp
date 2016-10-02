@@ -163,12 +163,12 @@ double SynthVoice::Private::calcSample()
             // proc modulator envelope
             fm.env.next();
             // modulation from previous stage
-            fm.phase += fm.modSelfPhase * phaseMod;
-            double freq = freq_c[0] * fm.freqMul;
+            fm.phase += fm.modSelfFreq * freqMod;
             freq += fm.modSelfFreq * freqMod;
             // get modulator's sample
-            fm.phase += freq;
-            fm.sample = fm.velo * fm.env.value() * waveform(fm.phase);
+            fm.phase += freq_c[0] * fm.freqMul;
+            fm.sample = fm.velo * fm.env.value()
+                            * waveform(fm.phase + fm.modSelfPhase * phaseMod);
             fm.sample += fm.modSelfAm * ampMod
                             * (fm.sample*ampMod - fm.sample);
             // add to modulation
@@ -182,9 +182,7 @@ double SynthVoice::Private::calcSample()
         for (size_t j = 0; j<phase.size(); ++j)
         {
             // advance phase counter
-            double freq = freq_c[j];
-            freq += freq * freqMod;
-            phase[j] += freq;
+            phase[j] += freq_c[j] + freqMod;
 
             double sam = waveform(phase[j] + phaseMod);
             sam += ampMod * (ampMod*sam - sam);
@@ -341,7 +339,7 @@ void Synth::Private::createProperties()
 
     props.set("number-mod-voices", tr("modulation voices"),
               tr("The number of modulator voices per voice"),
-              1);
+              0);
 
     props.set("base-freq", tr("base frequency"),
               tr("The frequency in Hertz of the lowest C note"),
@@ -861,7 +859,18 @@ void Synth::setProperties(const QProps::Properties& p)
     while (numberModVoices() < p_->modProps.size())
         p_->modProps.pop_back();
     while (numberModVoices() > p_->modProps.size())
-        p_->modProps.push_back(p_->modPropsDef);
+    {
+        if (!p_->modProps.empty())
+            p_->modProps.push_back(p_->modPropsDef);
+        else
+        {
+            auto p = p_->modPropsDef;
+            p.setVisible("mod-self-am", false);
+            p.setVisible("mod-self-fm", false);
+            p.setVisible("mod-self-pm", false);
+            p_->modProps.push_back(p);
+        }
+    }
 }
 
 void Synth::setModProperties(size_t idx, const QProps::Properties& p)

@@ -333,6 +333,7 @@ void MainWindow::closeEvent(QCloseEvent* e)
 void MainWindow::setScore(const Score& s)
 {
     p_->document->setScore(s);
+    p_->propsView->setDocument(p_->document);
 }
 
 

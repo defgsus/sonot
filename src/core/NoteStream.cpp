@@ -44,7 +44,7 @@ NoteStream::NoteStream()
 
     p_props_.set("pause-on-end", tr("pause on end"),
                  tr("Pause playback on end of this part"),
-                 true);
+                 false);
 
     p_props_.set("title", tr("title"),
                  tr("The title of this part"),
@@ -52,7 +52,6 @@ NoteStream::NoteStream()
     p_props_.set("source", tr("source"),
                  tr("Narrow description of the source, like page number"),
                  QString());
-
     p_props_.set("transcriber", tr("transcriber"),
                  tr("The one who did the typing"),
                  QString());
