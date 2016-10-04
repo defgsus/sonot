@@ -183,6 +183,8 @@ const char* Note::noteName(Name n)
     }
 }
 
+const char* Note::noteName() const { return noteName(note()); }
+
 QString Note::toString() const
 {
     if (p_note_ == Invalid)

@@ -38,6 +38,8 @@ public:
 
     QString toString();
 
+    void saveFile(const QString& fn);
+
 private:
     struct Private;
     Private* p_;

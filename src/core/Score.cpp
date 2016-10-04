@@ -42,13 +42,15 @@ struct Score::Private
                   tr("Title of the collection"), QString());
         props.set("author", tr("author"),
                   tr("Author of the collection"), QString());
+        props.set("poet", tr("poet"),
+                  tr("Author of the lyrics"), QString());
         props.set("copyright", tr("copyright"),
                   tr("Copyleft/right information"), QString());
-        props.set("source", tr("source"),
-                  tr("Narrow description of the source, like page number"),
-                  QString());
         props.set("transcriber", tr("transcriber"),
                   tr("The one who did the typing"),
+                  QString());
+        props.set("source", tr("source"),
+                  tr("Description of the source"),
                   QString());
     }
 

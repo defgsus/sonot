@@ -6,7 +6,8 @@ HEADERS += \
     src/QProps/JsonInterfaceHelper.h \
     src/QProps/Properties.h \
     src/QProps/PropertyWidget.h \
-    src/QProps/PropertiesView.h
+    src/QProps/PropertiesView.h \
+    src/QProps/FileTypes.h
 
 SOURCES += \
     src/QProps/JsonInterface.cpp \
@@ -15,4 +16,5 @@ SOURCES += \
     src/QProps/Properties_json.cpp \
     src/QProps/Properties_qvariant.cpp \
     src/QProps/PropertyWidget.cpp \
-    src/QProps/PropertiesView.cpp
+    src/QProps/PropertiesView.cpp \
+    src/QProps/FileTypes.cpp

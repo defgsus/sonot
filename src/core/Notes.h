@@ -50,6 +50,7 @@ public:
     /** Returns the note at given column.
         @warning No range checking! */
     const Note& note(size_t column) const;
+    const Note& operator[](size_t column) const { return note(column); }
 
     /** Returns the given column's time in range [0,1]
         scaled from length(). */

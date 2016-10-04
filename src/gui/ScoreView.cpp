@@ -70,8 +70,8 @@ struct ScoreView::Private
         , penLayoutFrame        (QColor(0,50,50,30))
         , penScoreRow           (QColor(0,0,0,50))
         , penScoreItem          (QColor(0,0,0))
-        , penCursor             (QColor(0,60,100,50))
-        , penPlayCursor         (QColor(0,160,0,60))
+        , penCursor             (QColor(0,60,100,100))
+        , penPlayCursor         (QColor(0,160,0,100))
     {
         penScoreItem.setWidthF(.5);
         penLayoutFrame.setStyle(Qt::DotLine);

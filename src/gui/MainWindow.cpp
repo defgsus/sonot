@@ -29,6 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QMessageBox>
 
 #include "QProps/PropertiesView.h"
+#include "QProps/FileTypes.h"
 #include "QProps/error.h"
 
 #include "MainWindow.h"
@@ -44,6 +45,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/NoteStream.h"
 #include "core/Score.h"
 #include "core/ScoreEditor.h"
+#include "core/ExportMusicXML.h"
 
 namespace Sonot {
 
@@ -76,6 +78,7 @@ struct MainWindow::Private
     bool loadScore(const QString& fn);
     bool saveScore(const QString& fn);
     Score createNewScore();
+    bool exportMusicXML();
 
     bool loadSynth(const QString& fn);
     bool saveSynth(const QString& fn);
@@ -118,6 +121,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     //setScore(p_->getSomeScore());
     setScore(p_->createNewScore());
+
+
+    // install file types
+    QProps::FileTypes::addFileType(QProps::FileType(
+        "document", "Sonot document", "../sonot/score",
+        QStringList() << ".sonot.json"));
+    QProps::FileTypes::addFileType(QProps::FileType(
+        "synth", "Synthesizer", "../sonot/synth",
+        QStringList() << ".synth.json"));
+    QProps::FileTypes::addFileType(QProps::FileType(
+        "musicxml", "MusicXML", "./",
+        QStringList() << ".music.xml"));
 }
 
 MainWindow::~MainWindow()
@@ -219,7 +234,7 @@ void MainWindow::Private::createMenu()
     {
         if (!isSaveToDiscard())
             return;
-        QString fn = p->getScoreFilename(false);
+        QString fn = QProps::FileTypes::getOpenFilename("document", p);
         if (!fn.isEmpty())
             loadScore(fn);
     });
@@ -237,10 +252,17 @@ void MainWindow::Private::createMenu()
     a->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_S);
     a->connect(a, &QAction::triggered, [=]()
     {
-        QString fn = p->getScoreFilename(true);
+        QString fn = QProps::FileTypes::getSaveFilename("document", p);
         if (!fn.isEmpty())
             saveScore(fn);
     });
+
+    menu->addSeparator();
+
+    auto sub = menu->addMenu(tr("Export"));
+
+        a = sub->addAction(tr("MusicXML"));
+        connect(a, &QAction::triggered, [=](){ exportMusicXML(); });
 
     menu->addSeparator();
 
@@ -249,7 +271,7 @@ void MainWindow::Private::createMenu()
     {
         if (!isSaveToDiscardSynth())
             return;
-        QString fn = p->getSynthFilename(false);
+        QString fn = QProps::FileTypes::getOpenFilename("synth", p);
         if (!fn.isEmpty())
             loadSynth(fn);
     });
@@ -257,7 +279,7 @@ void MainWindow::Private::createMenu()
     a = menu->addAction(tr("Save Synth settings as"));
     a->connect(a, &QAction::triggered, [=]()
     {
-        QString fn = p->getSynthFilename(true);
+        QString fn = QProps::FileTypes::getSaveFilename("synth", p);
         if (!fn.isEmpty())
             saveSynth(fn);
     });
@@ -350,7 +372,7 @@ bool MainWindow::Private::isSaveToDiscard()
         return true;
     if (ret == 2)
         return false;
-    QString fn = p->getScoreFilename(true);
+    QString fn = QProps::FileTypes::getOpenFilename("document", p);
     if (fn.isEmpty())
         return false;
     return saveScore(fn);
@@ -370,7 +392,7 @@ bool MainWindow::Private::isSaveToDiscardSynth()
         return true;
     if (ret == 2)
         return false;
-    QString fn = p->getSynthFilename(true);
+    QString fn = QProps::FileTypes::getOpenFilename("synth", p);
     if (fn.isEmpty())
         return false;
     return saveSynth(fn);
@@ -455,6 +477,24 @@ Score MainWindow::Private::createNewScore()
     return s;
 }
 
+bool MainWindow::Private::exportMusicXML()
+{
+    ExportMusicXML exp(*document->score());
+    QString filename = QProps::FileTypes::getSaveFilename("musicxml");
+    try
+    {
+        exp.saveFile(filename);
+    }
+    catch (const QProps::Exception& e)
+    {
+        QMessageBox::critical(p, tr("Export MusicXML"),
+            tr("Exporting MusicXML file\n%1\nfailed!\n%2")
+                              .arg(filename).arg(e.text()));
+        return false;
+    }
+    return true;
+}
+
 bool MainWindow::Private::loadSynth(const QString& fn)
 {
     try
@@ -492,7 +532,7 @@ bool MainWindow::Private::saveSynth(const QString& fn)
     return false;
 }
 
-
+/*
 QString MainWindow::getScoreFilename(bool forSave)
 {
     QString dir = "../sonot/score",
@@ -551,7 +591,7 @@ QString MainWindow::getSynthFilename(bool forSave)
     }
     return fn;
 }
-
+*/
 
 
 

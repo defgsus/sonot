@@ -82,6 +82,8 @@ public:
 
     static const char* noteName(Name n);
 
+    const char* noteName() const;
+
     /** Pure value, this is either a note if >= 0
         or a Special enum if < 0 */
     int8_t value() const;

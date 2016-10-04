@@ -35,8 +35,8 @@ public:
     MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    QString getScoreFilename(bool forSave);
-    QString getSynthFilename(bool forSave);
+    //QString getScoreFilename(bool forSave);
+    //QString getSynthFilename(bool forSave);
 
 public slots:
 

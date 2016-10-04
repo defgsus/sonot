@@ -247,9 +247,11 @@ public:
 
     const QList<NoteStream>& noteStreams() const;
 
-    QString title() const { return props().get("title").toString(); }
-    QString author() const { return props().get("author").toString(); }
-    QString copyright() const { return props().get("copyright").toString(); }
+    QString stringTitle() const { return props().get("title").toString(); }
+    QString stringAuthor() const { return props().get("author").toString(); }
+    QString stringCopyright() const { return props().get("copyright").toString(); }
+    QString stringSource() const { return props().get("source").toString(); }
+    QString stringTranscriber() const { return props().get("transcriber").toString(); }
 
     /** Returns an index to the specified note.
         If any of the indices is out of range an invalid Index is returned.

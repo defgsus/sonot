@@ -19,6 +19,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ****************************************************************************/
 
 #include <QTextStream>
+#include <QFile>
+
+#include "QProps/error.h"
 
 #include "ExportMusicXML.h"
 #include "Score.h"
@@ -42,7 +45,8 @@ struct ExportMusicXML::Private
     void exportHeader();
     void exportFooter();
     void exportWork();
-    void exportPart(const NoteStream& xml);
+    void exportNotes();
+    void exportPart(size_t row);
 
     Score score;
     QString xmlString;
@@ -67,12 +71,22 @@ QString ExportMusicXML::toString()
     return p_->xmlString;
 }
 
+void ExportMusicXML::saveFile(const QString& fn)
+{
+    QFile f(fn);
+    if (!f.open(QFile::WriteOnly))
+        QPROPS_ERROR("Could not open file " << fn
+                     << " for writing.\n" << f.errorString());
+    QByteArray a = toString().toUtf8();
+    f.write(a);
+}
+
 void ExportMusicXML::Private::exportAll()
 {
     exportHeader();
     exportWork();
-    for (const NoteStream& s : score.noteStreams())
-        exportPart(s);
+    exportNotes();
+    exportFooter();
 }
 
 void ExportMusicXML::Private::exportHeader()
@@ -95,45 +109,63 @@ void ExportMusicXML::Private::exportWork()
 {
     xml << "<work>\n"
         << "  <work-number>1</work-number>\n"
-        << "  <work-title>" << score.title() << "</work-title>\n"
+        << "  <work-title>" << score.stringTitle() << "</work-title>\n"
         << "</work>\n"
         //<movement-number>22</movement-number>
         //<movement-title>Mut</movement-title>
         << "<identification>\n"
         << "  <creator type=\"composer\">"
-                << score.author() << "</creator>\n";
+                << score.stringAuthor() << "</creator>\n";
 
     if (score.props().contains("poet"))
-        xml
-        << "  <creator type=\"poet\">"
-        << score.props().get("poet").toString() << "</creator>\n";
+        xml << "  <creator type=\"poet\">"
+            << score.props().get("poet").toString() << "</creator>\n";
 
-    xml << "  <rights>" << score.copyright() << "</rights>\n"
-        << "  <encoding>\n"
+    xml << "  <rights>" << score.stringCopyright() << "</rights>\n"
+        << "  <encoding>\n";
         //<< "    <encoding-date>2002-02-16</encoding-date>\n"
-        //<< "    <encoder>Michael Good</encoder>\n"
-        << "    <software>Sonot</software>\n"
+
+    if (!score.stringTranscriber().isEmpty())
+        xml << "    <encoder>" << score.stringTranscriber()
+            << "</encoder>\n";
+
+    xml << "    <software>Sonot</software>\n"
         << "    <encoding-description>Sonot export"
                 "</encoding-description>\n"
-        << "  </encoding>\n"
-        //<< "  <source></source>\n"
-        << "</identification>\n"
-        << "<part-list>\n"
+        << "  </encoding>\n";
+    if (!score.stringSource().isEmpty())
+        xml << "  <source>" << score.stringSource() << "</source>\n";
+
+    xml << "</identification>\n";
+}
+
+void ExportMusicXML::Private::exportNotes()
+{
+    xml << "<part-list>\n"
         << "  <score-part id=\"P1\">\n"
-        << "    <part-name>Singstimme.</part-name>\n"
-        << "  </score-part>\n"
-        << "  <score-part id=\"P2\">\n"
-        << "    <part-name>Pianoforte.</part-name>\n"
+        << "    <part-name>Mal sehen</part-name>\n"
         << "  </score-part>\n"
         << "</part-list>\n"
     ;
+
+    exportPart(0);
 }
 
-void ExportMusicXML::Private::exportPart(const NoteStream &stream)
+void ExportMusicXML::Private::exportPart(size_t row)
 {
-    xml << "<part>\n"
-        << "  <attributes>\n"
-        << "    <divisions>24</divisions>\n";
+    xml << "<part id=\"P" << (row+1) << "\">\n";
+
+    const NoteStream& stream = score.noteStream(0);
+    for (size_t barIdx=0; barIdx<stream.numBars(); ++barIdx)
+    {
+        xml << "  <messure number = \"" << barIdx << "\">\n";
+        xml << "    <attributes>\n";
+
+        const Bar& bar = stream.bar(barIdx);
+        int beats = bar.maxNumberNotes();
+        int beatType = 4;
+
+        xml << "      <divisions>" << (beats*beatType) << "</divisions>\n";
 
 /*
         << "    <key>\n"
@@ -141,12 +173,28 @@ void ExportMusicXML::Private::exportPart(const NoteStream &stream)
         << "      <mode>minor</mode>\n"
         << "    </key>\n"
 */
-    xml << "    <time>\n"
-        << "      <beats>4</beats>\n"
-        << "      <beat-type>4</beat-type>\n"
-        << "    </time>\n";
+        xml << "      <time>\n"
+            << "        <beats>" << beats << "</beats>\n"
+            << "        <beat-type>" << beatType << "</beat-type>\n"
+            << "      </time>\n";
 
-    xml << "  </attributes>\n";
+        xml << "    </attributes>\n";
+
+        xml << "    <sound tempo=\"" << stream.beatsPerMinute(0) << "\"/>\n";
+
+        const Notes& notes = bar.notes(row);
+        for (size_t noteIdx = 0; noteIdx < notes.length(); ++noteIdx)
+        {
+            const Note& note = notes[noteIdx];
+            xml << "    <note><pitch><step>" << note.noteName() << "</step>"
+                    << "<octave>" << note.octave() << "</octave></pitch>\n";
+            xml << "      <duration>" << 1 << "</duration>\n";
+            xml << "      <type>" << "eight" << "</type>\n";
+            xml << "    </note>\n";
+        }
+
+        xml << "  </messure>";
+    }
 
     //xml << "  <note><pitch>"
 

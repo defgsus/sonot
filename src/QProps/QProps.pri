@@ -6,7 +6,8 @@ HEADERS += \
     JsonInterfaceHelper.h \
     Properties.h \
     PropertyWidget.h \
-    PropertiesView.h
+    PropertiesView.h \
+    FileTypes.h
 
 SOURCES += \
     JsonInterface.cpp \
@@ -15,4 +16,5 @@ SOURCES += \
     Properties_json.cpp \
     Properties_qvariant.cpp \
     PropertyWidget.cpp \
-    PropertiesView.cpp
+    PropertiesView.cpp \
+    FileTypes.cpp
