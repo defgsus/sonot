@@ -53,6 +53,10 @@ public:
     bool operator != (const Bar& o) const { return !(*this == o); }
 
     bool isEmpty() const;
+    /** Returns true if any of the row's Notes::containsNotes()
+        returns true */
+    bool containsNotes() const;
+
     size_t numRows() const;
     size_t maxNumberNotes() const;
 

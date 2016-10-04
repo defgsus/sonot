@@ -67,6 +67,14 @@ Bar::Iter Bar::end() { return p_->rows.end(); }
 bool Bar::isEmpty() const { return p_->rows.empty(); }
 size_t Bar::numRows() const { return p_->rows.size(); }
 
+bool Bar::containsNotes() const
+{
+    for (const Notes& n : p_->rows)
+        if (n.containsNotes())
+            return true;
+    return false;
+}
+
 bool Bar::operator == (const Bar& o) const
 {
     return p_->rows == o.p_->rows;

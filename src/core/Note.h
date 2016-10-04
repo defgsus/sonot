@@ -93,6 +93,8 @@ public:
     bool isSpecial() const { return !isNote(); }
     bool isNote(Name n) const { return p_note_ == n; }
     bool isSpecial(Special s) const { return p_note_ == s; }
+    bool isRest() const { return isSpecial(Rest); }
+    bool isSpace() const { return isSpecial(Space); }
 
     Name   note() const { return Name(p_note_); }
     int8_t accidental() const { return p_acc_; }

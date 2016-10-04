@@ -133,7 +133,7 @@ MainWindow::MainWindow(QWidget *parent)
         QStringList() << ".synth.json",
         QStringList() << "Sonot synth (*.synth.json)"));
     QProps::FileTypes::addFileType(QProps::FileType(
-        "musicxml", "MusicXML", "./",
+        "musicxml", "MusicXML", "../sonot/export",
         QStringList() << ".music.xml",
         QStringList() << "MusicXML (*.music.xml *.xml)"));
 }

@@ -39,6 +39,13 @@ bool Notes::operator == (const Notes& rhs) const
     return p_data_ == rhs.p_data_;
 }
 
+bool Notes::containsNotes() const
+{
+    for (const Note& n : p_data_)
+        if (n.isNote())
+            return true;
+    return false;
+}
 
 const Note& Notes::note(size_t column) const
 {

@@ -44,6 +44,10 @@ public:
 
     bool isEmpty() const { return p_data_.empty(); }
 
+    /** Returns true if at least on Note::isNote() is true for
+        the contained data. */
+    bool containsNotes() const;
+
     /** Number of Notes */
     size_t length() const { return p_data_.size(); }
 
