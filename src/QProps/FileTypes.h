@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef QPROPS_SRC_FILETYPES_H
 #define QPROPS_SRC_FILETYPES_H
 
-
+#include <QtCore>
 #include <QString>
 #include <QStringList>
 
@@ -38,18 +38,22 @@ public:
     FileType(const QString& id,
              const QString& name,
              const QString& directory,
-             const QStringList& extensions)
-        : id(id), name(name), directory(directory), extensions(extensions)
+             const QStringList& extensions,
+             const QStringList& filters)
+        : id(id), name(name), directory(directory),
+          extensions(extensions), filters(filters)
     { }
 
     QString id, name, directory;
-    QStringList extensions;
+    QStringList extensions, filters;
 };
 
 
 /** Singleton instance for managing application's file types */
 class FileTypes
 {
+    Q_DECLARE_TR_FUNCTIONS(FileTypes);
+
     FileTypes() { }
     FileTypes(const FileTypes&) = delete;
     void operator=(const FileTypes&) = delete;
@@ -64,18 +68,25 @@ public:
     static QString getDirectory(const QString& id);
     /** Returns a list of extensions for the file type */
     static QStringList getExtensions(const QString& id);
+    /** Returns a list of filters for the file type */
+    static QStringList getFilters(const QString& id);
 
 #ifdef QT_GUI_LIB
     /** Returns a filename for saving the file type, or
         empty string */
-    static QString getSaveFilename(const QString& id, QWidget* parent = nullptr);
-    static QString getOpenFilename(const QString& id, QWidget* parent = nullptr);
+    static QString getSaveFilename(const QString& id,
+                                   QWidget* parent = nullptr,
+                                   bool updateDirectory = true);
+    static QString getOpenFilename(const QString& id,
+                                   QWidget* parent = nullptr,
+                                   bool updateDirectory = true);
 #endif
 
     // -------------- setter -----------------
 
     static void addFileType(const FileType& t);
 
+    static void setDirectory(const QString& id, const QString& dir);
 };
 
 } // namespace QProps

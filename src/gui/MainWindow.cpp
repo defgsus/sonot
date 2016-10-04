@@ -126,13 +126,16 @@ MainWindow::MainWindow(QWidget *parent)
     // install file types
     QProps::FileTypes::addFileType(QProps::FileType(
         "document", "Sonot document", "../sonot/score",
-        QStringList() << ".sonot.json"));
+        QStringList() << ".sonot.json",
+        QStringList() << "Sonot document (*.sonot.json)"));
     QProps::FileTypes::addFileType(QProps::FileType(
         "synth", "Synthesizer", "../sonot/synth",
-        QStringList() << ".synth.json"));
+        QStringList() << ".synth.json",
+        QStringList() << "Sonot synth (*.synth.json)"));
     QProps::FileTypes::addFileType(QProps::FileType(
         "musicxml", "MusicXML", "./",
-        QStringList() << ".music.xml"));
+        QStringList() << ".music.xml",
+        QStringList() << "MusicXML (*.music.xml *.xml)"));
 }
 
 MainWindow::~MainWindow()
@@ -372,7 +375,7 @@ bool MainWindow::Private::isSaveToDiscard()
         return true;
     if (ret == 2)
         return false;
-    QString fn = QProps::FileTypes::getOpenFilename("document", p);
+    QString fn = QProps::FileTypes::getSaveFilename("document", p);
     if (fn.isEmpty())
         return false;
     return saveScore(fn);
@@ -392,7 +395,7 @@ bool MainWindow::Private::isSaveToDiscardSynth()
         return true;
     if (ret == 2)
         return false;
-    QString fn = QProps::FileTypes::getOpenFilename("synth", p);
+    QString fn = QProps::FileTypes::getSaveFilename("synth", p);
     if (fn.isEmpty())
         return false;
     return saveSynth(fn);
@@ -480,7 +483,10 @@ Score MainWindow::Private::createNewScore()
 bool MainWindow::Private::exportMusicXML()
 {
     ExportMusicXML exp(*document->score());
-    QString filename = QProps::FileTypes::getSaveFilename("musicxml");
+    QString filename = QProps::FileTypes::getSaveFilename("musicxml", p);
+    if (filename.isEmpty())
+        return false;
+
     try
     {
         exp.saveFile(filename);
@@ -488,8 +494,8 @@ bool MainWindow::Private::exportMusicXML()
     catch (const QProps::Exception& e)
     {
         QMessageBox::critical(p, tr("Export MusicXML"),
-            tr("Exporting MusicXML file\n%1\nfailed!\n%2")
-                              .arg(filename).arg(e.text()));
+            tr("Exporting MusicXML file failed!\n%1")
+                              .arg(e.text()));
         return false;
     }
     return true;
@@ -531,68 +537,6 @@ bool MainWindow::Private::saveSynth(const QString& fn)
     }
     return false;
 }
-
-/*
-QString MainWindow::getScoreFilename(bool forSave)
-{
-    QString dir = "../sonot/score",
-            filter = "*.sonot.json";
-    QString fn;
-    if (forSave)
-        fn = QFileDialog::getSaveFileName(this, tr("save score"),
-                                 dir, filter, &filter);
-    else
-        fn = QFileDialog::getOpenFileName(this, tr("load score"),
-                                 dir, filter, &filter);
-    if (!fn.isEmpty() && !fn.endsWith(".sonot.json"))
-    {
-        fn.append( ".sonot.json" );
-        if (forSave && QFileInfo(fn).exists())
-        {
-            int r = QMessageBox::question(this, tr("Replace score"),
-                    tr("The file %1 already exists\n").arg(fn),
-                    tr("Change name"), tr("Overwrite"), tr("Cancel"));
-            if (r == 0)
-                return getScoreFilename(true);
-            if (r == 1)
-                return fn;
-            return QString();
-        }
-    }
-    return fn;
-}
-
-
-QString MainWindow::getSynthFilename(bool forSave)
-{
-    QString dir = "../sonot/synth",
-            filter = "*.sonot.json";
-    QString fn;
-    if (forSave)
-        fn = QFileDialog::getSaveFileName(this, tr("save synth"),
-                                 dir, filter, &filter);
-    else
-        fn = QFileDialog::getOpenFileName(this, tr("load synth"),
-                                 dir, filter, &filter);
-    if (!fn.isEmpty() && !fn.endsWith(".sonot.json"))
-    {
-        fn.append( ".sonot.json" );
-        if (forSave && QFileInfo(fn).exists())
-        {
-            int r = QMessageBox::question(this, tr("Replace synth"),
-                    tr("The file %1 already exists\n").arg(fn),
-                    tr("Change name"), tr("Overwrite"), tr("Cancel"));
-            if (r == 0)
-                return getSynthFilename(true);
-            if (r == 1)
-                return fn;
-            return QString();
-        }
-    }
-    return fn;
-}
-*/
-
 
 
 

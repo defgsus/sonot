@@ -19,8 +19,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ****************************************************************************/
 
 #include <QMap>
+#include <QFileInfo>
+
 #ifdef QT_GUI_LIB
 #   include <QFileDialog>
+#   include <QMessageBox>
 #endif
 
 #include "FileTypes.h"
@@ -39,9 +42,22 @@ struct FileTypes::Private
         return p_instance_;
     }
 
+    static void fixDirectory(QString& dir);
+
     QMap<QString, FileType> typeMap;
 };
 
+
+void FileTypes::Private::fixDirectory(QString& dir)
+{
+    if (dir.isEmpty())
+        dir = "./";
+    else
+        dir.replace("\\", "/");
+
+    if (!dir.endsWith("/"))
+        dir.append("/");
+}
 
 
 void FileTypes::addFileType(const FileType& t_)
@@ -53,11 +69,7 @@ void FileTypes::addFileType(const FileType& t_)
 
     FileType t(t_);
 
-    if (t.directory.isEmpty())
-        t.directory = "./";
-    else t.directory.replace("\\", "/");
-    if (!t.directory.endsWith("/"))
-        t.directory.append("/");
+    Private::fixDirectory(t.directory);
 
     for (QString& e : t.extensions)
     {
@@ -68,15 +80,30 @@ void FileTypes::addFileType(const FileType& t_)
             e.prepend(".");
     }
 
+    if (t.filters.isEmpty())
+        t.filters << (tr("Any file") + " (*)");
+
     Private::instance()->typeMap.insert(t.id, t);
 }
+
+void FileTypes::setDirectory(const QString &id, const QString &dir)
+{
+    QMap<QString,FileType>::iterator
+            i = Private::instance()->typeMap.find(id);
+    if (i == Private::instance()->typeMap.end())
+        return;
+    i.value().directory = dir;
+    Private::fixDirectory(i.value().directory);
+}
+
+
 
 QString FileTypes::getName(const QString& id)
 {
     Private* p = Private::instance();
     auto i = p->typeMap.find(id);
     if (i == p->typeMap.end())
-        return QObject::tr("file");
+        return tr("file");
 
     return i.value().name;
 }
@@ -101,23 +128,35 @@ QStringList FileTypes::getExtensions(const QString &id)
     return i.value().extensions;
 }
 
+QStringList FileTypes::getFilters(const QString &id)
+{
+    Private* p = Private::instance();
+    auto i = p->typeMap.find(id);
+    if (i == p->typeMap.end())
+        return QStringList() << (tr("Any file") + " (*)");
+
+    return i.value().filters;
+}
+
+
 
 #ifdef QT_GUI_LIB
 
-QString FileTypes::getSaveFilename(const QString& id, QWidget* parent)
+QString FileTypes::getSaveFilename(const QString& id, QWidget* parent, bool updateDirectory)
 {
-    QString dir = getDirectory(id);
+    QString dir = getDirectory(id),
+            name = getName(id);
     QStringList extensions = getExtensions(id);
 
     QFileDialog diag(parent);
 
     diag.setDirectory(dir);
-    diag.setConfirmOverwrite(true);
+    diag.setConfirmOverwrite(false);
     diag.setDefaultSuffix(extensions[0]);
     diag.setAcceptMode(QFileDialog::AcceptSave);
-    diag.setWindowTitle(QFileDialog::tr("Save %1").arg(getName(id)));
+    diag.setWindowTitle(QFileDialog::tr("Save %1").arg(name));
     diag.setDirectory(dir);
-    //diag.setNameFilters(fileTypeDialogFilters[ft]);
+    diag.setNameFilters(getFilters(id));
     //if (!isDir && !fn.isEmpty())
     //    diag.selectFile(fn);
 
@@ -129,17 +168,29 @@ QString FileTypes::getSaveFilename(const QString& id, QWidget* parent)
 
     if (!fn.isEmpty())
     {
+        if (QFileInfo(fn).exists())
+        {
+            int r = QMessageBox::question(parent,
+                    tr("Replace %1").arg(name),
+                    tr("The file %1 already exists\n").arg(fn),
+                    tr("Change name"), tr("Overwrite"), tr("Cancel"));
+            if (r == 0)
+                return getSaveFilename(id, parent);
+            if (r == 2)
+                return QString();
+        }
+
         //if (updateFile)
         //    setFilename(ft, fn);
 
-        //if (updateDirectory)
-        //    setDirectory(ft, QFileInfo(fn).absolutePath());
+        if (updateDirectory)
+            setDirectory(id, QFileInfo(fn).absolutePath());
     }
 
     return fn;
 }
 
-QString FileTypes::getOpenFilename(const QString& id, QWidget* parent)
+QString FileTypes::getOpenFilename(const QString& id, QWidget* parent, bool updateDirectory)
 {
     QString dir = getDirectory(id);
     QStringList extensions = getExtensions(id);
@@ -153,7 +204,7 @@ QString FileTypes::getOpenFilename(const QString& id, QWidget* parent)
     diag.setAcceptMode(QFileDialog::AcceptOpen);
     diag.setWindowTitle(QFileDialog::tr("Open %1").arg(getName(id)));
     diag.setDirectory(dir);
-    //diag.setNameFilters(fileTypeDialogFilters[ft]);
+    diag.setNameFilters(getFilters(id));
     //if (!isDir && !fn.isEmpty())
     //    diag.selectFile(fn);
 
@@ -168,8 +219,8 @@ QString FileTypes::getOpenFilename(const QString& id, QWidget* parent)
         //if (updateFile)
         //    setFilename(ft, fn);
 
-        //if (updateDirectory)
-        //    setDirectory(ft, QFileInfo(fn).absolutePath());
+        if (updateDirectory)
+            setDirectory(id, QFileInfo(fn).absolutePath());
     }
 
     return fn;
