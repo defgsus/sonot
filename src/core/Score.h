@@ -249,9 +249,11 @@ public:
 
     QString stringTitle() const { return props().get("title").toString(); }
     QString stringAuthor() const { return props().get("author").toString(); }
-    QString stringCopyright() const { return props().get("copyright").toString(); }
+    QString stringCopyright() const
+                            { return props().get("copyright").toString(); }
     QString stringSource() const { return props().get("source").toString(); }
-    QString stringTranscriber() const { return props().get("transcriber").toString(); }
+    QString stringTranscriber() const
+                            { return props().get("transcriber").toString(); }
 
     /** Returns an index to the specified note.
         If any of the indices is out of range an invalid Index is returned.
@@ -262,6 +264,10 @@ public:
 
     bool operator == (const Score& rhs) const;
     bool operator != (const Score& rhs) const { return !(*this == rhs); }
+
+    /** Returns a string containing the number of bars and rows per
+        NoteStream */
+    QString toInfoString() const;
 
     // ---- setter ----
 

@@ -93,6 +93,20 @@ bool Score::operator == (const Score& rhs) const
 const QProps::Properties& Score::props() const { return p_->props;}
 QProps::Properties& Score::propsw() { return p_->props;}
 
+QString Score::toInfoString() const
+{
+    QString s = "Score(";
+    for (int i=0; i<p_->streams.size(); ++i)
+    {
+        if (i != 0)
+            s += ", ";
+        s += QString("%1x%2")
+                .arg(p_->streams[i].numBars())
+                .arg(p_->streams[i].numRows());
+    }
+    return s + ")";
+}
+
 void Score::setProperties(const QProps::Properties& p)
 {
     p_->props = p;

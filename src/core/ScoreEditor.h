@@ -94,9 +94,9 @@ signals:
     /** Cursor position after undo() or redo() */
     void cursorChanged(const Score::Index&);
     /** Signals if undo-data is available or not */
-    void undoAvailable(bool, const QString& desc);
+    void undoAvailable(bool, const QString& desc, const QString& detail);
     /** Signals if redo-data is available or not */
-    void redoAvailable(bool, const QString& desc);
+    void redoAvailable(bool, const QString& desc, const QString& detail);
 
     void streamsChanged(const IndexList&);
     void barsChanged(const IndexList&);
