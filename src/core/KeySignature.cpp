@@ -66,8 +66,12 @@ Note KeySignature::transform(const Note &note) const
         return note;
 
     Note n(note);
-    n.transpose(i->second);
-    //n.setAccidental(n.accidental() + i->second);
+    if (n.accidental() == 0)
+    {
+        n.setAccidental(n.accidental() + i->second);
+    }
+    else
+        n.transpose(i->second);
     return n;
 }
 

@@ -43,6 +43,10 @@ public:
 
     // --- editing ---
 
+    bool undo();
+    bool redo();
+    void clearUndo();
+
     void setScore(const Score& s);
     void setStreamProperties(size_t streamIdx, const QProps::Properties& p);
 
@@ -57,7 +61,7 @@ public:
     bool insertScore(const Score::Index&, const Score& s,
                       bool insertAfterIndex = false);
     bool changeNote(const Score::Index&, const Note& n);
-    bool changeBar(const Score::Index&, const Notes& b);
+    bool changeBar(const Score::Index&, const Bar& b);
     bool deleteNote(const Score::Index&, bool allRows);
     bool deleteBar(const Score::Index&);
     bool deleteRow(const Score::Index&);
@@ -83,6 +87,13 @@ signals:
     void documentChanged();
     /** Request to redraw the view, used by ScoreDocument */
     void refresh();
+
+    /** Cursor position after undo() or redo() */
+    void cursorChanged(const Score::Index&);
+    /** Signals if undo-data is available or not */
+    void undoAvailable(bool, const QString& desc);
+    /** Signals if redo-data is available or not */
+    void redoAvailable(bool, const QString& desc);
 
     void streamsChanged(const IndexList&);
     void barsChanged(const IndexList&);

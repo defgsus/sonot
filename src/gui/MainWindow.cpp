@@ -100,8 +100,9 @@ struct MainWindow::Private
     SynthDevice* synthStream;
 
     QMenu* menuEdit;
-    QAction* actSaveScore,
-            *actFollowPlay;
+    QAction *actSaveScore,
+            *actFollowPlay,
+            *actUndo, *actRedo;
 };
 
 MainWindow::MainWindow(QWidget *parent)
@@ -121,7 +122,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //setScore(p_->getSomeScore());
     setScore(p_->createNewScore());
-
+    p_->document->editor()->clearUndo();
 
     // install file types
     QProps::FileTypes::addFileType(QProps::FileType(
@@ -209,6 +210,23 @@ void MainWindow::Private::createObjects()
         synthStream->setScore(s);
         synthStream->setIndex(s->index(0,0,0,0));
     });
+    connect(document->editor(), &ScoreEditor::undoAvailable,
+            [=](bool avail, const QString& desc)
+    {
+        actUndo->setText(tr("undo %1").arg(desc));
+        actUndo->setEnabled(avail);
+    });
+    connect(document->editor(), &ScoreEditor::redoAvailable,
+            [=](bool avail, const QString& desc)
+    {
+        actRedo->setText(tr("redo %1").arg(desc));
+        actRedo->setEnabled(avail);
+    });
+    connect(document->editor(), &ScoreEditor::cursorChanged,
+            [=](const Score::Index& idx)
+    {
+        scoreView->setCurrentIndex(idx);
+    });
 
 }
 
@@ -287,8 +305,27 @@ void MainWindow::Private::createMenu()
             saveSynth(fn);
     });
 
+    // ######## EDIT ########
+
     menu = menuEdit = p->menuBar()->addMenu(tr("Edit"));
+
+    a = actUndo = menu->addAction(tr("Undo"));
+    a->setShortcut(Qt::CTRL + Qt::Key_Z);
+    a->setEnabled(false);
+    connect(a, &QAction::triggered, [=](){ document->editor()->undo(); });
+
+    a = actRedo = menu->addAction(tr("Redo"));
+    a->setShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z);
+    a->setEnabled(false);
+    connect(a, &QAction::triggered, [=](){ document->editor()->redo(); });
+
+    menu->addSeparator();
+
     scoreView->createEditActions(menu);
+
+
+
+    // ###### PLAYBACK ######
 
     menu = p->menuBar()->addMenu(tr("Playback"));
 

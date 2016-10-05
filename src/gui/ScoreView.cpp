@@ -165,6 +165,11 @@ void ScoreView::setDocument(ScoreDocument* doc)
     goToPage(0);
 }
 
+void ScoreView::setCurrentIndex(const Score::Index& idx)
+{
+    p_->setCursor(idx, true, false);
+}
+
 void ScoreView::goToPage(int pageIndex, double margin)
 {
     if (!isAssigned())

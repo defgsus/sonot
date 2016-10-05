@@ -60,6 +60,8 @@ public:
 
     /** Ownership is not taken */
     void setDocument(ScoreDocument*);
+    /** Set cursor */
+    void setCurrentIndex(const Score::Index&);
 
 signals:
 

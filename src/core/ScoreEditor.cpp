@@ -18,6 +18,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include <functional>
+#include <memory>
+
 #include <QMimeData>
 
 #include "QProps/error.h"
@@ -34,7 +37,16 @@ struct ScoreEditor::Private
     Private(ScoreEditor* p)
         : p         (p)
         , score_    (nullptr)
+        , undoDataPos(0)
     { }
+
+    struct UndoData
+    {
+        QString name;
+        std::function<void()> undo, redo;
+        QByteArray data1, data2;
+        Score::Index index;
+    };
 
     Score* score() const { return score_; }
 
@@ -45,9 +57,22 @@ struct ScoreEditor::Private
     /** Returns writeable Notes */
     Notes* getNotes(const Score::Index& i);
 
+    void addUndoData(UndoData*);
+    void addBarChangeUndoData(const Score::Index& idx,
+                              const Bar& newBar, const Bar& oldBar);
+
+    void setScore(const Score& s);
+    void setStreamProperties(
+            size_t streamIdx, const QProps::Properties& p);
+    bool changeBar(const Score::Index& idx, const Bar& b);
+    bool insertBar(const Score::Index& idx, const Bar& bar, bool after);
+
+
     ScoreEditor* p;
 
     Score* score_;
+    QList<std::shared_ptr<UndoData>> undoData;
+    int undoDataPos;
 };
 
 ScoreEditor::ScoreEditor(QObject *parent)
@@ -64,8 +89,74 @@ ScoreEditor::~ScoreEditor()
 
 Score* ScoreEditor::score() const { return p_->score_; }
 
+/*  undo0
+    undo1
+    undo2
+    */
+void ScoreEditor::Private::addUndoData(UndoData* d)
+{
+    qDebug() << "UNDO: " << d->name;
 
+    while (undoDataPos < undoData.size())
+        undoData.removeLast();
 
+    undoData << std::shared_ptr<UndoData>(d);
+    undoDataPos = undoData.size();
+
+    emit p->undoAvailable(true, undoData.last()->name);
+}
+
+bool ScoreEditor::undo()
+{
+    if (p_->undoData.isEmpty())
+        return false;
+    if (p_->undoDataPos > p_->undoData.size())
+        return false;
+
+    QPROPS_ASSERT(p_->undoData[p_->undoDataPos-1]->undo,
+                  "No undo action defined");
+    p_->undoData[p_->undoDataPos-1]->undo();
+    --p_->undoDataPos;
+    if (p_->undoDataPos > 0)
+        emit undoAvailable(true, p_->undoData[p_->undoDataPos-1]->name);
+    else
+        emit undoAvailable(false, "");
+    if (p_->undoDataPos < p_->undoData.size())
+        emit redoAvailable(true, p_->undoData[p_->undoDataPos]->name);
+    else
+        emit redoAvailable(false, "");
+    return true;
+}
+
+bool ScoreEditor::redo()
+{
+    if (p_->undoData.isEmpty())
+        return false;
+    if (p_->undoDataPos >= p_->undoData.size())
+        return false;
+
+    QPROPS_ASSERT(p_->undoData[p_->undoDataPos]->redo,
+                  "No redo action defined");
+    p_->undoData[p_->undoDataPos]->redo();
+    ++p_->undoDataPos;
+    if (p_->undoDataPos > 0)
+        emit undoAvailable(true, p_->undoData[p_->undoDataPos-1]->name);
+    else
+        emit undoAvailable(false, "");
+    if (p_->undoDataPos < p_->undoData.size())
+        emit redoAvailable(true, p_->undoData[p_->undoDataPos]->name);
+    else
+        emit redoAvailable(false, "");
+    return true;
+}
+
+void ScoreEditor::clearUndo()
+{
+    p_->undoData.clear();
+    p_->undoDataPos = 0;
+    emit undoAvailable(false, "");
+    emit redoAvailable(false, "");
+}
 
 // ##################### editing ###########################
 
@@ -80,12 +171,69 @@ Score* ScoreEditor::score() const { return p_->score_; }
     SONOT__CHECK_INDEX(i__.from(), ret__); \
     SONOT__CHECK_INDEX(i__.to(), ret__);
 
+void ScoreEditor::Private::addBarChangeUndoData(
+        const Score::Index& idx, const Bar& newBar, const Bar& oldBar)
+{
+    auto undo = new UndoData();
+    undo->name = tr("change bar");
+    undo->index = idx;
+    undo->data1 = oldBar.toJsonByteArrayZipped();
+    undo->undo = [=]()
+    {
+        Bar bar;
+        bar.fromJsonByteArrayZipped(undo->data1);
+        changeBar(idx, bar);
+        emit p->cursorChanged(undo->index);
+    };
+    undo->data2 = newBar.toJsonByteArrayZipped();
+    undo->redo = [=]()
+    {
+        Bar bar;
+        bar.fromJsonByteArrayZipped(undo->data2);
+        changeBar(idx, bar);
+        emit p->cursorChanged(undo->index);
+    };
+    addUndoData(undo);
+}
 
 void ScoreEditor::setScore(const Score& s)
 {
-    delete p_->score_;
-    p_->score_ = new Score(s);
-    emit scoreReset(p_->score_);
+    auto undo = new Private::UndoData();
+    undo->name = tr("set score");
+    if (p_->score_)
+    {
+        undo->data1 = p_->score_->toJsonByteArrayZipped();
+        undo->undo = [=]()
+        {
+            Score s;
+            s.fromJsonByteArrayZipped(undo->data1);
+            p_->setScore(s);
+        };
+    }
+    else
+    {
+        undo->undo = [=]()
+        {
+            p_->setScore(Score());
+        };
+    }
+    undo->data2 = s.toJsonByteArrayZipped();
+    undo->redo = [=]()
+    {
+        Score s;
+        s.fromJsonByteArrayZipped(undo->data2);
+        p_->setScore(s);
+    };
+    p_->addUndoData(undo);
+
+    p_->setScore(s);
+}
+
+void ScoreEditor::Private::setScore(const Score& s)
+{
+    delete score_;
+    score_ = new Score(s);
+    emit p->scoreReset(score_);
 }
 
 void ScoreEditor::setStreamProperties(
@@ -93,12 +241,50 @@ void ScoreEditor::setStreamProperties(
 {
     if (!score())
         return;
+
     auto idx = score()->index(streamIdx, 0,0,0);
     if (NoteStream* stream = p_->getStream(idx))
     {
-        stream->setProperties(p);
-        emit streamsChanged(IndexList() << idx);
-        emit documentChanged();
+        auto undo = new Private::UndoData();
+        undo->name = tr("set part properties");
+        undo->data1 = stream->props().toJsonByteArrayZipped();
+        undo->undo = [=]()
+        {
+            auto props = stream->props();
+            QProps::Properties savedProps("tmp");
+            savedProps.fromJsonByteArrayZipped(undo->data1);
+            // Note, can't overwrite because saved properties
+            // will not contain the GUI settings
+            props.updateFrom(savedProps);
+            p_->setStreamProperties(streamIdx, props);
+        };
+
+        undo->data2 = p.toJsonByteArrayZipped();
+        undo->redo = [=]()
+        {
+            auto props = stream->props();
+            QProps::Properties savedProps("tmp");
+            savedProps.fromJsonByteArrayZipped(undo->data2);
+            // Note, can't overwrite because saved properties
+            // will not contain the GUI settings
+            props.updateFrom(savedProps);
+            p_->setStreamProperties(streamIdx, props);
+        };
+        p_->addUndoData(undo);
+    }
+
+    p_->setStreamProperties(streamIdx, p);
+}
+
+void ScoreEditor::Private::setStreamProperties(
+        size_t streamIdx, const QProps::Properties& prop)
+{
+    auto idx = score()->index(streamIdx, 0,0,0);
+    if (NoteStream* stream = getStream(idx))
+    {
+        stream->setProperties(prop);
+        emit p->streamsChanged(IndexList() << idx);
+        emit p->documentChanged();
     }
 }
 
@@ -108,11 +294,13 @@ bool ScoreEditor::insertNote(
     SONOT__CHECK_INDEX(idx, false);
     if (!allRows)
     {
-        if (Notes* bar = p_->getNotes(idx))
+        if (Notes* notes = p_->getNotes(idx))
         {
-            bar->insertNote(idx.column(), n);
+            Bar oldBar = *p_->getBar(idx);
+            notes->insertNote(idx.column(), n);
             emit barsChanged(IndexList() << idx);
             emit documentChanged();
+            p_->addBarChangeUndoData(idx, *p_->getBar(idx), oldBar);
             return true;
         }
     }
@@ -120,6 +308,10 @@ bool ScoreEditor::insertNote(
     {
         bool changed = false;
         NoteStream* s = p_->getStream(idx);
+        auto oldBarP = p_->getBar(idx);
+        if (!oldBarP)
+            return false;
+        Bar oldBar = *oldBarP;
         for (size_t i=0; i<s->numRows(); ++i)
         {
             auto x = score()->index(idx.stream(),
@@ -137,6 +329,7 @@ bool ScoreEditor::insertNote(
         {
             emit barsChanged(IndexList() << idx);
             emit documentChanged();
+            p_->addBarChangeUndoData(idx, *p_->getBar(idx), oldBar);
             return true;
         }
     }
@@ -147,11 +340,23 @@ bool ScoreEditor::insertBar(
         const Score::Index& idx, const Bar& bar, bool after)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (NoteStream* stream = p_->getStream(idx))
+    if (!p_->getStream(idx))
+        return false;
+
+    return p_->insertBar(idx, bar, after);
+    //auto undo = new Private::UndoData();
+    //undo->index =
+}
+
+bool ScoreEditor::Private::insertBar(
+        const Score::Index& idx, const Bar& bar, bool after)
+{
+    SONOT__CHECK_INDEX(idx, false);
+    if (NoteStream* stream = getStream(idx))
     {
         stream->insertBar(idx.bar() + (after ? 1 : 0), bar);
-        emit streamsChanged(IndexList() << idx);
-        emit documentChanged();
+        emit p->streamsChanged(IndexList() << idx);
+        emit p->documentChanged();
         return true;
     }
     return false;
@@ -257,14 +462,26 @@ bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
     return false;
 }
 
-bool ScoreEditor::changeBar(const Score::Index& idx, const Notes& b)
+bool ScoreEditor::changeBar(const Score::Index& idx, const Bar& b)
 {
     SONOT__CHECK_INDEX(idx, false);
-    if (Notes* bar = p_->getNotes(idx))
+    Bar* bar = p_->getBar(idx);
+    if (!bar)
+        return false;
+
+    p_->addBarChangeUndoData(idx, b, *bar);
+
+    return p_->changeBar(idx, b);
+}
+
+bool ScoreEditor::Private::changeBar(const Score::Index& idx, const Bar& b)
+{
+    SONOT__CHECK_INDEX(idx, false);
+    if (Bar* bar = getBar(idx))
     {
         *bar = b;
-        emit barsChanged(IndexList() << idx);
-        emit documentChanged();
+        emit p->barsChanged(IndexList() << idx);
+        emit p->documentChanged();
         return true;
     }
     return false;

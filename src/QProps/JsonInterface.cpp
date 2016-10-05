@@ -34,17 +34,41 @@ QString JsonInterface::toJsonString(bool compact) const
                 compact ? QJsonDocument::Compact : QJsonDocument::Indented));
 }
 
+QByteArray JsonInterface::toJsonByteArray(bool compact) const
+{
+    QJsonDocument doc(toJson());
+    return doc.toJson( compact ? QJsonDocument::Compact
+                               : QJsonDocument::Indented );
+}
+
 void JsonInterface::fromJsonString(const QString &jsonString)
 {
+    fromJsonByteArray(jsonString.toUtf8());
+}
+
+void JsonInterface::fromJsonByteArray(const QByteArray &jsonString)
+{
     QJsonParseError error;
-    auto doc = QJsonDocument::fromJson(jsonString.toUtf8(), &error);
+    auto doc = QJsonDocument::fromJson(jsonString, &error);
     if (error.error != QJsonParseError::NoError)
-        QPROPS_IO_ERROR("Error parsing json string: "
+        QPROPS_IO_ERROR("Error parsing json: "
                         << error.errorString());
     auto main = doc.object();
     fromJson(main);
 }
 
+QByteArray JsonInterface::toJsonByteArrayZipped() const
+{
+    return qCompress( toJsonByteArray() );
+}
+
+void JsonInterface::fromJsonByteArrayZipped(const QByteArray& a)
+{
+    auto b = qUncompress(a);
+    if (b.isEmpty())
+        QPROPS_IO_ERROR("Json byte-array could not be uncompressed");
+    fromJsonByteArray( b );
+}
 
 void JsonInterface::saveJsonFile(const QString& filename, bool compact) const
 {

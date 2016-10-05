@@ -28,6 +28,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 class QJsonObject;
 class QJsonArray;
 class QJsonValue;
+class QByteArray;
 
 namespace QProps {
 
@@ -46,34 +47,54 @@ public:
     // ----------- pure methods --------------
 
     /** Return a QJsonObject with all data inside.
-        Should throw a descriptive Sonot::Exception on any errors. */
+        Should throw a descriptive QProps::Exception on any errors. */
     virtual QJsonObject toJson() const = 0;
 
     /** Initializes the object from the QJsonObject.
-        Should throw a descriptive Sonot::Exception on severe errors. */
+        Should throw a descriptive QProps::Exception on severe errors. */
     virtual void fromJson(const QJsonObject&) = 0;
 
     // ------------ convenience --------------
 
     /** Converts this object's data to a Json string.
         Uses toJson().
-        @throws Sonot::Exception on any error */
+        @throws QProps::Exception on any error */
     virtual QString toJsonString(bool compact = true) const;
+
+    /** Converts this object's data to a Json string.
+        Uses toJson().
+        @throws QProps::Exception on any error */
+    virtual QByteArray toJsonByteArray(bool compact = true) const;
+
+    /** Converts this object's data to a zipped Json string.
+        Uses toJsonByteArray().
+        @throws QProps::Exception on any error */
+    virtual QByteArray toJsonByteArrayZipped() const;
+
+    /** Initializes this objects's data from a json string.
+        Uses fromJsonByteArray().
+        @throws QProps::Exception on any error */
+    virtual void fromJsonString(const QString&);
 
     /** Initializes this objects's data from a json string.
         Uses fromJson().
-        @throws Sonot::Exception on any error */
-    virtual void fromJsonString(const QString&);
+        @throws QProps::Exception on any error */
+    virtual void fromJsonByteArray(const QByteArray&);
+
+    /** Initializes this objects's data from a zipped json string.
+        Uses fromJsonByteArray().
+        @throws QProps::Exception on any error */
+    virtual void fromJsonByteArrayZipped(const QByteArray&);
 
     /** Stores the json string to a file.
         Uses toJsonString().
-        @throws Sonot::Exception on any error */
+        @throws QProps::Exception on any error */
     virtual void saveJsonFile(
             const QString& filename, bool compact = true) const;
 
     /** Initializes this object's data from a json file.
         Uses fromJsonString().
-        @throws Sonot::Exception on any error */
+        @throws QProps::Exception on any error */
     virtual void loadJsonFile(const QString& filename);
 
 };

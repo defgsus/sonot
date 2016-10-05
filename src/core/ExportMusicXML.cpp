@@ -70,6 +70,7 @@ struct ExportMusicXML::Private
     void exportRow(size_t row);
     //void exportChords(size_t row, size_t rowCount);
 
+    int getOctaveChange(size_t row);
     void notesToMeasure(Measure& m, const Notes& n);
     void dumpMeasure(const Measure& m);
 
@@ -77,6 +78,8 @@ struct ExportMusicXML::Private
     QString xmlString;
     QTextStream xml;
     QStringList noteTypeNames;
+    KeySignature curKeySig;
+    int curOctaveChange;
 };
 
 ExportMusicXML::ExportMusicXML(const Score& s)
@@ -129,6 +132,9 @@ void ExportMusicXML::Private::notesToMeasure(Measure& m, const Notes& n)
         case 48:
             m.beat = 3; m.beatType = 4;
         break;
+
+        default:
+            QPROPS_ERROR("Bar length " << n.length() << " not yet implemented");
     }
 
     int noteType = 0, dur = 0;
@@ -150,6 +156,9 @@ void ExportMusicXML::Private::notesToMeasure(Measure& m, const Notes& n)
         case 12: noteType = 4; dur = m.divisions/4; break;
         case 24: noteType = 5; dur = m.divisions/8; break;
         case 48: noteType = 6; dur = m.divisions/16; break;
+
+        default:
+            QPROPS_ERROR("Bar length " << n.length() << " not yet implemented");
     }
 
     m.notes.clear();
@@ -174,16 +183,24 @@ void ExportMusicXML::Private::notesToMeasure(Measure& m, const Notes& n)
         note.duration = dur * note.length;
         note.noteType = noteType;
 
+        int restLength = 0, restType = -1;
         if (note.length > 1)
+        {
+            // determine note type for length
             note.noteType = std::max(0, note.noteType
                     - (int)std::log2(note.length));
+            // see if length fits into time sig
+            //restLength = note.length % m.beatType;
+            //restType = note.noteType - (int)std::log2(restLength);
+        }
 
         if (n[i].isNote())
         {
+            Note tn = curKeySig.transform(n[i]);
             note.isRest = false;
-            note.noteName = n[i].noteName();
-            note.octave = n[i].octave();
-            note.alter = n[i].accidental();
+            note.noteName = tn.noteName();
+            note.octave = tn.octave() - curOctaveChange;
+            note.alter = tn.accidental();
 
             restWritten = false;
             noteWritten = true;
@@ -201,6 +218,18 @@ void ExportMusicXML::Private::notesToMeasure(Measure& m, const Notes& n)
             note.isRest = true;
 
             restWritten = true;
+            m.notes.push_back(note);
+        }
+
+        if (restLength > 0)
+        {
+            MeasureNote note;
+            note.isRest = true;
+            note.length = restLength;
+            note.duration = dur * note.length;
+            note.noteType = restType;
+
+            //restWritten = true;
             m.notes.push_back(note);
         }
     }
@@ -234,7 +263,7 @@ void ExportMusicXML::Private::exportHeader()
     xml <<
     "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
     "<!DOCTYPE score-partwise PUBLIC\n"
-    "    \"-//Recordare//DTD MusicXML 3.0 Partwise//EN\"\n"
+    "    \"-//Recordare//DTD MusicXML 3.0 Partwise//EN\" "
     "    \"http://www.musicxml.org/dtds/partwise.dtd\">\n"
     "<score-partwise>\n";
 }
@@ -325,6 +354,24 @@ void ExportMusicXML::Private::exportNotes()
 #endif
 }
 
+int ExportMusicXML::Private::getOctaveChange(size_t row)
+{
+    const int defaultOctave = 4;
+
+    int oct = 0, count = 0;
+    auto idx = score.index(0,0,row,0);
+    while (true)
+    {
+        if (idx.getNote().isNote())
+        {
+            oct += idx.getNote().octave() - defaultOctave;
+            ++count;
+        }
+        if (!idx.nextNote())
+            break;
+    }
+    return count ? oct / count : 0;
+}
 
 void ExportMusicXML::Private::exportRow(size_t row)
 {
@@ -335,8 +382,11 @@ void ExportMusicXML::Private::exportRow(size_t row)
     prevMeasure.beatType = -1;
 
     const NoteStream& stream = score.noteStream(0);
+    curOctaveChange = getOctaveChange(row);
+
     for (size_t barIdx=0; barIdx<stream.numBars(); ++barIdx)
     {
+        curKeySig = stream.keySignature();
         const Bar& bar = stream.bar(barIdx);
         const Notes& notes = bar.notes(row);
 
@@ -374,10 +424,22 @@ void ExportMusicXML::Private::exportRow(size_t row)
         xml << "      <divisions>" << measure.divisions << "</divisions>\n";
 
         if (writeKey)
-        xml << "      <key>\n"
+        {
+            xml
+            << "      <key>\n"
             << "        <fifths>0</fifths>\n"
             << "        <mode>major</mode>\n"
             << "      </key>\n";
+
+            if (curOctaveChange != 0)
+            xml
+            << "      <transpose>\n"
+            << "        <chromatic>" << (12*curOctaveChange)
+                        << "</chromatic>\n"
+            << "        <octave-change>" << curOctaveChange
+                        << "</octave-change>\n"
+            << "      </transpose>\n";
+        }
 
         if (writeTime)
         xml << "      <time>\n"
@@ -386,11 +448,19 @@ void ExportMusicXML::Private::exportRow(size_t row)
             << "      </time>\n";
 
         if (writeClef)
-        xml << "      <staves>1</staves>\n"
+        {
+            xml
+            << "      <staves>1</staves>\n"
             << "      <clef number=\"1\">\n"
             << "        <sign>G</sign>\n"
-            << "        <line>2</line>\n"
+            << "        <line>2</line>\n";
+            if (curOctaveChange != 0)
+            xml
+            << "        <clef-octave-change>" << curOctaveChange
+                << "</clef-octave-change>\n";
+            xml
             << "      </clef>\n";
+        }
 
         xml << "    </attributes>\n";
 

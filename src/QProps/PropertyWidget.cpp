@@ -243,7 +243,8 @@ namespace {
     struct sb_limits<QChar>
     {
         static constexpr int32_t min() { return 0; }
-        static constexpr int32_t max() { return std::numeric_limits<uint16_t>::max(); }
+        static constexpr int32_t max()
+            { return std::numeric_limits<uint16_t>::max(); }
     };
 
     // QSpinBox only supports int32 :(
@@ -758,7 +759,8 @@ void PropertyWidget::Private::createWidgets()
                         QPROPS__SUBLAYOUT(QHBoxLayout);
                         auto e = new QLineEdit(container);
                         e->setReadOnly(true);
-                        e->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+                        e->setSizePolicy(QSizePolicy::Minimum,
+                                         QSizePolicy::Minimum);
                         layout->addWidget(e);
 
                         auto b = new QToolButton(container);
@@ -821,10 +823,12 @@ void PropertyWidget::Private::createWidgets()
                     auto e = new QLineEdit(widget);
                     edit = e;
                     e->setReadOnly(false);
-                    e->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+                    e->setSizePolicy(QSizePolicy::Minimum,
+                                     QSizePolicy::Minimum);
                     f_update_widget = [=](){ e->setText(v.toString()); };
                     f_update_value = [=](){ v = e->text(); };
-                    connect(e, SIGNAL(textChanged(QString)), widget, SLOT(onValueChanged_()));
+                    connect(e, SIGNAL(editingFinished()),
+                            widget, SLOT(onValueChanged_()));
                 }
             }
             break;
