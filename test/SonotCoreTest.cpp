@@ -24,69 +24,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/KeySignature.h"
 #include "core/NoteStream.h"
 #include "core/Score.h"
+#include "core/ScoreEditor.h"
 #include "core/ExportMusicXML.h"
 #include "QProps/Properties.h"
 #include "QProps/error.h"
 
 using namespace Sonot;
-
-class SonotCoreTest : public QObject
-{
-    Q_OBJECT
-
-public:
-    SonotCoreTest() { }
-
-    static Notes createRandomNotes(size_t length);
-    static Bar createRandomBar(size_t length, size_t rows);
-    static Score createRandomScore(int mi=1, int ma=20, int numStreams=9);
-    static Score createScoreForIndexTest();
-
-private slots:
-
-    void testNoteFromString();
-    void testNoteFromValue();
-    void testNoteTranspose();
-    void testKeySignature();
-    void testResize();
-    void testRandomCursor();
-    void testKeepDataOnResize();
-    void testJsonNotes();
-    void testJsonStream();
-    void testJsonScore();
-    void testScoreIndexNextNote();
-    void testScoreIndexPrevNote();
-    void testScoreSelection();
-
-    void testExportMusicXML();
-};
-
-namespace { int randi(int mi, int ma) { return (rand()%(ma-mi)) + mi; } }
-
-Notes SonotCoreTest::createRandomNotes(size_t length)
-{
-    QStringList anno;
-    anno << "bladiblub" << "annotation" << "anno 1900"
-         << "andante" << "piano forte";
-    Notes b(length);
-    for (size_t x = 0; x < length; ++x)
-    {
-        if (rand()%10 <= 7)
-        {
-            Note note = Note::fromValue(rand()%128);
-            b.setNote(x, note);
-        }
-    }
-    return b;
-}
-
-Bar SonotCoreTest::createRandomBar(size_t length, size_t rows)
-{
-    Bar b;
-    for (size_t i=0; i<rows; ++i)
-        b.append( createRandomNotes(length) );
-    return b;
-}
 
 namespace QTest {
 
@@ -115,6 +58,12 @@ namespace QTest {
     }
 
     template <>
+    char* toString(const Bar& n)
+    {
+        return toString(n.toString());
+    }
+
+    template <>
     char* toString(const QVariant::Type& t)
     {
         return toString(QVariant::typeToName(t));
@@ -126,7 +75,133 @@ namespace QTest {
         return toString(s.toJsonString());
     }
 
+    template <>
+    char* toString(const Score& s)
+    {
+        return toString(s.toJsonString());
+    }
+
 } // namespace QTest
+
+
+class SonotCoreTest : public QObject
+{
+    Q_OBJECT
+
+public:
+    SonotCoreTest() { }
+
+    static Note createRandomNote();
+    static Notes createRandomNotes(size_t length);
+    static Bar createRandomBar(size_t length, size_t rows);
+    static Score createRandomScore(int mi=1, int ma=20, int numStreams=9);
+    static Score createScoreForIndexTest();
+    static Score::Index getRandomIndex(const Score* score);
+    static bool compare(const Score& a, const Score& b);
+
+private slots:
+
+    void testNoteFromString();
+    void testNoteFromValue();
+    void testNoteTranspose();
+    void testKeySignature();
+    void testResize();
+    void testRandomCursor();
+    void testKeepDataOnResize();
+    void testJsonNotes();
+    void testJsonStream();
+    void testJsonScore();
+    void testScoreIndexNextNote();
+    void testScoreIndexPrevNote();
+    void testScoreSelection();
+
+    void testUndoRedo();
+    void testUndoRedoMany();
+
+    void testExportMusicXML();
+};
+
+namespace { int randi(int mi, int ma)
+{
+    return ma==mi ? mi : (rand()%(ma-mi)) + mi;
+} }
+
+Note SonotCoreTest::createRandomNote()
+{
+    if (rand()%5 < 4)
+        return Note( Note::Name(rand()%7),
+                     1 + rand()%6,
+                     rand()%4 == 0 ? (rand()%5-1) : 0);
+    else
+        return Note( rand()%4 == 0 ? Note::Rest : Note::Space );
+}
+
+Notes SonotCoreTest::createRandomNotes(size_t length)
+{
+    Notes b(length);
+    for (size_t x = 0; x < length; ++x)
+    {
+        if (rand()%10 <= 7)
+        {
+            b.setNote(x, createRandomNote() );
+        }
+    }
+    return b;
+}
+
+Bar SonotCoreTest::createRandomBar(size_t length, size_t rows)
+{
+    Bar b;
+    for (size_t i=0; i<rows; ++i)
+        b.append( createRandomNotes(length) );
+    return b;
+}
+
+Score::Index SonotCoreTest::getRandomIndex(const Score* score)
+{
+    QPROPS_ASSERT(score->numNoteStreams(), "");
+    int stream = rand() % score->numNoteStreams();
+    QPROPS_ASSERT(score->noteStream(stream).numBars(), "");
+    QPROPS_ASSERT(score->noteStream(stream).numRows(), "");
+    int bar = rand() % score->noteStream(stream).numBars();
+    int row = rand() % score->noteStream(stream).numRows();
+    QPROPS_ASSERT(score->noteStream(stream).bar(bar).notes(row).length(), "");
+    int col = rand() % score->noteStream(stream).bar(bar).notes(row).length();
+    return score->index(stream, bar, row, col);
+}
+
+bool SonotCoreTest::compare(const Score &a, const Score &b)
+{
+#define MY_QCOMPARE(actual, expected) \
+    QTest::qCompare(actual, expected, #actual, #expected, __FILE__, __LINE__);
+
+    if (a == b)
+        return true;
+    if (a.props() != b.props())
+        qDebug() << "properties don't match";
+    MY_QCOMPARE(a.numNoteStreams(), b.numNoteStreams());
+
+    if (a.numNoteStreams() == b.numNoteStreams())
+    for (size_t i=0; i<a.numNoteStreams(); ++i)
+    {
+        if (a.noteStream(i) != b.noteStream(i))
+        {
+            MY_QCOMPARE(a.noteStream(i).numBars(), b.noteStream(i).numBars());
+            MY_QCOMPARE(a.noteStream(i).numRows(), b.noteStream(i).numRows());
+
+            if (a.noteStream(i).numBars() == b.noteStream(i).numBars())
+            for (size_t j=0; j<a.noteStream(i).numBars(); ++j)
+            {
+                const Bar& barA = a.noteStream(i).bar(j),
+                           barB = b.noteStream(i).bar(j);
+                MY_QCOMPARE(barA, barB);
+            }
+        }
+    }
+
+    return false;
+}
+
 
 
 
@@ -498,8 +573,133 @@ void SonotCoreTest::testScoreSelection()
     //Score::Selection s2 = Score::Selection::fromBar(s1.from());
 }
 
+void SonotCoreTest::testUndoRedo()
+{
+    ScoreEditor editor;
+    editor.setCollapseUndo(false);
+    editor.setScore( createRandomScore(4,4,9) );
+    editor.clearUndo();
+
+    auto backup = *editor.score();
+
+    editor.deleteBar(editor.score()->index(8,3,0,0));
+    QVERIFY(backup != *editor.score());
+    editor.undo();
+    QCOMPARE(*editor.score(), backup);
+}
+
+void SonotCoreTest::testUndoRedoMany()
+{
+    ScoreEditor editor;
+    editor.setCollapseUndo(false);
+    editor.setScore( createRandomScore() );
+    editor.clearUndo();
+
+    QString undoAction;
+    connect(&editor, &ScoreEditor::undoAvailable,
+            [&](bool e, const QString& n)
+    {
+        if (e) undoAction = n;
+    });
+
+    QList<Score> history;
+
+    for (int it=0; it<300; ++it)
+    {
+        Score::Index idx = getRandomIndex(editor.score());
+        QVERIFY(idx.isValid());
+
+        history << *editor.score();
+
+        try
+        {
+            switch (rand() % 4)
+            {
+                case 0:
+                    QVERIFY(
+                    editor.insertNote( idx, createRandomNote(), rand()%2 )
+                                );
+                break;
+
+                case 1:
+                    QVERIFY(
+                    editor.insertBar( idx, createRandomBar(
+                                          1+rand()%12, 1+rand()%30), rand()%2 )
+                                );
+                break;
+
+                case 2:
+                    QVERIFY(
+                    editor.deleteBar( idx )
+                                );
+                break;
+
+                case 3:
+                {
+                    auto props = editor.score()->noteStream(
+                                                    idx.stream()).props();
+                    props.change("bpm", double(rand()%300));
+                    props.change("title", QString("titel %1").arg(rand()));
+                    QVERIFY(
+                    editor.setStreamProperties(idx.stream(), props)
+                                );
+                }
+                break;
+            }
+        }
+        catch (const QProps::Exception& e)
+        {
+            qDebug().noquote() << e.text();
+            QFAIL("exception in editor action");
+        }
+
+        Score current = *editor.score();
+
+        // test undo
+
+        int numUndos = std::max(1,std::min(200, int(rand() % history.size()) ));
+        try
+        {
+            for (int i=0; i<numUndos; ++i)
+                editor.undo();
+        }
+        catch (const QProps::Exception& e)
+        {
+            qDebug().noquote() << e.text();
+            QFAIL("exception in undo action");
+        }
+
+        if (!compare(*editor.score(), history[history.size()-numUndos]))
+            qDebug() << "mismatch after undo " << undoAction;
+        QCOMPARE(*editor.score(), history[history.size()-numUndos]);
+
+        // test redo
+        try
+        {
+            // redo all actions until most recent score
+            int k=0;
+            while (editor.redo()) ++k;
+            QCOMPARE(k, numUndos);
+        }
+        catch (const QProps::Exception& e)
+        {
+            qDebug().noquote() << e.text();
+            QFAIL("exception in redo action");
+        }
+
+        if (!compare(*editor.score(), current))
+            qDebug() << "mismatch after redo " << undoAction;
+        QCOMPARE(*editor.score(), current);
+
+        if ((it % 50) == 49)
+            qDebug().noquote() << (it+1) << "actions";
+    }
+}
+
+
 void SonotCoreTest::testExportMusicXML()
 {
+    return;
     Score score = createRandomScore(2, 10, 1);
     ExportMusicXML exp(score);
     qDebug().noquote().nospace() << "\n" << exp.toString();

@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QString>
 #include <QStringList>
 
-#ifdef QT_GUI_LIB
+#ifdef QT_WIDGETS_LIB
 class QWidget;
 #endif
 
@@ -71,7 +71,7 @@ public:
     /** Returns a list of filters for the file type */
     static QStringList getFilters(const QString& id);
 
-#ifdef QT_GUI_LIB
+#ifdef QT_WIDGETS_LIB
     /** Returns a filename for saving the file type, or
         empty string */
     static QString getSaveFilename(const QString& id,

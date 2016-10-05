@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QMap>
 #include <QFileInfo>
 
-#ifdef QT_GUI_LIB
+#ifdef QT_WIDGETS_LIB
 #   include <QFileDialog>
 #   include <QMessageBox>
 #endif
@@ -140,7 +140,7 @@ QStringList FileTypes::getFilters(const QString &id)
 
 
 
-#ifdef QT_GUI_LIB
+#ifdef QT_WIDGETS_LIB
 
 QString FileTypes::getSaveFilename(const QString& id, QWidget* parent, bool updateDirectory)
 {

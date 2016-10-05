@@ -46,9 +46,12 @@ public:
     bool undo();
     bool redo();
     void clearUndo();
+    /** Enables or disabled collapsing similiar undo actions.
+        Default is true */
+    void setCollapseUndo(bool enable);
 
     void setScore(const Score& s);
-    void setStreamProperties(size_t streamIdx, const QProps::Properties& p);
+    bool setStreamProperties(size_t streamIdx, const QProps::Properties& p);
 
     bool insertNote(const Score::Index&, const Note& n, bool allRows);
     bool insertBar(const Score::Index&, const Bar& bar,

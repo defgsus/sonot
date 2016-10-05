@@ -239,12 +239,37 @@ Score::Index Score::index(
 
 QString Score::Index::toString() const
 {
-    auto s = QString("(%1,%2,%3,%4)")
+    if (isValid())
+        return QString("(%1,%2,%3,%4)")
                     .arg(p_stream).arg(p_bar).arg(p_row).arg(p_column);
-    if (!isValid())
-        s.prepend("invalid");
-    return s;
+
+    QString s = "invalid(";
+    if (!score())
+        return s + "NULL)";
+
+    if (stream() >= score()->numNoteStreams())
+        return s + QString("%1>=%2)")
+                    .arg(stream()).arg(score()->numNoteStreams());
+    s += QString("%1,").arg(stream());
+    const NoteStream& stream_ = score()->noteStream(stream());
+
+    if (bar() >= stream_.numBars())
+        return s + QString("%1>=%2)")
+                    .arg(bar()).arg(stream_.numBars());
+    s += QString("%1,").arg(bar());
+
+    if (row() >= stream_.numRows())
+        return s + QString("%1>=%2)")
+                    .arg(row()).arg(stream_.numRows());
+    s += QString("%1,").arg(row());
+
+    const Bar& bar_ = stream_.bar(bar());
+    if (column() >= bar_.notes(row()).length())
+        return s + QString("%1>=%2)")
+                    .arg(column()).arg(bar_.notes(row()).length());
+    return s + QString("%1)").arg(column());
 }
+
 
 bool Score::Index::operator == (const Index& rhs) const
 {

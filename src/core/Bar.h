@@ -80,8 +80,8 @@ public:
     void insert(size_t idx, const Notes& n);
     void remove(size_t idx);
 
-    Notes& notes(size_t i) { return (*this)[i]; }
-    Notes& operator[](size_t i);
+    Notes& notes(size_t row) { return (*this)[row]; }
+    Notes& operator[](size_t row);
 
 private:
     struct Private;

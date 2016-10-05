@@ -82,7 +82,8 @@ void Notes::insertNote(size_t column, const Note &n)
 {
     if (column >= length())
         append(n);
-    p_data_.insert(p_data_.begin() + column, n);
+    else
+        p_data_.insert(p_data_.begin() + column, n);
 }
 
 void Notes::removeNote(size_t column)
