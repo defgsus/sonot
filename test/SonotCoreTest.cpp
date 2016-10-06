@@ -94,6 +94,8 @@ public:
     static Note createRandomNote();
     static Notes createRandomNotes(size_t length);
     static Bar createRandomBar(size_t length, size_t rows);
+    static NoteStream createRandomStream(
+            size_t numBars, size_t rows, size_t columns);
     static Score createRandomScore(int mi=1, int ma=20, int numStreams=9);
     static Score createScoreForIndexTest();
     static Score::Index getRandomIndex(const Score* score);
@@ -158,6 +160,15 @@ Bar SonotCoreTest::createRandomBar(size_t length, size_t rows)
     return b;
 }
 
+NoteStream SonotCoreTest::createRandomStream(
+        size_t numBars, size_t rows, size_t columns)
+{
+    NoteStream s;
+    for (size_t i=0; i<numBars; ++i)
+        s.appendBar( createRandomBar(columns, rows));
+    return s;
+}
+
 Score::Index SonotCoreTest::getRandomIndex(const Score* score)
 {
     QPROPS_ASSERT(score->numNoteStreams(), score->toInfoString());
@@ -168,6 +179,13 @@ Score::Index SonotCoreTest::getRandomIndex(const Score* score)
          || score->noteStream(stream).numRows() == 0)
             continue;
         int bar = rand() % score->noteStream(stream).numBars();
+        if (score->noteStream(stream).numRows() !=
+            score->noteStream(stream).bar(bar).numRows())
+            QPROPS_ERROR("Inconsistent NoteStream, numRows="
+                         << score->noteStream(stream).numRows()
+                         << ", bar " << bar << " numRows="
+                         << score->noteStream(stream).bar(bar).numRows()
+                         << "\nin " << score->toInfoString());
         int row = rand() % score->noteStream(stream).numRows();
         if (score->noteStream(stream).bar(bar).notes(row).length() == 0)
             continue;
@@ -175,7 +193,7 @@ Score::Index SonotCoreTest::getRandomIndex(const Score* score)
                                     .bar(bar).notes(row).length();
         return score->index(stream, bar, row, col);
     }
-    QPROPS_ERROR("No random index found in Score " << score->toInfoString());
+    QPROPS_ERROR("No random index found for " << score->toInfoString());
 }
 
 bool SonotCoreTest::compare(const Score &a, const Score &b)
@@ -476,6 +494,7 @@ Score SonotCoreTest::createScoreForIndexTest()
     Score score;
     {
         NoteStream stream;
+        stream.setDefaultBarLength(1);
         stream.appendBar( createRandomBar(4,3) );
         stream.appendBar( createRandomBar(3,2) );
         stream.appendBar( createRandomBar(5,3) );
@@ -483,6 +502,7 @@ Score SonotCoreTest::createScoreForIndexTest()
     }
     {
         NoteStream stream;
+        stream.setDefaultBarLength(1);
         stream.appendBar( createRandomBar(2,1) );
         stream.appendBar( createRandomBar(5,2) );
         stream.appendBar( createRandomBar(8,3) );
@@ -515,7 +535,7 @@ void SonotCoreTest::testScoreIndexPrevNote()
         while (idx.prevNote()) ++cnt;
         QVERIFY(idx.isValid());
         QCOMPARE(idx, score.index(0,0,1,0));
-        QCOMPARE(cnt, 29);
+        QCOMPARE(cnt, 30);
 
         idx = score.index(1, 3, 2, 0);
         QVERIFY(idx.isValid());
@@ -523,7 +543,7 @@ void SonotCoreTest::testScoreIndexPrevNote()
         while (idx.prevNote()) ++cnt;
         QVERIFY(idx.isValid());
         QCOMPARE(idx, score.index(0,0,2,0));
-        QCOMPARE(cnt, 21);
+        QCOMPARE(cnt, 28);
     }
     catch (const QProps::Exception& e)
     {
@@ -555,15 +575,17 @@ void SonotCoreTest::testScoreIndexNextNote()
     while (idx.nextNote()) ++cnt;
     QVERIFY(idx.isValid());
     QCOMPARE(idx, score.index(1, 3, 1, 2));
-    QCOMPARE(cnt, 29);
+    QCOMPARE(cnt, 30);
 
     idx = score.index(0,0,2,0);
     QVERIFY(idx.isValid());
     cnt = 1;
     while (idx.nextNote()) ++cnt;
     QVERIFY(idx.isValid());
-    QCOMPARE(idx, score.index(1, 3, 2, 0));
-    QCOMPARE(cnt, 21);
+    //QCOMPARE(idx, score.index(1, 3, 2, 0));
+    //QCOMPARE(cnt, 21);
+    QCOMPARE(idx, score.index(1, 3, 2, 2));
+    QCOMPARE(cnt, 30);
 }
 
 void SonotCoreTest::testScoreSelection()
@@ -584,6 +606,7 @@ void SonotCoreTest::testScoreSelection()
 
 bool SonotCoreTest::makeRandomEditorAction(ScoreEditor &editor)
 {
+  again:
     Score::Index idx = getRandomIndex(editor.score());
     if (!idx.isValid())
     {
@@ -591,39 +614,97 @@ bool SonotCoreTest::makeRandomEditorAction(ScoreEditor &editor)
         return false;
     }
 
-    switch (rand() % 6)
+    QString desc;
+
+    try
     {
-        case 0:
-            return editor.insertNote( idx, createRandomNote(), rand()%2 );
-        break;
-
-        case 1:
-            return editor.insertRow( idx, rand()%2 );
-        break;
-
-        case 2:
-            return editor.insertBar( idx, createRandomBar(
-                                  1+rand()%12, 1+rand()%30), rand()%2 );
-        break;
-
-        case 3:
+        switch (rand() % 11)
         {
-            auto props = editor.score()->noteStream(
-                                            idx.stream()).props();
-            props.set("bpm", double(rand()%30000)/100.);
-            props.set("title", props.get("title").toString()
-                                + QString("%1").arg(rand()));
-            return editor.setStreamProperties(idx.stream(), props);
+            case 0:
+            {
+                Note n = idx.getNote(), rn = n;
+                while (n == rn) rn = createRandomNote();
+                desc = tr("changeNote(%1)").arg(idx.toString());
+                return editor.changeNote( idx, rn );
+            }
+            break;
+
+            case 1:
+                desc = tr("changeBar(%1)").arg(idx.toString());
+                return editor.changeBar( idx, createRandomBar(
+                                             1+rand()%12, 1+rand()%30) );
+            break;
+
+            case 2:
+                desc = tr("insertNote(%1)").arg(idx.toString());
+                return editor.insertNote( idx, createRandomNote(), rand()%2 );
+            break;
+
+            case 3:
+                desc = tr("insertRow(%1)").arg(idx.toString());
+                return editor.insertRow( idx, rand()%2 );
+            break;
+
+            case 4:
+                desc = tr("insertBar(%1)").arg(idx.toString());
+                return editor.insertBar( idx, createRandomBar(
+                                      1+rand()%12, 1+rand()%30), rand()%2 );
+            break;
+
+            case 5:
+                desc = tr("insertStream(%1)").arg(idx.toString());
+                return editor.insertStream( idx, createRandomStream(
+                                      1+rand()%10, 1+rand()%20, 1+rand()%20),
+                                            rand()%2 );
+            break;
+
+            case 6:
+            {
+                desc = tr("setStreamProperties(%1)").arg(idx.toString());
+                auto props = editor.score()->noteStream(
+                                                idx.stream()).props();
+                props.set("bpm", double(rand()%30000)/100.);
+                props.set("title", props.get("title").toString()
+                                    + QString("%1").arg(rand()));
+                return editor.setStreamProperties(idx.stream(), props);
+            }
+            break;
+
+            case 7:
+                if (idx.getNotes().length() == 1)
+                    goto again;
+                desc = tr("deleteNote(%1)").arg(idx.toString());
+                return editor.deleteNote( idx, rand()%2 );
+            break;
+
+            case 8:
+                if (idx.getStream().numBars() == 1)
+                    goto again;
+                desc = tr("deleteBar(%1)").arg(idx.toString());
+                return editor.deleteBar( idx );
+            break;
+
+            case 9:
+                if (idx.getStream().numRows() == 1)
+                    goto again;
+                desc = tr("deleteRow(%1)").arg(idx.toString());
+                return editor.deleteRow( idx );
+            break;
+
+            case 10:
+                if (editor.score()->numNoteStreams() == 1)
+                    goto again;
+                desc = tr("deleteStream(%1)").arg(idx.toString());
+                return editor.deleteStream( idx );
+            break;
         }
-        break;
-
-        case 4:
-            return editor.deleteBar( idx );
-        break;
-
-        case 5:
-            return editor.deleteRow( idx );
-        break;
+        return false;
+    }
+    catch (const QProps::Exception& e)
+    {
+        qDebug().noquote().nospace()
+                << "exception in editor action '" << desc << "'\n"
+                << e.text();
     }
     return false;
 }
@@ -631,8 +712,9 @@ bool SonotCoreTest::makeRandomEditorAction(ScoreEditor &editor)
 void SonotCoreTest::testUndoRedo()
 {
     ScoreEditor editor;
-    editor.setCollapseUndo(false);
+    editor.setMergeUndo(false);
     editor.setScore( createRandomScore() );
+    qDebug() << editor.score()->toInfoString();
 
     QString undoAction;
     connect(&editor, &ScoreEditor::undoAvailable,
@@ -648,11 +730,13 @@ void SonotCoreTest::testUndoRedo()
         Score backup = *editor.score();
 
         QVERIFY( makeRandomEditorAction(editor) );
+
         if (backup == *editor.score())
             qDebug() << "no change to score for #" << it << undoAction;
         QVERIFY(backup != *editor.score());
         Score backupAction = *editor.score();
 
+        // test undo
         if (!editor.undo())
         {
             qDebug() << "undo returned false for #" << it << undoAction;
@@ -662,6 +746,7 @@ void SonotCoreTest::testUndoRedo()
             qDebug() << "mismatch after undo #" << it << undoAction;
         QCOMPARE(*editor.score(), backup);
 
+        // test redo
         if (!editor.redo())
         {
             qDebug() << "redo returned false for #" << it << undoAction;
@@ -670,49 +755,50 @@ void SonotCoreTest::testUndoRedo()
         if (!compare(*editor.score(), backupAction))
             qDebug() << "mismatch after redo #" << it << undoAction;
         QCOMPARE(*editor.score(), backupAction);
+
+        // revert
+        QVERIFY(editor.undo());
     }
 }
 
 void SonotCoreTest::testUndoRedoMany()
 {
     ScoreEditor editor;
-    editor.setCollapseUndo(false);
+    editor.setMergeUndo(false);
     editor.setScore( createRandomScore() );
     editor.clearUndo();
 
     QString undoAction;
     connect(&editor, &ScoreEditor::undoAvailable,
-            [&](bool e, const QString& n)
+            [&](bool e, const QString&, const QString& n)
     {
         if (e) undoAction = n;
     });
 
     QList<Score> history;
 
-    for (int it=0; it<300; ++it)
+    for (int it=0; it<500; ++it)
     {
-
         history << *editor.score();
 
-        try
-        {
-            QVERIFY( makeRandomEditorAction(editor) );
-        }
-        catch (const QProps::Exception& e)
-        {
-            qDebug().noquote() << e.text();
-            QFAIL("exception in editor action");
-        }
+        QVERIFY( makeRandomEditorAction(editor) );
 
         Score current = *editor.score();
 
         // test undo
 
-        int numUndos = std::max(1,std::min(200, int(rand() % history.size()) ));
+        int numUndos = std::max(1,std::min(300, int(rand() % history.size()) ));
         try
         {
             for (int i=0; i<numUndos; ++i)
-                editor.undo();
+            {
+                if (!editor.undo())
+                {
+                    qDebug().nospace() << i << "th undo failed, after "
+                                       << undoAction;
+                    QFAIL("undo action failed");
+                }
+            }
         }
         catch (const QProps::Exception& e)
         {
@@ -723,7 +809,7 @@ void SonotCoreTest::testUndoRedoMany()
         if (!compare(*editor.score(), history[history.size()-numUndos]))
             qDebug() << "mismatch after undo " << undoAction;
         QCOMPARE(*editor.score(), history[history.size()-numUndos]);
-#if 1
+
         // test redo
         try
         {
@@ -741,7 +827,8 @@ void SonotCoreTest::testUndoRedoMany()
         if (!compare(*editor.score(), current))
             qDebug() << "mismatch after redo " << undoAction;
         QCOMPARE(*editor.score(), current);
-#endif
+
+
         if ((it % 50) == 49)
             qDebug().noquote() << (it+1) << "actions";
     }

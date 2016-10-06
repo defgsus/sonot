@@ -100,13 +100,17 @@ Notes& Bar::operator[](size_t i)
     return p_->rows[i];
 }
 
-void Bar::resize(size_t numRows)
+void Bar::resize(size_t numRows, size_t newLength)
 {
     if (numRows < p_->rows.size())
         p_->rows.resize(numRows);
+    else if (numRows > p_->rows.size())
     {
+        size_t len = std::max(size_t(1),
+                              newLength == 0 ? maxNumberNotes()
+                                             : newLength );
         for (size_t i = p_->rows.size(); i<numRows; ++i)
-            p_->rows.push_back(Notes(1));
+            p_->rows.push_back(Notes(len));
     }
 }
 

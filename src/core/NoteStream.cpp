@@ -32,7 +32,8 @@ namespace Sonot {
 namespace { const double defaultBpm_ = 120.; }
 
 NoteStream::NoteStream()
-    : p_props_      ("note-stream")
+    : p_props_          ("note-stream")
+    , p_defaultLength_  (4)
 {
     p_props_.set("bpm", tr("tempo"), tr("Tempo in beats-per-minute"),
                  defaultBpm_);
@@ -63,8 +64,15 @@ bool NoteStream::operator == (const NoteStream& rhs) const
         && p_props_ == rhs.p_props_;
 }
 
+void NoteStream::setDefaultBarLength(size_t len)
+{
+    p_defaultLength_ = len;
+}
+
 Notes NoteStream::createDefaultNotes(size_t len) const
 {
+    if (len == 0)
+        len = p_defaultLength_;
     return Notes(std::max(size_t(1), len));
 }
 
@@ -205,14 +213,9 @@ void NoteStream::removeBar(size_t idx)
 
 void NoteStream::setNumRows(size_t newRows)
 {
-    if (newRows == numRows())
-        return;
     for (Bar& bar : p_data_)
     {
-        size_t n = bar.numRows();
         bar.resize(newRows);
-        for (size_t i=n; i<newRows; ++i)
-            bar[n] = createDefaultNotes();
     }
 }
 

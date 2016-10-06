@@ -48,7 +48,7 @@ public:
     void clearUndo();
     /** Enables or disabled collapsing similiar undo actions.
         Default is true */
-    void setCollapseUndo(bool enable);
+    void setMergeUndo(bool enable);
 
     void setScore(const Score& s);
     bool setStreamProperties(size_t streamIdx, const QProps::Properties& p);

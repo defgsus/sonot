@@ -48,7 +48,7 @@ struct ScoreEditor::Private
         : p                 (p)
         , score_            (nullptr)
         , undoDataPos       (0)
-        , doCollapseUndo    (true)
+        , doMergeUndo    (true)
     { }
 
     struct UndoData
@@ -78,16 +78,17 @@ struct ScoreEditor::Private
     bool changeStream(size_t streamIdx, const NoteStream& s);
     bool insertBar(const Score::Index& idx, const Bar& bar, bool after);
     bool insertRow(const Score::Index& idx, bool after);
+    bool insertStream(const Score::Index& idx, const NoteStream& s, bool after);
     bool deleteBar(const Score::Index& idx);
     bool deleteRow(const Score::Index& idx);
-
+    bool deleteStream(const Score::Index& idx);
 
     ScoreEditor* p;
 
     Score* score_;
     QList<std::shared_ptr<UndoData>> undoData;
     int undoDataPos;
-    bool doCollapseUndo;
+    bool doMergeUndo;
 };
 
 ScoreEditor::ScoreEditor(QObject *parent)
@@ -113,7 +114,7 @@ void ScoreEditor::Private::addUndoData(UndoData* d)
     while (undoDataPos < undoData.size())
         undoData.removeLast();
 
-    if (doCollapseUndo)
+    if (doMergeUndo)
     if (!undoData.isEmpty())
     {
         if (undoData.last()->name == d->name)
@@ -212,37 +213,57 @@ void ScoreEditor::clearUndo()
     emit redoAvailable(false, "", "");
 }
 
-void ScoreEditor::setCollapseUndo(bool enable)
+void ScoreEditor::setMergeUndo(bool enable)
 {
-    p_->doCollapseUndo = enable;
+    p_->doMergeUndo = enable;
 }
 
 // ##################### editing ###########################
 
-#define SONOT__CHECK_INDEX(i__, ret__) \
+#define SONOT__CHECK_INDEX_INSTANCE(i__, ret__, arg__) \
+    QPROPS_ASSERT(score(), "no Score assigned to ScoreEditor " << arg__); \
     QPROPS_ASSERT(i__.score() == score(), \
-     "non-matching index " << i__.toString() << " used with ScoreEditor"); \
+     "Score pointer in index " << i__.toString() \
+     << " not matching ScoreEditor " << arg__);
+
+#define SONOT__CHECK_INDEX(i__, ret__, arg__) \
+    SONOT__CHECK_INDEX_INSTANCE(i__, ret__, arg__); \
     QPROPS_ASSERT(i__.isValid(), \
-     "invalid index " << i__.toString() << " used with ScoreEditor"); \
+     "invalid index " << i__.toString() << " used with ScoreEditor, " \
+     << score()->toInfoString() << " " << arg__ ); \
     if (!i__.isValid() || i__.score() != score()) return ret__;
 
-#define SONOT__CHECK_SELECTION(i__, ret__) \
-    SONOT__CHECK_INDEX(i__.from(), ret__); \
-    SONOT__CHECK_INDEX(i__.to(), ret__);
+#define SONOT__CHECK_SELECTION(i__, ret__, arg__) \
+    SONOT__CHECK_INDEX(i__.from(), ret__, arg__); \
+    SONOT__CHECK_INDEX(i__.to(), ret__, arg__);
 
 void ScoreEditor::Private::addBarChangeUndoData(
-        const Score::Index& idx, const Bar& newBar, const Bar& oldBar,
+        const Score::Index& idx_, const Bar& newBar, const Bar& oldBar,
         const QString& desc, const QString& detail)
 {
     SONOT__DEBUG("Private::addBarChangeUndoData(" << idx.toString()
                  << ", '" << detail << "')");
+
+    auto idx = idx_.topLeft();
+
+    auto stream = getStream(idx);
+    QPROPS_ASSERT(stream, "in ScoreEditor::Private::addBarChangeUndoData()");
+    size_t orgRows = stream->numRows();
 
     auto undo = new UndoData();
     undo->name = desc;
     undo->detail = detail;
     undo->undo = [=]()
     {
+        auto stream = getStream(idx);
+        QPROPS_ASSERT(stream,
+                      "in ScoreEditor::Private::addBarChangeUndoData():undo");
+        bool rowChange = orgRows != stream->numRows();
+        if (rowChange)
+            stream->setNumRows(orgRows);
         changeBar(idx, oldBar);
+        if (rowChange)
+            emit p->streamsChanged(IndexList() << idx);
         emit p->cursorChanged(idx);
     };
     undo->redo = [=]()
@@ -343,7 +364,7 @@ bool ScoreEditor::insertNote(
 {
     SONOT__DEBUG("insertNote(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in insertNote");
     if (!allRows)
     {
         if (Notes* notes = p_->getNotes(idx))
@@ -401,7 +422,7 @@ bool ScoreEditor::insertBar(
 {
     SONOT__DEBUG("insertBar(" << idx_.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx_, false);
+    SONOT__CHECK_INDEX(idx_, false, "in insertBar");
     auto idx = idx_.topLeft();
     NoteStream* stream = p_->getStream(idx);
     if (!stream)
@@ -452,9 +473,7 @@ bool ScoreEditor::Private::insertBar(
     SONOT__DEBUG("Private::insertBar("
                  << idx.toString() << ", after=" << after << ")");
 
-    QPROPS_ASSERT(idx.score() == score(),
-                  "non-matching index " << idx.toString()
-                  << " used in ScoreEditor");
+    SONOT__CHECK_INDEX_INSTANCE(idx, false, "in Private::insertBar");
     QPROPS_ASSERT_LT(idx.stream(), score()->numNoteStreams(),
                   "stream index out of range");
     NoteStream* stream = getStream(idx, false);
@@ -472,7 +491,7 @@ bool ScoreEditor::insertBars(
 {
     SONOT__DEBUG("insertBars(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in insertBars");
     if (NoteStream* dst = p_->getStream(idx))
     {
         size_t iidx = idx.bar() + (after ? 1 : 0);
@@ -492,7 +511,7 @@ bool ScoreEditor::insertRow(const Score::Index& idx, bool after)
 {
     SONOT__DEBUG("insertRow(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in insertRow");
     auto stream = p_->getStream(idx);
     if (!stream)
         return false;
@@ -519,9 +538,10 @@ bool ScoreEditor::insertRow(const Score::Index& idx, bool after)
 
 bool ScoreEditor::Private::insertRow(const Score::Index& idx, bool after)
 {
-    SONOT__DEBUG("insertRow(" << idx.toString() << ", after=" << after << ")");
+    SONOT__DEBUG("Private::insertRow("
+                 << idx.toString() << ", after=" << after << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in Private::insertRow");
     if (NoteStream* stream = getStream(idx))
     {
         stream->insertRow(idx.row() + (after ? 1 : 0));
@@ -533,24 +553,51 @@ bool ScoreEditor::Private::insertRow(const Score::Index& idx, bool after)
 }
 
 bool ScoreEditor::insertStream(
+        const Score::Index& idx_, const NoteStream& s, bool after)
+{
+    SONOT__DEBUG("insertStream(" << idx_.toString() << ")");
+    auto idx = idx_.streamTopLeft();
+
+    SONOT__CHECK_INDEX(idx, false, "in insertStream");
+
+    auto undo = new Private::UndoData();
+    undo->name = tr("insert part %1").arg(idx.stream());
+    undo->detail = tr("insert part %1").arg(idx.toString());
+    undo->undo = [=]()
+    {
+        Score::Index index = idx;
+        if (after)
+            index.nextStream();
+        p_->deleteStream(index);
+    };
+    undo->redo = [=]()
+    {
+        p_->insertStream(idx, s, after);
+    };
+    p_->addUndoData(undo);
+
+    return p_->insertStream(idx, s, after);
+}
+
+bool ScoreEditor::Private::insertStream(
         const Score::Index& idx, const NoteStream& s, bool after)
 {
-    SONOT__DEBUG("insertStream(" << idx.toString() << ")");
+    SONOT__DEBUG("Private::insertStream(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
-    if (idx.stream() < score()->numNoteStreams())
-    {
-        size_t iidx = idx.stream() + (after ? 1 : 0);
-        score()->insertNoteStream(iidx, s);
+    SONOT__CHECK_INDEX_INSTANCE(idx, false, "in Private::insertStream");
 
-        IndexList list;
-        for (size_t i = iidx; i < score()->numNoteStreams(); ++i)
-            list << score()->index(i, 0,0,0);
-        emit streamsChanged(list);
-        emit documentChanged();
-        return true;
-    }
-    return false;
+    size_t iidx = idx.stream() + (after ? 1 : 0);
+    if (iidx > score()->numNoteStreams())
+        iidx = score()->numNoteStreams();
+
+    score()->insertNoteStream(iidx, s);
+
+    IndexList list;
+    for (size_t i = iidx; i < score()->numNoteStreams(); ++i)
+        list << score()->index(i, 0,0,0);
+    emit p->streamsChanged(list);
+    emit p->documentChanged();
+    return true;
 }
 
 bool ScoreEditor::insertScore(
@@ -558,7 +605,7 @@ bool ScoreEditor::insertScore(
 {
     SONOT__DEBUG("insertScore(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in insertScore");
     if (idx.stream() < score()->numNoteStreams())
     {
         size_t iidx = idx.stream() + (after ? 1 : 0);
@@ -582,7 +629,7 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
 {
     SONOT__DEBUG("deleteRow(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in deleteRow");
     auto stream = p_->getStream(idx);
     if (!stream)
         return false;
@@ -608,7 +655,7 @@ bool ScoreEditor::Private::deleteRow(const Score::Index& idx)
 {
     SONOT__DEBUG("Private::deleteRow(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in Private::deleteRow");
     if (NoteStream* stream = getStream(idx))
     {
         stream->removeRow(idx.row());
@@ -623,22 +670,33 @@ bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
 {
     SONOT__DEBUG("changeNote(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in changeNote");
+
+    if (Bar* bar = p_->getBar(idx))
     if (Notes* notes = p_->getNotes(idx))
     {
+        Bar oldBar = *bar;
         notes->setNote(idx.column(), n);
         emit noteValuesChanged(IndexList() << idx);
         emit documentChanged();
+
+        // store the whole bar so merging undo actions
+        // will keep all changed notes
+        p_->addBarChangeUndoData(idx, *bar, oldBar,
+                                 tr("change note in %1:%2")
+                                 .arg(idx.stream()).arg(idx.bar()),
+                                 tr("change note %1").arg(idx.toString()));
         return true;
     }
     return false;
 }
 
-bool ScoreEditor::changeBar(const Score::Index& idx, const Bar& b)
+bool ScoreEditor::changeBar(const Score::Index& idx_, const Bar& b)
 {
     SONOT__DEBUG("changeBar(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    auto idx = idx_.topLeft();
+
     Bar* bar = p_->getBar(idx);
     if (!bar)
         return false;
@@ -653,13 +711,29 @@ bool ScoreEditor::changeBar(const Score::Index& idx, const Bar& b)
 
 bool ScoreEditor::Private::changeBar(const Score::Index& idx, const Bar& b)
 {
-    SONOT__DEBUG("changeBar(" << idx.toString() << ")");
+    SONOT__DEBUG("Private::changeBar(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    if (NoteStream* stream = getStream(idx))
     if (Bar* bar = getBar(idx))
     {
-        *bar = b;
-        emit p->barsChanged(IndexList() << idx);
+        if (b.numRows() < stream->numRows())
+        {
+            Bar b2 = b;
+            b2.resize(stream->numRows());
+            *bar = b2;
+            emit p->barsChanged(IndexList() << idx);
+        }
+        else if (b.numRows() > stream->numRows())
+        {
+            stream->setNumRows(b.numRows());
+            *bar = b;
+            emit p->streamsChanged(IndexList() << idx);
+        }
+        else
+        {
+            *bar = b;
+            emit p->barsChanged(IndexList() << idx);
+        }
         emit p->documentChanged();
         return true;
     }
@@ -684,7 +758,7 @@ bool ScoreEditor::transpose(const Score::Selection& sel, int steps)
 {
     SONOT__DEBUG("transpose(" << sel.toString() << ")");
 
-    SONOT__CHECK_SELECTION(sel, false);
+    SONOT__CHECK_SELECTION(sel, false, "in transpose");
     if (steps == 0)
         return false;
     auto indices = sel.containedIndices();
@@ -705,16 +779,20 @@ bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
 {
     SONOT__DEBUG("deleteNote(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
-    if (Notes* bar = p_->getNotes(idx))
+    SONOT__CHECK_INDEX(idx, false, "in deleteNote");
+    if (Bar* bar = p_->getBar(idx))
+    if (Notes* notes = p_->getNotes(idx))
     {
+        Bar oldBar = *bar;
+        QString undoDesc = tr("delete note%1 %2")
+                .arg(allRows ? "-column" : "").arg(idx.toString());
+
         IndexList list;
         if (!allRows)
         {
             list << idx;
             emit notesAboutToBeDeleted(list);
-            emit documentChanged();
-            bar->removeNote(idx.column());
+            notes->removeNote(idx.column());
         }
         else
         {
@@ -722,19 +800,25 @@ bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
             {
                 auto x = score()->index(idx.stream(), idx.bar(),
                                         i, idx.column());
-                if (p_->getNotes(x))
+                if (x.isValid())
                     list << x;
             }
             emit notesAboutToBeDeleted(list);
             for (auto& x : list)
-            if (Notes* b = p_->getNotes(x))
+            if (Notes* notes = p_->getNotes(x))
             {
-                b->removeNote(x.column());
+                notes->removeNote(x.column());
             }
         }
 
         emit notesDeleted(list);
         emit documentChanged();
+
+        p_->addBarChangeUndoData(idx, *bar, oldBar,
+                                 tr("delete note in %1:%2")
+                                 .arg(idx.stream()).arg(idx.bar()),
+                                 undoDesc);
+
         return true;
     }
     return false;
@@ -744,8 +828,8 @@ bool ScoreEditor::deleteBar(const Score::Index& idx_)
 {
     SONOT__DEBUG("deleteBar(" << idx_.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx_, false);
     auto idx = idx_.topLeft();
+    SONOT__CHECK_INDEX(idx, false, "in deleteBar");
     Bar* bar = p_->getBar(idx);
     if (!bar)
         return false;
@@ -756,10 +840,20 @@ bool ScoreEditor::deleteBar(const Score::Index& idx_)
     Bar copy(*bar);
     undo->undo = [=]()
     {
+        /** @todo The call to idx.toString() "fixes" a problem
+            in SonotCoreTest::testUndoRedo().
+            Maybe it's a bug(?) in lambda captures or
+            some optimization thing.. It's really strange,
+            it does not help to enable debug printing because
+            the problem disappears then. */
+        idx.toString();
+        //qDebug() << "insert" << idx.toString();
         p_->insertBar(idx, copy, false);
     };
     undo->redo = [=]()
     {
+        idx.toString();
+        //qDebug() << "delete" << idx.toString();
         p_->deleteBar(idx);
     };
     p_->addUndoData(undo);
@@ -771,7 +865,7 @@ bool ScoreEditor::Private::deleteBar(const Score::Index& idx)
 {
     SONOT__DEBUG("Private::deleteBar(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in deleteBar");
     if (NoteStream* stream = getStream(idx))
     {
         IndexList list; list << idx;
@@ -785,18 +879,45 @@ bool ScoreEditor::Private::deleteBar(const Score::Index& idx)
     return false;
 }
 
-bool ScoreEditor::deleteStream(const Score::Index& idx)
+bool ScoreEditor::deleteStream(const Score::Index& idx_)
 {
-    SONOT__DEBUG("deleteStream(" << idx.toString() << ")");
+    SONOT__DEBUG("deleteStream(" << idx_.toString() << ")");
+    auto idx = idx_.streamTopLeft();
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in deleteStream");
+    NoteStream* stream = p_->getStream(idx);
+    if (!stream)
+        return false;
+
+    auto undo = new Private::UndoData();
+    undo->name = tr("delete part %1").arg(idx.stream());
+    undo->detail = tr("delete part %1").arg(idx.toString());
+    NoteStream copy(*stream);
+    undo->undo = [=]()
+    {
+        p_->insertStream(idx, copy, false);
+    };
+    undo->redo = [=]()
+    {
+        p_->deleteStream(idx);
+    };
+    p_->addUndoData(undo);
+
+    return p_->deleteStream(idx);
+}
+
+bool ScoreEditor::Private::deleteStream(const Score::Index& idx)
+{
+    SONOT__DEBUG("Private::deleteStream(" << idx.toString() << ")");
+
+    SONOT__CHECK_INDEX(idx, false, "in Private::deleteStream");
     if (idx.stream() < score()->numNoteStreams())
     {
         IndexList list; list << idx;
-        emit streamsAboutToBeDeleted(list);
+        emit p->streamsAboutToBeDeleted(list);
         score()->removeNoteStream(idx.stream());
-        emit streamsDeleted(list);
-        emit documentChanged();
+        emit p->streamsDeleted(list);
+        emit p->documentChanged();
         return true;
     }
     return false;
@@ -806,7 +927,7 @@ bool ScoreEditor::splitStream(const Score::Index& idx)
 {
     SONOT__DEBUG("splitStream(" << idx.toString() << ")");
 
-    SONOT__CHECK_INDEX(idx, false);
+    SONOT__CHECK_INDEX(idx, false, "in splitStream");
     if (idx.isStreamRight())
         return false;
     NoteStream* org = p_->getStream(idx);
@@ -830,7 +951,7 @@ NoteStream* ScoreEditor::Private::getStream(const Score::Index& idx, bool check)
 {
     if (check)
     {
-        SONOT__CHECK_INDEX(idx, nullptr);
+        SONOT__CHECK_INDEX(idx, nullptr, "in Private::getStream");
     }
     else if (idx.stream() >= score_->numNoteStreams())
         return nullptr;
@@ -839,14 +960,24 @@ NoteStream* ScoreEditor::Private::getStream(const Score::Index& idx, bool check)
 
 Bar* ScoreEditor::Private::getBar(const Score::Index& idx)
 {
-    SONOT__CHECK_INDEX(idx, nullptr);
+    SONOT__CHECK_INDEX_INSTANCE(idx, false, "in Private::getBar");
+    QPROPS_ASSERT_LT(idx.stream(),
+                     score()->numNoteStreams(),
+                     "in ScoreEditor::Private::getBar");
+    QPROPS_ASSERT_LT(idx.bar(), score()->noteStream(idx.stream()).numBars(),
+                     "in ScoreEditor::Private::getBar");
+    if (idx.stream() >= score()->numNoteStreams())
+        return nullptr;
+    if (idx.bar() >= score()->noteStream(idx.stream()).numBars())
+        return nullptr;
+
     return const_cast<Bar*>(&score_->noteStreams()[idx.stream()]
                             .bar(idx.bar()));
 }
 
 Notes* ScoreEditor::Private::getNotes(const Score::Index& idx)
 {
-    SONOT__CHECK_INDEX(idx, nullptr);
+    SONOT__CHECK_INDEX(idx, nullptr, "in Private::getNotes");
     return const_cast<Notes*>(&score_->noteStreams()[idx.stream()]
                             .notes(idx.bar(), idx.row()));
 }

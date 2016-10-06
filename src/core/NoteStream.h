@@ -49,6 +49,8 @@ public:
 
     // --- factory ---
 
+    void setDefaultBarLength(size_t len);
+
     /** Default empty bar for this stream.
         If @p len == 0, the default length will be used. */
     Notes createDefaultNotes(size_t len = 0) const;
@@ -149,6 +151,7 @@ public:
 private:
     std::vector<Bar> p_data_;
     QProps::Properties p_props_;
+    size_t p_defaultLength_;
 };
 
 } // namespace Sonot

@@ -74,7 +74,11 @@ public:
     Iter end();
 
     void clear() { resize(0); }
-    void resize(size_t numRows);
+    /** Sets the number of rows in this bar.
+        @param newLength defines the length of new created rows.
+        If @p newLength is 0, the maxNumberNotes() will be used instead.
+        If maxNumberNotes() == 0, 1 will be used. */
+    void resize(size_t numRows, size_t newLength = 0);
     void setNotes(size_t row, const Notes& n);
     void append(const Notes& n);
     void insert(size_t idx, const Notes& n);
