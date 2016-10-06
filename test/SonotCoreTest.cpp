@@ -116,7 +116,6 @@ private slots:
     void testScoreIndexPrevNote();
     void testScoreSelection();
 
-    void testUndoRedo0();
     void testUndoRedo();
     void testUndoRedoMany();
 
@@ -161,15 +160,22 @@ Bar SonotCoreTest::createRandomBar(size_t length, size_t rows)
 
 Score::Index SonotCoreTest::getRandomIndex(const Score* score)
 {
-    QPROPS_ASSERT(score->numNoteStreams(), "");
-    int stream = rand() % score->numNoteStreams();
-    QPROPS_ASSERT(score->noteStream(stream).numBars(), "");
-    QPROPS_ASSERT(score->noteStream(stream).numRows(), "");
-    int bar = rand() % score->noteStream(stream).numBars();
-    int row = rand() % score->noteStream(stream).numRows();
-    QPROPS_ASSERT(score->noteStream(stream).bar(bar).notes(row).length(), "");
-    int col = rand() % score->noteStream(stream).bar(bar).notes(row).length();
-    return score->index(stream, bar, row, col);
+    QPROPS_ASSERT(score->numNoteStreams(), score->toInfoString());
+    for (int i=0; i<1000; ++i)
+    {
+        int stream = rand() % score->numNoteStreams();
+        if (score->noteStream(stream).numBars() == 0
+         || score->noteStream(stream).numRows() == 0)
+            continue;
+        int bar = rand() % score->noteStream(stream).numBars();
+        int row = rand() % score->noteStream(stream).numRows();
+        if (score->noteStream(stream).bar(bar).notes(row).length() == 0)
+            continue;
+        int col = rand() % score->noteStream(stream)
+                                    .bar(bar).notes(row).length();
+        return score->index(stream, bar, row, col);
+    }
+    QPROPS_ERROR("No random index found in Score " << score->toInfoString());
 }
 
 bool SonotCoreTest::compare(const Score &a, const Score &b)
@@ -585,7 +591,7 @@ bool SonotCoreTest::makeRandomEditorAction(ScoreEditor &editor)
         return false;
     }
 
-    switch (rand() % 2)
+    switch (rand() % 6)
     {
         case 0:
             return editor.insertNote( idx, createRandomNote(), rand()%2 );
@@ -604,8 +610,9 @@ bool SonotCoreTest::makeRandomEditorAction(ScoreEditor &editor)
         {
             auto props = editor.score()->noteStream(
                                             idx.stream()).props();
-            props.change("bpm", double(rand()%300));
-            props.change("title", QString("titel %1").arg(rand()));
+            props.set("bpm", double(rand()%30000)/100.);
+            props.set("title", props.get("title").toString()
+                                + QString("%1").arg(rand()));
             return editor.setStreamProperties(idx.stream(), props);
         }
         break;
@@ -619,24 +626,6 @@ bool SonotCoreTest::makeRandomEditorAction(ScoreEditor &editor)
         break;
     }
     return false;
-}
-
-void SonotCoreTest::testUndoRedo0()
-{
-    ScoreEditor editor;
-    editor.setCollapseUndo(false);
-    editor.setScore( createRandomScore(4,4,9) );
-    editor.clearUndo();
-
-    auto backup = *editor.score();
-
-    editor.deleteBar(editor.score()->index(8,3,0,0));
-    QVERIFY(backup != *editor.score());
-    auto backupAction = *editor.score();
-    editor.undo();
-    QCOMPARE(*editor.score(), backup);
-    editor.redo();
-    QCOMPARE(*editor.score(), backupAction);
 }
 
 void SonotCoreTest::testUndoRedo()
@@ -656,11 +645,13 @@ void SonotCoreTest::testUndoRedo()
     {
         editor.clearUndo();
         undoAction.clear();
-        auto backup = *editor.score();
+        Score backup = *editor.score();
 
         QVERIFY( makeRandomEditorAction(editor) );
+        if (backup == *editor.score())
+            qDebug() << "no change to score for #" << it << undoAction;
         QVERIFY(backup != *editor.score());
-        auto backupAction = *editor.score();
+        Score backupAction = *editor.score();
 
         if (!editor.undo())
         {
@@ -717,7 +708,7 @@ void SonotCoreTest::testUndoRedoMany()
 
         // test undo
 
-        int numUndos = 1;//std::max(1,std::min(200, int(rand() % history.size()) ));
+        int numUndos = std::max(1,std::min(200, int(rand() % history.size()) ));
         try
         {
             for (int i=0; i<numUndos; ++i)
@@ -732,7 +723,7 @@ void SonotCoreTest::testUndoRedoMany()
         if (!compare(*editor.score(), history[history.size()-numUndos]))
             qDebug() << "mismatch after undo " << undoAction;
         QCOMPARE(*editor.score(), history[history.size()-numUndos]);
-#if 0
+#if 1
         // test redo
         try
         {

@@ -59,7 +59,8 @@ NoteStream::NoteStream()
 
 bool NoteStream::operator == (const NoteStream& rhs) const
 {
-    return p_data_ == rhs.p_data_;
+    return p_data_ == rhs.p_data_
+        && p_props_ == rhs.p_props_;
 }
 
 Notes NoteStream::createDefaultNotes(size_t len) const

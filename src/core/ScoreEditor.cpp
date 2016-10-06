@@ -31,7 +31,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "NoteStream.h"
 
 
-#if 1
+#if 0
 #   include <QDebug>
 #   define SONOT__DEBUG(arg__) { qDebug().noquote().nospace() \
         << "ScoreEditor::" << arg__; }
@@ -107,7 +107,7 @@ Score* ScoreEditor::score() const { return p_->score_; }
 
 void ScoreEditor::Private::addUndoData(UndoData* d)
 {
-    //qDebug() << "UNDO: " << d->name;
+    SONOT__DEBUG("Private::addUndoData('" << d->detail << "')");
 
     // clear redo-data
     while (undoDataPos < undoData.size())
@@ -132,6 +132,8 @@ void ScoreEditor::Private::addUndoData(UndoData* d)
 
 bool ScoreEditor::undo()
 {
+    SONOT__DEBUG("undo()");
+
     if (p_->undoData.isEmpty())
         return false;
     if (p_->undoDataPos > p_->undoData.size())
@@ -168,6 +170,8 @@ bool ScoreEditor::undo()
 
 bool ScoreEditor::redo()
 {
+    SONOT__DEBUG("redo()");
+
     if (p_->undoData.isEmpty())
         return false;
     if (p_->undoDataPos >= p_->undoData.size())
@@ -230,8 +234,8 @@ void ScoreEditor::Private::addBarChangeUndoData(
         const Score::Index& idx, const Bar& newBar, const Bar& oldBar,
         const QString& desc, const QString& detail)
 {
-    SONOT__DEBUG("barChangeUndoData(" << idx.toString() << ", "
-                 << detail << ")");
+    SONOT__DEBUG("Private::addBarChangeUndoData(" << idx.toString()
+                 << ", '" << detail << "')");
 
     auto undo = new UndoData();
     undo->name = desc;
@@ -251,6 +255,8 @@ void ScoreEditor::Private::addBarChangeUndoData(
 
 void ScoreEditor::setScore(const Score& newScore)
 {
+    SONOT__DEBUG("setScore()");
+
     auto undo = new Private::UndoData();
     undo->name = tr("set score");
     undo->detail = undo->name;
@@ -280,7 +286,7 @@ void ScoreEditor::setScore(const Score& newScore)
 
 void ScoreEditor::Private::setScore(const Score& s)
 {
-    SONOT__DEBUG("setScore(" << &s << ")");
+    SONOT__DEBUG("Private::setScore(" << &s << ")");
     delete score_;
     score_ = new Score(s);
     emit p->scoreReset(score_);
@@ -289,6 +295,8 @@ void ScoreEditor::Private::setScore(const Score& s)
 bool ScoreEditor::setStreamProperties(
         size_t streamIdx, const QProps::Properties& newProps)
 {
+    SONOT__DEBUG("setStreamProperties()");
+
     if (!score())
         return false;
 
@@ -319,7 +327,7 @@ bool ScoreEditor::setStreamProperties(
 void ScoreEditor::Private::setStreamProperties(
         size_t streamIdx, const QProps::Properties& prop)
 {
-    SONOT__DEBUG("setStreamProperties(" << streamIdx << ")");
+    SONOT__DEBUG("Private::setStreamProperties(" << streamIdx << ")");
 
     auto idx = score()->index(streamIdx, 0,0,0);
     if (NoteStream* stream = getStream(idx))
@@ -333,6 +341,8 @@ void ScoreEditor::Private::setStreamProperties(
 bool ScoreEditor::insertNote(
         const Score::Index& idx, const Note& n, bool allRows)
 {
+    SONOT__DEBUG("insertNote(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     if (!allRows)
     {
@@ -389,6 +399,8 @@ bool ScoreEditor::insertNote(
 bool ScoreEditor::insertBar(
         const Score::Index& idx_, const Bar& bar, bool after)
 {
+    SONOT__DEBUG("insertBar(" << idx_.toString() << ")");
+
     SONOT__CHECK_INDEX(idx_, false);
     auto idx = idx_.topLeft();
     NoteStream* stream = p_->getStream(idx);
@@ -437,7 +449,8 @@ bool ScoreEditor::insertBar(
 bool ScoreEditor::Private::insertBar(
         const Score::Index& idx, const Bar& bar, bool after)
 {
-    SONOT__DEBUG("insertBar(" << idx.toString() << ", after=" << after << ")");
+    SONOT__DEBUG("Private::insertBar("
+                 << idx.toString() << ", after=" << after << ")");
 
     QPROPS_ASSERT(idx.score() == score(),
                   "non-matching index " << idx.toString()
@@ -448,7 +461,6 @@ bool ScoreEditor::Private::insertBar(
     if (!stream)
         return false;
 
-    qDebug() << "INSERT" << stream->numRows() << bar.numRows();
     stream->insertBar(idx.bar() + (after ? 1 : 0), bar);
     emit p->streamsChanged(IndexList() << idx);
     emit p->documentChanged();
@@ -458,6 +470,8 @@ bool ScoreEditor::Private::insertBar(
 bool ScoreEditor::insertBars(
         const Score::Index& idx, const NoteStream& stream, bool after)
 {
+    SONOT__DEBUG("insertBars(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     if (NoteStream* dst = p_->getStream(idx))
     {
@@ -476,6 +490,8 @@ bool ScoreEditor::insertBars(
 
 bool ScoreEditor::insertRow(const Score::Index& idx, bool after)
 {
+    SONOT__DEBUG("insertRow(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     auto stream = p_->getStream(idx);
     if (!stream)
@@ -492,7 +508,7 @@ bool ScoreEditor::insertRow(const Score::Index& idx, bool after)
             index.nextRow();
         p_->deleteRow(index);
     };
-    undo->undo = [=]()
+    undo->redo = [=]()
     {
         p_->insertRow(idx, after);
     };
@@ -519,6 +535,8 @@ bool ScoreEditor::Private::insertRow(const Score::Index& idx, bool after)
 bool ScoreEditor::insertStream(
         const Score::Index& idx, const NoteStream& s, bool after)
 {
+    SONOT__DEBUG("insertStream(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     if (idx.stream() < score()->numNoteStreams())
     {
@@ -538,6 +556,8 @@ bool ScoreEditor::insertStream(
 bool ScoreEditor::insertScore(
         const Score::Index& idx, const Score& s, bool after)
 {
+    SONOT__DEBUG("insertScore(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     if (idx.stream() < score()->numNoteStreams())
     {
@@ -560,6 +580,8 @@ bool ScoreEditor::insertScore(
 
 bool ScoreEditor::deleteRow(const Score::Index& idx)
 {
+    SONOT__DEBUG("deleteRow(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     auto stream = p_->getStream(idx);
     if (!stream)
@@ -573,7 +595,7 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
     {
         p_->changeStream(idx.stream(), copy);
     };
-    undo->undo = [=]()
+    undo->redo = [=]()
     {
         p_->deleteRow(idx);
     };
@@ -584,7 +606,7 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
 
 bool ScoreEditor::Private::deleteRow(const Score::Index& idx)
 {
-    SONOT__DEBUG("deleteRow(" << idx.toString() << ")");
+    SONOT__DEBUG("Private::deleteRow(" << idx.toString() << ")");
 
     SONOT__CHECK_INDEX(idx, false);
     if (NoteStream* stream = getStream(idx))
@@ -599,6 +621,8 @@ bool ScoreEditor::Private::deleteRow(const Score::Index& idx)
 
 bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
 {
+    SONOT__DEBUG("changeNote(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     if (Notes* notes = p_->getNotes(idx))
     {
@@ -612,6 +636,8 @@ bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
 
 bool ScoreEditor::changeBar(const Score::Index& idx, const Bar& b)
 {
+    SONOT__DEBUG("changeBar(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     Bar* bar = p_->getBar(idx);
     if (!bar)
@@ -642,7 +668,7 @@ bool ScoreEditor::Private::changeBar(const Score::Index& idx, const Bar& b)
 
 bool ScoreEditor::Private::changeStream(size_t streamIdx, const NoteStream& s)
 {
-    SONOT__DEBUG("changeStream(" << streamIdx << ", "
+    SONOT__DEBUG("Private::changeStream(" << streamIdx << ", "
                  << s.numBars() << "x" << s.numRows() << ")");
 
     if (!score() || streamIdx >= score()->numNoteStreams())
@@ -656,6 +682,8 @@ bool ScoreEditor::Private::changeStream(size_t streamIdx, const NoteStream& s)
 
 bool ScoreEditor::transpose(const Score::Selection& sel, int steps)
 {
+    SONOT__DEBUG("transpose(" << sel.toString() << ")");
+
     SONOT__CHECK_SELECTION(sel, false);
     if (steps == 0)
         return false;
@@ -675,6 +703,8 @@ bool ScoreEditor::transpose(const Score::Selection& sel, int steps)
 
 bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
 {
+    SONOT__DEBUG("deleteNote(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     if (Notes* bar = p_->getNotes(idx))
     {
@@ -712,6 +742,8 @@ bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
 
 bool ScoreEditor::deleteBar(const Score::Index& idx_)
 {
+    SONOT__DEBUG("deleteBar(" << idx_.toString() << ")");
+
     SONOT__CHECK_INDEX(idx_, false);
     auto idx = idx_.topLeft();
     Bar* bar = p_->getBar(idx);
@@ -724,18 +756,10 @@ bool ScoreEditor::deleteBar(const Score::Index& idx_)
     Bar copy(*bar);
     undo->undo = [=]()
     {
-        /** @todo The call to idx.toString() fixes a problem
-            in SonotCoreTest::testUndoRedoMany().
-            Probably it's a bug(?) in lambda captures or
-            some optimization thing.. */
-        idx.toString();
-        qDebug() << "insert" << idx.toString();
         p_->insertBar(idx, copy, false);
     };
     undo->redo = [=]()
     {
-        idx.toString();
-        qDebug() << "delete" << idx.toString();
         p_->deleteBar(idx);
     };
     p_->addUndoData(undo);
@@ -745,7 +769,7 @@ bool ScoreEditor::deleteBar(const Score::Index& idx_)
 
 bool ScoreEditor::Private::deleteBar(const Score::Index& idx)
 {
-    SONOT__DEBUG("deleteBar(" << idx.toString() << ")");
+    SONOT__DEBUG("Private::deleteBar(" << idx.toString() << ")");
 
     SONOT__CHECK_INDEX(idx, false);
     if (NoteStream* stream = getStream(idx))
@@ -763,6 +787,8 @@ bool ScoreEditor::Private::deleteBar(const Score::Index& idx)
 
 bool ScoreEditor::deleteStream(const Score::Index& idx)
 {
+    SONOT__DEBUG("deleteStream(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     if (idx.stream() < score()->numNoteStreams())
     {
@@ -778,6 +804,8 @@ bool ScoreEditor::deleteStream(const Score::Index& idx)
 
 bool ScoreEditor::splitStream(const Score::Index& idx)
 {
+    SONOT__DEBUG("splitStream(" << idx.toString() << ")");
+
     SONOT__CHECK_INDEX(idx, false);
     if (idx.isStreamRight())
         return false;
@@ -826,6 +854,8 @@ Notes* ScoreEditor::Private::getNotes(const Score::Index& idx)
 bool ScoreEditor::pasteMimeData(const Score::Index& idx,
                                 const QMimeData* data, bool after)
 {
+    SONOT__DEBUG("pasteMimeData(" << idx.toString() << ")");
+
     if (!data->hasText())
         return false;
     auto doc = QJsonDocument::fromJson(data->data("text/plain"));

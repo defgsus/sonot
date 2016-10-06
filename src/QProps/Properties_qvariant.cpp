@@ -192,7 +192,7 @@ bool Properties::qvariant_compare(const QVariant& v1, const QVariant& v2)
     // else QVariant::operator==
     ret = (v1 == v2);
 
-    if (!ret) qDebug() << "COMPARE " << ret << v1 << v2;
+    //if (!ret) qDebug() << "COMPARE " << ret << v1 << v2;
     return ret;
 }
 
