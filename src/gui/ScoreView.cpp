@@ -327,9 +327,13 @@ void ScoreView::createEditActions(QMenu* menu)
 
     menu->addSeparator();
 
-    a = menu->addAction(tr("select notes"));
+    a = menu->addAction(tr("select row/column/bar/stream"));
     a->setShortcut(Qt::ALT + Qt::Key_S);
     connect(a, &QAction::triggered, [=](){ editSelectNext(); });
+
+    a = menu->addAction(tr("unselect"));
+    a->setShortcut(Qt::ALT + Qt::Key_U);
+    connect(a, &QAction::triggered, [=](){ editSelectNone(); });
 
     a = menu->addAction(tr("copy selection"));
     a->setShortcut(Qt::CTRL + Qt::Key_C);
@@ -519,6 +523,13 @@ void ScoreView::editAccidentialUp(int steps)
 void ScoreView::editAccidentialDown(int steps)
 {
     editAccidentialUp(-steps);
+}
+
+void ScoreView::editSelectNone()
+{
+    if (!isAssigned())
+        return;
+    p_->setSelection(Score::Selection());
 }
 
 void ScoreView::editSelectNext()

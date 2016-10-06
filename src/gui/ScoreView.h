@@ -112,6 +112,7 @@ public slots:
     void editAccidentialDown(int steps = 1);
 
     void editSelectNext();
+    void editSelectNone();
     void editCopySel();
     void editPaste(bool after = false);
 

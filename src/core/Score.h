@@ -191,7 +191,8 @@ public:
 
         bool contains(const Index& idx) const;
 
-        QList<Index> containedIndices() const;
+        /** Returns all notes within the selection */
+        QList<Index> containedNoteIndices() const;
 
         QString toString() const;
 

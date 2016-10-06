@@ -800,7 +800,7 @@ bool Score::Selection::contains(const Index &idx) const
     return true;
 }
 
-QList<Score::Index> Score::Selection::containedIndices() const
+QList<Score::Index> Score::Selection::containedNoteIndices() const
 {
     QList<Index> list;
     if (!isValid())

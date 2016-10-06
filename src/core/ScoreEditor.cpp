@@ -761,7 +761,7 @@ bool ScoreEditor::transpose(const Score::Selection& sel, int steps)
     SONOT__CHECK_SELECTION(sel, false, "in transpose");
     if (steps == 0)
         return false;
-    auto indices = sel.containedIndices();
+    auto indices = sel.containedNoteIndices();
     if (indices.isEmpty())
         return false;
     for (Score::Index& idx : indices)
