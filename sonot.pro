@@ -10,7 +10,7 @@ TARGET = sonot
 TEMPLATE = app
 CONFIG += c++11
 
-
+DEFINES += SONOT_GUI
 
 INCLUDEPATH += src
 

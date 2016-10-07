@@ -42,7 +42,8 @@ struct AllPropertiesView::Private
         : p             (p)
         , document      (nullptr)
         , synth         (nullptr)
-        , ignoreComboSig(false)
+        , ignoreSubComboSig(false)
+        , ignoreProbsChange(false)
     { }
 
     void createWidgets();
@@ -59,7 +60,8 @@ struct AllPropertiesView::Private
     ScoreDocument* document;
     SynthDevice* synth;
     Score::Index curScoreIndex;
-    bool ignoreComboSig;
+    bool ignoreSubComboSig,
+         ignoreProbsChange;
     QComboBox* combo, *subCombo;
     QProps::PropertiesView* propsView;
 
@@ -98,7 +100,7 @@ void AllPropertiesView::Private::createWidgets()
         lv->addWidget(subCombo);
         connect(subCombo, static_cast<void(QComboBox::*)(int)>(
                                        &QComboBox::currentIndexChanged),
-                [=](){ if (!ignoreComboSig) updateViewFromProps(); });
+                [=](){ if (!ignoreSubComboSig) updateViewFromProps(); });
 
         propsView = new QProps::PropertiesView(p);
         propsView->setSizePolicy(
@@ -112,16 +114,27 @@ void AllPropertiesView::Private::createWidgets()
 
 void AllPropertiesView::setDocument(ScoreDocument* s)
 {
+    bool changed = p_->document != s;
+    if (!changed && s && p_->document)
+        changed = s->editor() != p_->document->editor();
+
     p_->document = s;
     p_->curScoreIndex = s && s->score() ? s->score()->index(0,0,0,0)
                                         : Score::Index();
 
-    // catch NoteStream Properties change
-    /*connect(p_->document->editor(), &ScoreEditor::streamsChanged,
-            [=]()
+    if (p_->document && changed)
     {
-        p_->updateViews();
-    });*/
+        connect(p_->document->editor(), &ScoreEditor::documentPropertiesChanged,
+                [=]() { if (!p_->ignoreProbsChange) p_->updateViews(); });
+        connect(p_->document->editor(), &ScoreEditor::scorePropertiesChanged,
+                [=]() { if (!p_->ignoreProbsChange) p_->updateViews(); });
+        connect(p_->document->editor(), &ScoreEditor::streamPropertiesChanged,
+                [=]() { if (!p_->ignoreProbsChange) p_->updateViews(); });
+        connect(p_->document->editor(), &ScoreEditor::pageLayoutChanged,
+                [=]() { if (!p_->ignoreProbsChange) p_->updateViews(); });
+        connect(p_->document->editor(), &ScoreEditor::scoreLayoutChanged,
+                [=]() { if (!p_->ignoreProbsChange) p_->updateViews(); });
+    }
 
     p_->updateViews();
 }
@@ -153,7 +166,7 @@ QString AllPropertiesView::Private::curSubId()
 void AllPropertiesView::Private::updateComboBox()
 {
     p->setUpdatesEnabled(false);
-    ignoreComboSig = true;
+    ignoreSubComboSig = true;
 
     subCombo->clear();
 
@@ -174,7 +187,7 @@ void AllPropertiesView::Private::updateComboBox()
 
     subCombo->setVisible(subCombo->count() > 0);
 
-    ignoreComboSig = false;
+    ignoreSubComboSig = false;
     p->setUpdatesEnabled(true);
 }
 
@@ -260,25 +273,27 @@ void AllPropertiesView::Private::updatePropsFromView()
     if (!document)
         return;
 
+    ignoreProbsChange = true;
+
     if (curId() == "document")
     {
-        document->setProperties(propsView->properties());
+        document->editor()->setDocumentProperties(propsView->properties());
     }
     else if (curId() == "page-layout")
     {
         auto l = document->pageLayout(curSubId());
         l.setMargins(propsView->properties());
-        document->setPageLayout(curSubId(), l);
+        document->editor()->setPageLayout(curSubId(), l);
     }
     else if (curId() == "score-layout")
     {
         auto l = document->scoreLayout(curSubId());
         l.setProperties(propsView->properties());
-        document->setScoreLayout(curSubId(), l);
+        document->editor()->setScoreLayout(curSubId(), l);
     }
     else if (curId() == "score")
     {
-        document->setScoreProperties(propsView->properties());
+        document->editor()->setScoreProperties(propsView->properties());
     }
     else if (curId() == "stream")
     {
@@ -288,6 +303,8 @@ void AllPropertiesView::Private::updatePropsFromView()
                         curScoreIndex.stream(), propsView->properties());
         }
     }
+
+    ignoreProbsChange = false;
 
     /*
     PageAnnotation anno = scoreView->scoreDocument().pageAnnotation(0);

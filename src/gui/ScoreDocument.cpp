@@ -40,7 +40,7 @@ struct ScoreDocument::Private
 {
     Private(ScoreDocument* p)
         : p             (p)
-        , editor        (new ScoreEditor(nullptr))
+        , editor        (new ScoreEditor(p, nullptr))
         , numPages      (0)
         , props         ("score-document")
     {
@@ -70,9 +70,6 @@ struct ScoreDocument::Private
     ReturnCode createBarItems_Fixed(
             int pageIdx, int lineIdx, Score::Index& scoreIdx, QPointF& pagePos);
 
-    void emitRefresh() { if (editor) emit editor->refresh(); }
-    void emitDocumentChanged() { if (editor) emit editor->documentChanged(); }
-
     ScoreDocument* p;
 
     ScoreEditor* editor;
@@ -101,8 +98,8 @@ ScoreDocument::ScoreDocument()
     : p_        (new Private(this))
 {
     p_->initProps();
+    p_->initLayout();
     p_->initEditor();
-    initLayout();
 }
 
 /*
@@ -141,23 +138,7 @@ void ScoreDocument::Private::initProps()
 }
 
 const QProps::Properties& ScoreDocument::props() const { return p_->props; }
-void ScoreDocument::setProperties(const QProps::Properties &p)
-{
-    p_->props = p;
-    p_->createItems();
-    p_->emitDocumentChanged();
-    p_->emitRefresh();
-}
 
-void ScoreDocument::setScoreProperties(const QProps::Properties &p)
-{
-    if (auto s=p_->score())
-    {
-        s->setProperties(p);
-        p_->emitDocumentChanged();
-        p_->emitRefresh();
-    }
-}
 
 ScoreEditor* ScoreDocument::editor() const { return p_->editor; }
 
@@ -222,7 +203,7 @@ void ScoreDocument::fromJson(const QJsonObject& jscore)
         p_->props = tmp.p_->props;
     }
 
-    setScore(tmpScore);
+    editor()->setScore(tmpScore);
 }
 
 
@@ -230,11 +211,11 @@ const Score* ScoreDocument::score() const
 {
     return p_->score();
 }
-
+/*
 void ScoreDocument::setScore(const Score& s)
 {
     p_->editor->setScore(s);
-}
+}*/
 
 size_t ScoreDocument::numPages() const { return p_->numPages; }
 
@@ -583,8 +564,6 @@ ScoreItem* ScoreDocument::getClosestScoreItem(
 
 
 
-void ScoreDocument::initLayout() { p_->initLayout(); }
-
 /** @todo This is to be templated */
 void ScoreDocument::Private::initLayout()
 {
@@ -676,6 +655,7 @@ void ScoreDocument::Private::initLayout()
 
 }
 
+#if 0
 void ScoreDocument::setPageAnnotation(int pageIndex, const PageAnnotation &p)
 {
     setPageAnnotation( layoutKeyForIndex(pageIndex), p);
@@ -691,29 +671,41 @@ void ScoreDocument::setScoreLayout(int pageIndex, const ScoreLayout &p)
     setScoreLayout( layoutKeyForIndex(pageIndex), p);
 }
 
-void ScoreDocument::setPageAnnotation(const QString& id, const PageAnnotation &p)
+void ScoreDocument::setScoreProperties(const QProps::Properties &p)
+{
+    if (p_->score())
+    {
+        p_->score()->setProperties(p);
+    }
+}
+#endif
+
+void ScoreDocument::p_setProperties(const QProps::Properties &p)
+{
+    p_->props = p;
+    p_->createItems();
+}
+
+void ScoreDocument::p_setPageAnnotation(
+        const QString& id, const PageAnnotation &p)
 {
     p_->pageAnnotation.insert(id, p);
     p_->createItems();
-    p_->emitDocumentChanged();
-    p_->emitRefresh();
 }
 
-void ScoreDocument::setPageLayout(const QString& id, const PageLayout &p)
+void ScoreDocument::p_setPageLayout(
+        const QString& id, const PageLayout &p)
 {
     p_->pageLayout.insert(id, p);
     p_->createItems();
-    p_->emitDocumentChanged();
-    p_->emitRefresh();
 }
 
 
-void ScoreDocument::setScoreLayout(const QString& id, const ScoreLayout &p)
+void ScoreDocument::p_setScoreLayout(
+        const QString& id, const ScoreLayout &p)
 {
     p_->scoreLayout.insert(id, p);
     p_->createItems();
-    p_->emitDocumentChanged();
-    p_->emitRefresh();
 }
 
 

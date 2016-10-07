@@ -29,6 +29,12 @@ class QMimeData;
 
 namespace Sonot {
 
+#ifdef SONOT_GUI
+class ScoreDocument;
+class ScoreLayout;
+class PageLayout;
+#endif
+
 class ScoreEditor : public QObject
 {
     Q_OBJECT
@@ -36,10 +42,17 @@ public:
 
     typedef QList<Score::Index> IndexList;
 
+#ifdef SONOT_GUI
+    explicit ScoreEditor(ScoreDocument* doc, QObject *parent = 0);
+#else
     explicit ScoreEditor(QObject *parent = 0);
+#endif
     ~ScoreEditor();
 
     Score* score() const;
+#ifdef SONOT_GUI
+    ScoreDocument* document() const;
+#endif
 
     // --- editing ---
 
@@ -52,7 +65,14 @@ public:
     void setMergeUndo(bool enable);
 
     void setScore(const Score& s);
+
+    void setScoreProperties(const QProps::Properties&);
     bool setStreamProperties(size_t streamIdx, const QProps::Properties& p);
+#ifdef SONOT_GUI
+    void setDocumentProperties(const QProps::Properties&);
+    void setPageLayout(const QString& id, const PageLayout&);
+    void setScoreLayout(const QString& id, const ScoreLayout&);
+#endif
 
     bool insertNote(const Score::Index&, const Note& n, bool allRows);
     bool insertBar(const Score::Index&, const Bar& bar,
@@ -94,8 +114,17 @@ signals:
 
     /** Emitted for every change that would require saving. */
     void documentChanged();
-    /** Request to redraw the view, used by ScoreDocument */
+    /** Request to redraw the view */
     void refresh();
+
+    /** The Properties of a NoteStream have been changed */
+    void streamPropertiesChanged(const IndexList&);
+    void scorePropertiesChanged();
+#ifdef SONOT_GUI
+    void documentPropertiesChanged();
+    void pageLayoutChanged(const QString& id);
+    void scoreLayoutChanged(const QString& id);
+#endif
 
     /** Cursor position after undo() or redo() */
     void cursorChanged(const Score::Index&);

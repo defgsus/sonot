@@ -394,7 +394,7 @@ void MainWindow::closeEvent(QCloseEvent* e)
 void MainWindow::setScore(const Score& s)
 {
     p_->document->editor()->setEnableUndo(false);
-    p_->document->setScore(s);
+    p_->document->editor()->setScore(s);
     p_->document->editor()->setEnableUndo(true);
     p_->document->editor()->clearUndo();
     p_->propsView->setDocument(p_->document);

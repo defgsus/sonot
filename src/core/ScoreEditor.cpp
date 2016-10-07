@@ -30,6 +30,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "Notes.h"
 #include "NoteStream.h"
 
+#ifdef SONOT_GUI
+#   include "gui/ScoreDocument.h"
+#endif
 
 #if 0
 #   include <QDebug>
@@ -79,6 +82,12 @@ struct ScoreEditor::Private
     void setScore(const Score& s);
     void setStreamProperties(
             size_t streamIdx, const QProps::Properties& p);
+    void setScoreProperties(const QProps::Properties&);
+#ifdef SONOT_GUI
+    void setDocumentProperties(const QProps::Properties&);
+    void setPageLayout(const QString& id, const PageLayout&);
+    void setScoreLayout(const QString& id, const ScoreLayout&);
+#endif
     bool changeBar(const Score::Index& idx, const Bar& b);
     bool changeStream(size_t streamIdx, const NoteStream& s);
     bool insertBar(const Score::Index& idx, const Bar& bar, bool after);
@@ -91,25 +100,39 @@ struct ScoreEditor::Private
     ScoreEditor* p;
 
     Score* score_;
+#ifdef SONOT_GUI
+    ScoreDocument* document;
+#endif
     QList<std::shared_ptr<UndoData>> undoData;
     int undoDataPos;
     bool doEnableUndo, doMergeUndo;
 };
 
+#ifdef SONOT_GUI
+ScoreEditor::ScoreEditor(ScoreDocument* doc, QObject *parent)
+    : QObject   (parent)
+    , p_        (new Private(this))
+{
+    QPROPS_ASSERT(doc, "No ScoreDocument given for ScoreEditor instance");
+    p_->document = doc;
+}
+#else
 ScoreEditor::ScoreEditor(QObject *parent)
     : QObject   (parent)
     , p_        (new Private(this))
 {
-
 }
+#endif
 
 ScoreEditor::~ScoreEditor()
 {
     delete p_;
 }
 
-Score* ScoreEditor::score() const { return p_->score_; }
-
+Score* ScoreEditor::score() const { return p_->score(); }
+#ifdef SONOT_GUI
+ScoreDocument* ScoreEditor::document() const { return p_->document; }
+#endif
 
 // ########################### UNDO/REDO #############################
 
@@ -410,10 +433,180 @@ void ScoreEditor::Private::setStreamProperties(
     if (NoteStream* stream = getStream(idx))
     {
         stream->setProperties(prop);
-        emit p->streamsChanged(IndexList() << idx);
+        emit p->streamPropertiesChanged(IndexList() << idx);
         emit p->documentChanged();
+        emit p->refresh();
     }
 }
+
+void ScoreEditor::setScoreProperties(const QProps::Properties& newProps)
+{
+    SONOT__DEBUG("setScoreProperties()");
+
+    if (!score())
+        return;
+
+    if (p_->doEnableUndo)
+    {
+        auto undo = new Private::UndoData();
+        undo->name = undo->detail = tr("change score properties");
+        auto copy = score()->props();
+        undo->undo = [=]()
+        {
+            p_->setScoreProperties(copy);
+        };
+
+        undo->redo = [=]()
+        {
+            p_->setScoreProperties(newProps);
+        };
+        p_->addUndoData(undo);
+    }
+
+    p_->setScoreProperties(newProps);
+}
+
+void ScoreEditor::Private::setScoreProperties(
+        const QProps::Properties& newProps)
+{
+    SONOT__DEBUG("Private::setScoreProperties()");
+    if (score())
+    {
+        score()->setProperties(newProps);
+        emit p->scorePropertiesChanged();
+        emit p->documentChanged();
+        emit p->refresh();
+    }
+}
+
+#ifdef SONOT_GUI
+
+void ScoreEditor::setDocumentProperties(const QProps::Properties& newProps)
+{
+    SONOT__DEBUG("setDocumentProperties()");
+
+    if (!score())
+        return;
+
+    if (p_->doEnableUndo)
+    {
+        auto undo = new Private::UndoData();
+        undo->name = undo->detail = tr("change document properties");
+        auto copy = document()->props();
+        undo->undo = [=]()
+        {
+            p_->setDocumentProperties(copy);
+        };
+
+        undo->redo = [=]()
+        {
+            p_->setDocumentProperties(newProps);
+        };
+        p_->addUndoData(undo);
+    }
+
+    p_->setDocumentProperties(newProps);
+}
+
+void ScoreEditor::Private::setDocumentProperties(
+        const QProps::Properties& newProps)
+{
+    SONOT__DEBUG("Private::setDocumentProperties()");
+    if (score())
+    {
+        document->p_setProperties(newProps);
+        emit p->documentPropertiesChanged();
+        emit p->documentChanged();
+        emit p->refresh();
+    }
+}
+
+void ScoreEditor::setPageLayout(
+        const QString& id, const PageLayout& layout)
+{
+    SONOT__DEBUG("setPageLayout(" << id << ")");
+
+    if (!score())
+        return;
+
+    if (p_->doEnableUndo)
+    {
+        auto undo = new Private::UndoData();
+        undo->name = tr("change page layout");
+        undo->detail = tr("change page layout %1").arg(id);
+        auto copy = document()->pageLayout(id);
+        undo->undo = [=]()
+        {
+            p_->setPageLayout(id, copy);
+        };
+
+        undo->redo = [=]()
+        {
+            p_->setPageLayout(id, layout);
+        };
+        p_->addUndoData(undo);
+    }
+
+    p_->setPageLayout(id, layout);
+}
+
+void ScoreEditor::Private::setPageLayout(
+        const QString& id, const PageLayout& newProps)
+{
+    SONOT__DEBUG("Private::setPageLayout(" << id << ")");
+    if (score())
+    {
+        document->p_setPageLayout(id, newProps);
+        emit p->pageLayoutChanged(id);
+        emit p->documentChanged();
+        emit p->refresh();
+    }
+}
+
+void ScoreEditor::setScoreLayout(
+        const QString& id, const ScoreLayout& layout)
+{
+    SONOT__DEBUG("setScoreLayout(" << id << ")");
+
+    if (!score())
+        return;
+
+    if (p_->doEnableUndo)
+    {
+        auto undo = new Private::UndoData();
+        undo->name = tr("change score layout");
+        undo->detail = tr("change score layout %1").arg(id);
+        auto copy = document()->scoreLayout(id);
+        undo->undo = [=]()
+        {
+            p_->setScoreLayout(id, copy);
+        };
+
+        undo->redo = [=]()
+        {
+            p_->setScoreLayout(id, layout);
+        };
+        p_->addUndoData(undo);
+    }
+
+    p_->setScoreLayout(id, layout);
+}
+
+void ScoreEditor::Private::setScoreLayout(
+        const QString& id, const ScoreLayout& newProps)
+{
+    SONOT__DEBUG("Private::setScoreLayout(" << id << ")");
+    if (score())
+    {
+        document->p_setScoreLayout(id, newProps);
+        emit p->scoreLayoutChanged(id);
+        emit p->documentChanged();
+        emit p->refresh();
+    }
+}
+
+#endif
+
 
 bool ScoreEditor::insertNote(
         const Score::Index& idx, const Note& n, bool allRows)

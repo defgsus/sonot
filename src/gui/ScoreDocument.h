@@ -39,7 +39,9 @@ namespace Sonot {
 class ScoreItem;
 class ScoreEditor;
 
-/** Wrapper around Score and layout classes */
+/** Wrapper around Score and layout classes.
+    In a GUI environment, only ScoreEditor should be used
+    to make changes to a document! */
 class ScoreDocument : public QProps::JsonInterface
 {
     Q_DECLARE_TR_FUNCTIONS(ScoreDocument);
@@ -99,9 +101,9 @@ public:
     // --- ctor ---
 
     ScoreDocument();
-    ScoreDocument(const ScoreDocument& o) = delete;
     ~ScoreDocument();
 
+    ScoreDocument(const ScoreDocument& o) = delete;
     ScoreDocument& operator = (const ScoreDocument& o) = delete;
 
     bool operator == (const ScoreDocument& rhs) const;
@@ -143,7 +145,8 @@ public:
     QPointF pagePosition(int pageIndex) const;
 
     /** Spacing between displayed pages */
-    QPointF pageSpacing() const { return props().get("page-spacing").toPointF(); }
+    QPointF pageSpacing() const
+        { return props().get("page-spacing").toPointF(); }
 
     /** Returns the page index for a given point in document-space.
         Returns -1 if p is not on a page. */
@@ -191,10 +194,10 @@ public:
 
     // ----- settter ------
 
-    void initLayout();
-
+    /*
     void setScore(const Score&);
 
+    void initLayout();
     void setPageAnnotation(int pageIdx, const PageAnnotation& p);
     void setPageAnnotation(const QString&, const PageAnnotation& p);
     void setPageLayout(int pageIdx, const PageLayout& p);
@@ -204,6 +207,7 @@ public:
 
     void setProperties(const QProps::Properties& p);
     void setScoreProperties(const QProps::Properties& p);
+    */
 
     // ----- render -----
 
@@ -213,6 +217,13 @@ public:
     QList<QRectF> getSelectionRects(int pageIdx,
                                     const Score::Selection& s) const;
 private:
+    friend class ScoreEditor;
+    void p_setPageAnnotation(const QString&, const PageAnnotation& p);
+    void p_setPageLayout(const QString&, const PageLayout& p);
+    void p_setScoreLayout(const QString&, const ScoreLayout& p);
+
+    void p_setProperties(const QProps::Properties& p);
+
     struct Private;
     Private* p_;
 };
