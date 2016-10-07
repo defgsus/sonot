@@ -345,6 +345,10 @@ void ScoreView::createEditActions(QMenu* menu)
 
     menu->addSeparator();
 
+    a = menu->addAction(tr("delete part"));
+    a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_P);
+    connect(a, &QAction::triggered, [=](){ editDeleteStream(); });
+
     a = menu->addAction(tr("delete bar"));
     a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_B);
     connect(a, &QAction::triggered, [=](){ editDeleteBar(); });
@@ -394,6 +398,23 @@ void ScoreView::editInsertBar(bool after)
         if (c.isValid())
             p_->setCursor(c, true, false);
     }
+}
+
+void ScoreView::editDeleteStream()
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    if (score()->numNoteStreams() <= 1)
+        return;
+
+    auto c = p_->cursor;
+    if (!c.nextStream())
+        c.prevStream();
+
+    if (editor()->deleteStream(p_->cursor)
+            && !p_->cursor.isValid())
+        p_->setCursor(c, true, false);
 }
 
 void ScoreView::editDeleteBar()

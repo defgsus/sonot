@@ -81,6 +81,12 @@ namespace QTest {
         return toString(s.toInfoString());
     }
 
+    template <>
+    char* toString(const QProps::Properties& p)
+    {
+        return toString(p.toCompactString());
+    }
+
 } // namespace QTest
 
 
@@ -118,6 +124,7 @@ private slots:
     void testScoreIndexPrevNote();
     void testScoreSelection();
 
+    void testUndoRedoMerging();
     void testUndoRedo();
     void testUndoRedoMany();
 
@@ -211,6 +218,8 @@ bool SonotCoreTest::compare(const Score &a, const Score &b)
     if (a.numNoteStreams() == b.numNoteStreams())
     for (size_t i=0; i<a.numNoteStreams(); ++i)
     {
+        MY_QCOMPARE(a.noteStream(i).props(), b.noteStream(i).props());
+
         if (a.noteStream(i) != b.noteStream(i))
         {
             MY_QCOMPARE(a.noteStream(i).numBars(), b.noteStream(i).numBars());
@@ -826,6 +835,89 @@ void SonotCoreTest::testUndoRedoMany()
 
         if (!compare(*editor.score(), current))
             qDebug() << "mismatch after redo " << undoAction;
+        QCOMPARE(*editor.score(), current);
+
+
+        if ((it % 50) == 49)
+            qDebug().noquote() << (it+1) << "actions";
+    }
+}
+
+void SonotCoreTest::testUndoRedoMerging()
+{
+    ScoreEditor editor;
+    editor.setMergeUndo(true);
+    editor.setScore( createRandomScore(5,5,2) );
+    editor.clearUndo();
+
+    bool isSameAction = false;
+    QString undoName, undoDetail;
+    connect(&editor, &ScoreEditor::undoAvailable,
+            [&](bool e, const QString& name, const QString& detail)
+    {
+        if (e)
+        {
+            isSameAction = undoName == name;
+            undoName = name;
+            undoDetail = detail;
+            qDebug() << isSameAction << undoName << undoDetail;
+        }
+    });
+
+    QList<Score> history;
+
+    for (int it=0; it<500; ++it)
+    {
+        Score current = *editor.score();
+
+        QVERIFY( makeRandomEditorAction(editor) );
+
+        if (!isSameAction)
+            history << current;
+
+        current = *editor.score();
+
+        // test undo
+
+        int numUndos = std::max(1,std::min(300, int(rand() % history.size()) ));
+        try
+        {
+            for (int i=0; i<numUndos; ++i)
+            {
+                if (!editor.undo())
+                {
+                    qDebug().nospace() << i << "th undo failed, after "
+                                       << undoDetail;
+                    QFAIL("undo action failed");
+                }
+            }
+        }
+        catch (const QProps::Exception& e)
+        {
+            qDebug().noquote() << e.text();
+            QFAIL("exception in undo action");
+        }
+
+        if (!compare(*editor.score(), history[history.size()-numUndos]))
+            qDebug() << "mismatch after undo " << undoDetail;
+        QCOMPARE(*editor.score(), history[history.size()-numUndos]);
+
+        // test redo
+        try
+        {
+            // redo all actions until most recent score
+            int k=0;
+            while (editor.redo()) ++k;
+            QCOMPARE(k, numUndos);
+        }
+        catch (const QProps::Exception& e)
+        {
+            qDebug().noquote() << e.text();
+            QFAIL("exception in redo action");
+        }
+
+        if (!compare(*editor.score(), current))
+            qDebug() << "mismatch after redo " << undoDetail;
         QCOMPARE(*editor.score(), current);
 
 

@@ -101,6 +101,7 @@ public slots:
     void editInsertNote(const Note& n = Note(Note::Space));
     void editInsertRow(bool after = false);
     void editDuplicateBar();
+    void editDeleteStream();
     void editDeleteBar();
     void editDeleteNote();
     void editDeleteRow();

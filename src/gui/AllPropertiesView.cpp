@@ -115,6 +115,14 @@ void AllPropertiesView::setDocument(ScoreDocument* s)
     p_->document = s;
     p_->curScoreIndex = s && s->score() ? s->score()->index(0,0,0,0)
                                         : Score::Index();
+
+    // catch NoteStream Properties change
+    connect(p_->document->editor(), &ScoreEditor::streamsChanged,
+            [=]()
+    {
+        p_->updateViews();
+    });
+
     p_->updateViews();
 }
 

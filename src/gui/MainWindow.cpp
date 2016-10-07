@@ -227,7 +227,6 @@ void MainWindow::Private::createObjects()
     {
         scoreView->setCurrentIndex(idx);
     });
-
 }
 
 void MainWindow::Private::createMenu()
@@ -394,7 +393,10 @@ void MainWindow::closeEvent(QCloseEvent* e)
 
 void MainWindow::setScore(const Score& s)
 {
+    p_->document->editor()->setEnableUndo(false);
     p_->document->setScore(s);
+    p_->document->editor()->setEnableUndo(true);
+    p_->document->editor()->clearUndo();
     p_->propsView->setDocument(p_->document);
 }
 
@@ -472,7 +474,10 @@ bool MainWindow::Private::loadScore(const QString& fn)
 {
     try
     {
+        document->editor()->setEnableUndo(false);
         document->loadJsonFile(fn);
+        document->editor()->setEnableUndo(true);
+        document->editor()->clearUndo();
         curFilename = fn;
         if (!setChanged(false))
             updateWindowTitle();
@@ -527,15 +532,15 @@ bool MainWindow::Private::exportMusicXML()
     try
     {
         exp.saveFile(filename);
+        return true;
     }
     catch (const QProps::Exception& e)
     {
         QMessageBox::critical(p, tr("Export MusicXML"),
             tr("Exporting MusicXML file failed!\n%1")
                               .arg(e.text()));
-        return false;
     }
-    return true;
+    return false;
 }
 
 bool MainWindow::Private::loadSynth(const QString& fn)

@@ -46,6 +46,7 @@ public:
     bool undo();
     bool redo();
     void clearUndo();
+    void setEnableUndo(bool enable);
     /** Enables or disabled collapsing similiar undo actions.
         Default is true */
     void setMergeUndo(bool enable);
@@ -56,11 +57,13 @@ public:
     bool insertNote(const Score::Index&, const Note& n, bool allRows);
     bool insertBar(const Score::Index&, const Bar& bar,
                     bool insertAfterIndex = false);
+    /** @todo undo */
     bool insertBars(const Score::Index&, const NoteStream& stream,
                     bool insertAfterIndex = false);
     bool insertRow(const Score::Index&, bool insertAfterIndex = false);
     bool insertStream(const Score::Index&, const NoteStream& s,
                       bool insertAfterIndex = false);
+    /** @todo undo */
     bool insertScore(const Score::Index&, const Score& s,
                       bool insertAfterIndex = false);
     bool changeNote(const Score::Index&, const Note& n);
@@ -70,14 +73,17 @@ public:
     bool deleteRow(const Score::Index&);
     bool deleteStream(const Score::Index&);
 
+    /** @todo undo */
     bool transpose(const Score::Selection&, int steps);
 
     /** Splits a stream at the given Bar.
         The second stream will start with the next Bar.
-        Does nothing on the last Bar of a stream. */
+        Does nothing on the last Bar of a stream.
+        @todo undo */
     bool splitStream(const Score::Index&);
 
-    /** Pastes the clipboard data, if valid */
+    /** Pastes the clipboard data, if valid
+        @todo undo */
     bool pasteMimeData(const Score::Index&,
                        const QMimeData*, bool insertAfterIndex = false);
 
