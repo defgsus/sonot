@@ -124,9 +124,9 @@ private slots:
     void testScoreIndexPrevNote();
     void testScoreSelection();
 
-    void testUndoRedoMerging();
     void testUndoRedo();
     void testUndoRedoMany();
+    void testUndoRedoMerging();
 
     void testExportMusicXML();
 };
@@ -878,14 +878,14 @@ void SonotCoreTest::testUndoRedoMerging()
             if (isSameAction)
             {
                 ++numMerges;
-                // qDebug() << isSameAction << undoName << undoDetail;
+                // qDebug() << undoName << undoDetail;
             }
         }
     });
 
     QList<Score> history;
 
-    for (int it=0; it<500; ++it)
+    for (int it=0; it<1000; ++it)
     {
         Score current = *editor.score();
 

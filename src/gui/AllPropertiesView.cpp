@@ -117,11 +117,11 @@ void AllPropertiesView::setDocument(ScoreDocument* s)
                                         : Score::Index();
 
     // catch NoteStream Properties change
-    connect(p_->document->editor(), &ScoreEditor::streamsChanged,
+    /*connect(p_->document->editor(), &ScoreEditor::streamsChanged,
             [=]()
     {
         p_->updateViews();
-    });
+    });*/
 
     p_->updateViews();
 }
