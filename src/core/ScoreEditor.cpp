@@ -486,42 +486,55 @@ bool ScoreEditor::insertBar(
 
     if (p_->doEnableUndo)
     {
-        auto undo = new Private::UndoData();
-        undo->name = tr("insert bar %1 %2:%3")
-                .arg(after ? "after" : "at")
-                .arg(idx.stream()).arg(idx.bar());
-        undo->detail = tr("insert bar %1 %2")
-                .arg(after ? "after" : "at")
-                .arg(idx.toString());
-
-        int orgNumRows = -1;
-        if (stream->numRows() < bar.numRows())
-            orgNumRows = stream->numRows();
-
-        undo->undo = [=]()
+        QString undoName = tr("insert bar in part %1").arg(idx.stream()),
+                undoDetail = tr("insert bar %1 %2")
+                                .arg(after ? "after" : "at")
+                                .arg(idx.toString());
+        if (!p_->doMergeUndo)
         {
-            auto index = p_->score()->index(idx.stream(),
-                                            idx.bar() + (after ? 1 : 0),
-                                            0, 0);
-            if (orgNumRows >= 0)
+            auto undo = new Private::UndoData();
+            undo->name = undoName;
+            undo->detail = undoDetail;
+
+            int orgNumRows = -1;
+            if (stream->numRows() < bar.numRows())
+                orgNumRows = stream->numRows();
+
+            undo->undo = [=]()
             {
-                NoteStream* stream = p_->getStream(index);
-                QPROPS_ASSERT(stream, "no stream for " << index.toString()
-                              << " in insertBar-undo-action");
-                SONOT__DEBUG("insertBar(" << idx_.toString()
-                             << "):undo:changing "
-                             "numRows from " << stream->numRows() << " to "
-                             << orgNumRows);
-                stream->setNumRows(orgNumRows);
-                //^ Note: p_->deleteBar() emits streamsChanged() so this is safe
-            }
-            p_->deleteBar(index);
-        };
-        undo->redo = [=]()
+                auto index = p_->score()->index(idx.stream(),
+                                                idx.bar() + (after ? 1 : 0),
+                                                0, 0);
+                if (orgNumRows >= 0)
+                {
+                    NoteStream* stream = p_->getStream(index);
+                    QPROPS_ASSERT(stream, "no stream for " << index.toString()
+                                  << " in insertBar-undo-action");
+                    SONOT__DEBUG("insertBar(" << idx_.toString()
+                                 << "):undo:changing "
+                                 "numRows from " << stream->numRows()
+                                 << " to " << orgNumRows);
+                    stream->setNumRows(orgNumRows);
+                    //^ Note: p_->deleteBar() emits streamsChanged()
+                    //        so this is safe in terms of GUI update
+                }
+                p_->deleteBar(index);
+            };
+            undo->redo = [=]()
+            {
+                p_->insertBar(idx, bar, after);
+            };
+            p_->addUndoData(undo);
+        }
+        else
         {
-            p_->insertBar(idx, bar, after);
-        };
-        p_->addUndoData(undo);
+            auto oldStream = *stream;
+            if (!p_->insertBar(idx, bar, after))
+                return false;
+            p_->addStreamChangeUndoData(idx, *stream, oldStream,
+                                        undoName, undoDetail);
+            return true;
+        }
     }
 
     return p_->insertBar(idx, bar, after);
@@ -578,7 +591,7 @@ bool ScoreEditor::insertRow(const Score::Index& idx, bool after)
 
     if (p_->doEnableUndo)
     {
-        QString undoName = QString("insert row (%1)").arg(idx.stream()),
+        QString undoName = QString("insert row in part %1").arg(idx.stream()),
                 undoDetail = QString("insert row %1 %2")
                 .arg(after ? "after" : "before").arg(idx.toString());
 
@@ -640,21 +653,54 @@ bool ScoreEditor::insertStream(
 
     if (p_->doEnableUndo)
     {
-        auto undo = new Private::UndoData();
-        undo->name = tr("insert part %1").arg(idx.stream());
-        undo->detail = tr("insert part %1").arg(idx.toString());
-        undo->undo = [=]()
+        QString undoName = tr("insert part"),
+                undoDetail = tr("insert part %1 %2")
+                            .arg(after ? "after" : "at").arg(idx.toString());
+        if (!p_->doMergeUndo)
         {
-            Score::Index index = idx;
-            if (after)
-                index.nextStream();
-            p_->deleteStream(index);
-        };
-        undo->redo = [=]()
+            auto undo = new Private::UndoData();
+            undo->name = undoName;
+            undo->detail = undoDetail;
+            undo->undo = [=]()
+            {
+                Score::Index index = idx;
+                if (after)
+                    index.nextStream();
+                p_->deleteStream(index);
+                emit cursorChanged(idx);
+            };
+            undo->redo = [=]()
+            {
+                p_->insertStream(idx, s, after);
+                emit cursorChanged(idx);
+            };
+            p_->addUndoData(undo);
+        }
+        else
         {
-            p_->insertStream(idx, s, after);
-        };
-        p_->addUndoData(undo);
+            Score copy(*score());
+            auto undo = new Private::UndoData();
+            undo->name = undoName;
+            undo->detail = undoDetail;
+            undo->undo = [=]()
+            {
+                p_->setScore(copy);
+                emit cursorChanged(idx_);
+            };
+            if (!p_->insertStream(idx, s, after))
+            {
+                delete undo;
+                return false;
+            }
+            copy = *score();
+            undo->redo = [=]()
+            {
+                p_->setScore(copy);
+                emit cursorChanged(idx_);
+            };
+            p_->addUndoData(undo);
+            return true;
+        }
     }
 
     return p_->insertStream(idx, s, after);
@@ -717,19 +763,35 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
 
     if (p_->doEnableUndo)
     {
-        auto undo = new Private::UndoData();
-        undo->name = QString("delete row (%1)").arg(idx.stream());
-        undo->detail = QString("delete row %1").arg(idx.toString());
-        NoteStream copy(*stream);
-        undo->undo = [=]()
+        QString undoName = QString("delete row in part %1").arg(idx.stream()),
+                undoDetail = QString("delete row %1").arg(idx.toString());
+        if (!p_->doMergeUndo)
         {
-            p_->changeStream(idx.stream(), copy);
-        };
-        undo->redo = [=]()
+            auto undo = new Private::UndoData();
+            undo->name = undoName;
+            undo->detail = undoDetail;
+            auto copy = *stream;
+            undo->undo = [=]()
+            {
+                p_->changeStream(idx.stream(), copy);
+                emit cursorChanged(idx);
+            };
+            undo->redo = [=]()
+            {
+                p_->deleteRow(idx);
+                emit cursorChanged(idx);
+            };
+            p_->addUndoData(undo);
+        }
+        else
         {
-            p_->deleteRow(idx);
-        };
-        p_->addUndoData(undo);
+            auto oldStream = *stream;
+            if (!p_->deleteRow(idx))
+                return false;
+            p_->addStreamChangeUndoData(idx, *stream, oldStream,
+                                        undoName, undoDetail);
+            return true;
+        }
     }
 
     return p_->deleteRow(idx);
@@ -930,8 +992,8 @@ bool ScoreEditor::deleteBar(const Score::Index& idx_)
 
     if (p_->doEnableUndo)
     {
-        QString undoName = tr("delete bar at %1:%2")
-                            .arg(idx.stream()).arg(idx.bar()),
+        QString undoName = tr("delete bar in part %1")
+                            .arg(idx.stream()),
                 undoDetail = tr("delete bar %1").arg(idx.toString());
         if (!p_->doMergeUndo)
         {

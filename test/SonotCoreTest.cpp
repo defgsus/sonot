@@ -106,7 +106,7 @@ public:
     static Score createScoreForIndexTest();
     static Score::Index getRandomIndex(const Score* score);
     static bool compare(const Score& a, const Score& b);
-    static bool makeRandomEditorAction(ScoreEditor& editor);
+    static bool makeRandomEditorAction(ScoreEditor& editor, bool repeat);
 
 private slots:
 
@@ -613,9 +613,15 @@ void SonotCoreTest::testScoreSelection()
     //Score::Selection s2 = Score::Selection::fromBar(s1.from());
 }
 
-bool SonotCoreTest::makeRandomEditorAction(ScoreEditor &editor)
+bool SonotCoreTest::makeRandomEditorAction(
+        ScoreEditor &editor, bool repeat)
 {
+    int count = 0;
   again:
+    ++count;
+    if (count > 100)
+        repeat = false;
+
     Score::Index idx = getRandomIndex(editor.score());
     if (!idx.isValid())
     {
@@ -627,7 +633,15 @@ bool SonotCoreTest::makeRandomEditorAction(ScoreEditor &editor)
 
     try
     {
-        switch (rand() % 11)
+
+        int action = rand() % 11;
+
+        static int prevAction = 0;
+        if (repeat)
+            action = prevAction;
+        prevAction = action;
+
+        switch (action)
         {
             case 0:
             {
@@ -723,7 +737,7 @@ void SonotCoreTest::testUndoRedo()
     ScoreEditor editor;
     editor.setMergeUndo(false);
     editor.setScore( createRandomScore() );
-    qDebug() << editor.score()->toInfoString();
+    //qDebug() << editor.score()->toInfoString();
 
     QString undoAction;
     connect(&editor, &ScoreEditor::undoAvailable,
@@ -738,7 +752,7 @@ void SonotCoreTest::testUndoRedo()
         undoAction.clear();
         Score backup = *editor.score();
 
-        QVERIFY( makeRandomEditorAction(editor) );
+        QVERIFY( makeRandomEditorAction(editor, false) );
 
         if (backup == *editor.score())
             qDebug() << "no change to score for #" << it << undoAction;
@@ -790,7 +804,7 @@ void SonotCoreTest::testUndoRedoMany()
     {
         history << *editor.score();
 
-        QVERIFY( makeRandomEditorAction(editor) );
+        QVERIFY( makeRandomEditorAction(editor, false) );
 
         Score current = *editor.score();
 
@@ -847,10 +861,11 @@ void SonotCoreTest::testUndoRedoMerging()
 {
     ScoreEditor editor;
     editor.setMergeUndo(true);
-    editor.setScore( createRandomScore(5,5,2) );
+    editor.setScore( createRandomScore(1,20,4) );
     editor.clearUndo();
 
     bool isSameAction = false;
+    int numMerges = 0;
     QString undoName, undoDetail;
     connect(&editor, &ScoreEditor::undoAvailable,
             [&](bool e, const QString& name, const QString& detail)
@@ -860,7 +875,11 @@ void SonotCoreTest::testUndoRedoMerging()
             isSameAction = undoName == name;
             undoName = name;
             undoDetail = detail;
-            qDebug() << isSameAction << undoName << undoDetail;
+            if (isSameAction)
+            {
+                ++numMerges;
+                // qDebug() << isSameAction << undoName << undoDetail;
+            }
         }
     });
 
@@ -870,7 +889,7 @@ void SonotCoreTest::testUndoRedoMerging()
     {
         Score current = *editor.score();
 
-        QVERIFY( makeRandomEditorAction(editor) );
+        QVERIFY( makeRandomEditorAction(editor, rand()%10 < 5) );
 
         if (!isSameAction)
             history << current;
@@ -922,7 +941,8 @@ void SonotCoreTest::testUndoRedoMerging()
 
 
         if ((it % 50) == 49)
-            qDebug().noquote() << (it+1) << "actions";
+            qDebug().noquote() << (it+1) << "actions,"
+                               << numMerges << "merges";
     }
 }
 
