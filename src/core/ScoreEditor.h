@@ -35,6 +35,8 @@ class ScoreLayout;
 class PageLayout;
 #endif
 
+/** Wrapper around Score (or ScoreDocument) to make
+    changes, emit gui-signals and enable undo/redo. */
 class ScoreEditor : public QObject
 {
     Q_OBJECT
@@ -93,8 +95,7 @@ public:
     bool deleteRow(const Score::Index&);
     bool deleteStream(const Score::Index&);
 
-    /** @todo undo */
-    bool transpose(const Score::Selection&, int steps);
+    bool transpose(const Score::Selection&, int steps, bool wholeSteps);
 
     /** Splits a stream at the given Bar.
         The second stream will start with the next Bar.

@@ -156,16 +156,26 @@ Note Note::fromString(const QString& s)
     return Note(note, oct, acc);
 }
 
-Note Note::fromValue(int8_t v)
+void Note::setFromValue(int8_t v)
 {
     if (v < 0)
-        return Note(Special(v));
+    {
+        p_note_ = v;
+        p_acc_ = 0;
+        p_oct_ = 0;
+        return;
+    }
     size_t idx = (v % 12) * 2;
-    return Note(Name(val2NameAcc[idx]),
-                v / 12,
-                val2NameAcc[idx+1]);
-    //qDebug() << v << n.toNoaString();
-    //return n;
+    p_note_ = val2NameAcc[idx];
+    p_oct_ = v / 12;
+    p_acc_ = val2NameAcc[idx+1];
+}
+
+Note Note::fromValue(int8_t v)
+{
+    Note n;
+    n.setFromValue(v);
+    return n;
 }
 
 const char* Note::noteName(Name n)
@@ -269,20 +279,24 @@ QString Note::toShortAlphaNumString() const
     return s;
 }
 
-void Note::transpose(int8_t noteStep)
+void Note::transpose(int8_t step, bool wholeSteps)
 {
-    if (noteStep != 0 && isNote())
+    if (step != 0 && isNote())
     {
-#if 0
-        auto tmp = fromValue(std::max(0,std::min(127,
-                    int(value()) + int(noteStep) )));
-        qDebug() << "transpose" << toString() << toNoaString()
-                 << value() << "+" << noteStep
-                 << "=" << tmp.toString() << tmp.toNoaString()
-                 << tmp.value();
-#endif
-        *this = fromValue(std::max(0,std::min(127,
-                int(value()) + int(noteStep) )));
+        if (!wholeSteps)
+        {
+            setFromValue(std::max(0,std::min(127,
+                         int(value()) + int(step) )));
+        }
+        else
+        {
+            int note = p_note_ + step;
+            int octChange = note > 0
+                    ? note / 7
+                    : note / 7 - 1;
+            p_note_ = (note+700) % 7;
+            p_oct_ = std::max(0, octChange + p_oct_);
+        }
     }
 }
 

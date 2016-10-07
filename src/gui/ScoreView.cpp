@@ -505,7 +505,7 @@ void ScoreView::editSplitStream()
     editor()->splitStream(p_->cursor);
 }
 
-void ScoreView::editTransposeUp(int steps)
+void ScoreView::editTransposeUp(int steps, bool whole)
 {
     if (!isAssigned() || !p_->cursor.isValid())
         return;
@@ -514,19 +514,19 @@ void ScoreView::editTransposeUp(int steps)
         Note n = p_->cursor.getNote();
         if (n.isNote())
         {
-            n.transpose(steps);
+            n.transpose(steps, whole);
             editor()->changeNote(p_->cursor, n);
         }
     }
     else
     {
-        editor()->transpose(p_->curSelection, steps);
+        editor()->transpose(p_->curSelection, steps, whole);
     }
 }
 
-void ScoreView::editTransposeDown(int steps)
+void ScoreView::editTransposeDown(int steps, bool whole)
 {
-    editTransposeUp(-steps);
+    editTransposeUp(-steps, whole);
 }
 
 void ScoreView::editAccidentialUp(int steps)

@@ -92,11 +92,11 @@ void Notes::removeNote(size_t column)
     p_data_.erase(p_data_.begin() + column);
 }
 
-void Notes::transpose(int8_t noteStep)
+void Notes::transpose(int8_t noteStep, bool wholeNotes)
 {
     for (Note& n : p_data_)
         if (n.isNote())
-            n.transpose(noteStep);
+            n.transpose(noteStep, wholeNotes);
 }
 
 Notes& Notes::append(const Note &n)

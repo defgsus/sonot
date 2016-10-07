@@ -107,8 +107,8 @@ public slots:
     void editDeleteRow();
     void editSplitStream();
 
-    void editTransposeUp(int steps = 1);
-    void editTransposeDown(int steps = 1);
+    void editTransposeUp(int steps = 1, bool whole = true);
+    void editTransposeDown(int steps = 1, bool whole = true);
     void editAccidentialUp(int steps = 1);
     void editAccidentialDown(int steps = 1);
 

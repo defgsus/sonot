@@ -51,8 +51,8 @@ struct ScoreEditor::Private
         : p                 (p)
         , score_            (nullptr)
         , undoDataPos       (0)
-        , doEnableUndo      (true)
-        , doMergeUndo       (true)
+        , doUndo      (true)
+        , doUndoMerge       (true)
     { }
 
     struct UndoData
@@ -96,6 +96,7 @@ struct ScoreEditor::Private
     bool deleteBar(const Score::Index& idx);
     bool deleteRow(const Score::Index& idx);
     bool deleteStream(const Score::Index& idx);
+    bool transpose(const Score::Selection& sel, int steps, bool wholeSteps);
 
     ScoreEditor* p;
 
@@ -105,7 +106,7 @@ struct ScoreEditor::Private
 #endif
     QList<std::shared_ptr<UndoData>> undoData;
     int undoDataPos;
-    bool doEnableUndo, doMergeUndo;
+    bool doUndo, doUndoMerge;
 };
 
 #ifdef SONOT_GUI
@@ -140,7 +141,7 @@ void ScoreEditor::Private::addUndoData(UndoData* d)
 {
     SONOT__DEBUG("Private::addUndoData('" << d->detail << "')");
 
-    if (!doEnableUndo)
+    if (!doUndo)
     {
         delete d;
         return;
@@ -150,7 +151,7 @@ void ScoreEditor::Private::addUndoData(UndoData* d)
     while (undoDataPos < undoData.size())
         undoData.removeLast();
 
-    if (doMergeUndo)
+    if (doUndoMerge)
     if (!undoData.isEmpty())
     {
         if (undoData.last()->name == d->name)
@@ -315,12 +316,12 @@ void ScoreEditor::clearUndo()
 
 void ScoreEditor::setEnableUndo(bool enable)
 {
-    p_->doEnableUndo = enable;
+    p_->doUndo = enable;
 }
 
 void ScoreEditor::setMergeUndo(bool enable)
 {
-    p_->doMergeUndo = enable;
+    p_->doUndoMerge = enable;
 }
 
 
@@ -351,7 +352,7 @@ void ScoreEditor::setScore(const Score& newScore)
 {
     SONOT__DEBUG("setScore()");
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         auto undo = new Private::UndoData();
         undo->name = tr("set score");
@@ -384,8 +385,10 @@ void ScoreEditor::setScore(const Score& newScore)
 void ScoreEditor::Private::setScore(const Score& s)
 {
     SONOT__DEBUG("Private::setScore(" << &s << ")");
-    delete score_;
-    score_ = new Score(s);
+    if (!score_)
+        score_ = new Score(s);
+    else
+        *score_ = s;
     emit p->scoreReset(score_);
 }
 
@@ -400,7 +403,7 @@ bool ScoreEditor::setStreamProperties(
     auto idx = score()->index(streamIdx, 0,0,0);
     if (NoteStream* stream = p_->getStream(idx))
     {
-        if (p_->doEnableUndo)
+        if (p_->doUndo)
         {
             auto undo = new Private::UndoData();
             undo->name = tr("change part properties (%1)").arg(idx.stream());
@@ -446,7 +449,7 @@ void ScoreEditor::setScoreProperties(const QProps::Properties& newProps)
     if (!score())
         return;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         auto undo = new Private::UndoData();
         undo->name = undo->detail = tr("change score properties");
@@ -488,7 +491,7 @@ void ScoreEditor::setDocumentProperties(const QProps::Properties& newProps)
     if (!score())
         return;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         auto undo = new Private::UndoData();
         undo->name = undo->detail = tr("change document properties");
@@ -529,7 +532,7 @@ void ScoreEditor::setPageLayout(
     if (!score())
         return;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         auto undo = new Private::UndoData();
         undo->name = tr("change page layout");
@@ -571,7 +574,7 @@ void ScoreEditor::setScoreLayout(
     if (!score())
         return;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         auto undo = new Private::UndoData();
         undo->name = tr("change score layout");
@@ -677,13 +680,13 @@ bool ScoreEditor::insertBar(
     if (!stream)
         return false;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         QString undoName = tr("insert bar in part %1").arg(idx.stream()),
                 undoDetail = tr("insert bar %1 %2")
                                 .arg(after ? "after" : "at")
                                 .arg(idx.toString());
-        if (!p_->doMergeUndo)
+        if (!p_->doUndoMerge)
         {
             auto undo = new Private::UndoData();
             undo->name = undoName;
@@ -782,13 +785,13 @@ bool ScoreEditor::insertRow(const Score::Index& idx, bool after)
     if (!stream)
         return false;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         QString undoName = QString("insert row in part %1").arg(idx.stream()),
                 undoDetail = QString("insert row %1 %2")
                 .arg(after ? "after" : "before").arg(idx.toString());
 
-        if (!p_->doMergeUndo)
+        if (!p_->doUndoMerge)
         {
             auto undo = new Private::UndoData();
             undo->name = undoName;
@@ -844,12 +847,12 @@ bool ScoreEditor::insertStream(
 
     SONOT__CHECK_INDEX(idx, false, "in insertStream");
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         QString undoName = tr("insert part"),
                 undoDetail = tr("insert part %1 %2")
                             .arg(after ? "after" : "at").arg(idx.toString());
-        if (!p_->doMergeUndo)
+        if (!p_->doUndoMerge)
         {
             auto undo = new Private::UndoData();
             undo->name = undoName;
@@ -954,11 +957,11 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
     if (!stream)
         return false;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         QString undoName = QString("delete row in part %1").arg(idx.stream()),
                 undoDetail = QString("delete row %1").arg(idx.toString());
-        if (!p_->doMergeUndo)
+        if (!p_->doUndoMerge)
         {
             auto undo = new Private::UndoData();
             undo->name = undoName;
@@ -1019,7 +1022,7 @@ bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
         emit noteValuesChanged(IndexList() << idx);
         emit documentChanged();
 
-        if (p_->doEnableUndo)
+        if (p_->doUndo)
         {
             // store the whole bar so merging undo actions
             // will keep all changed notes
@@ -1044,9 +1047,9 @@ bool ScoreEditor::changeBar(const Score::Index& idx_, const Bar& b)
     if (!stream || !bar)
         return false;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
-        if (b.numRows() != stream->numRows() && p_->doMergeUndo)
+        if (b.numRows() != stream->numRows() && p_->doUndoMerge)
         {
             auto oldStream = *stream;
             if (!p_->changeBar(idx, b))
@@ -1112,26 +1115,67 @@ bool ScoreEditor::Private::changeStream(size_t streamIdx, const NoteStream& s)
     return true;
 }
 
-bool ScoreEditor::transpose(const Score::Selection& sel, int steps)
+bool ScoreEditor::transpose(
+        const Score::Selection& sel, int steps, bool wholeSteps)
 {
-    SONOT__DEBUG("transpose(" << sel.toString() << ")");
+    SONOT__DEBUG("transpose(" << sel.toString()
+                 << ", steps=" << steps << ", whole=" << wholeSteps << ")");
 
     SONOT__CHECK_SELECTION(sel, false, "in transpose");
+
+    /** @todo This is quite inefficient.
+        The whole score is saved because i'm too lazy right now
+        to fine-tune the granularity.
+        The selection can contain a single note up to the whole score..
+        It's probably best to create a generic function that creates
+        undo data for the portion contained in a selection! */
+    if (p_->doUndo)
+    {
+        Score copy(*score());
+        auto undo = new Private::UndoData();
+        undo->name = tr("transpose");
+        undo->detail = tr("transpose %1 by %2")
+                .arg(sel.toString()).arg(steps);
+        undo->undo = [=]()
+        {
+            p_->setScore(copy);
+        };
+        undo->redo = [=]()
+        {
+            p_->transpose(sel, steps, wholeSteps);
+        };
+        if (!p_->transpose(sel, steps, wholeSteps))
+        {
+            delete undo;
+            return false;
+        }
+        p_->addUndoData(undo);
+        return true;
+    }
+
+    return p_->transpose(sel, steps, wholeSteps);
+}
+
+bool ScoreEditor::Private::transpose(
+        const Score::Selection& sel, int steps, bool wholeSteps)
+{
+    SONOT__DEBUG("Private::transpose(" << sel.toString()
+                 << ", steps=" << steps << ", whole=" << wholeSteps << ")");
+
     if (steps == 0)
         return false;
     auto indices = sel.containedNoteIndices();
     if (indices.isEmpty())
         return false;
+
     for (Score::Index& idx : indices)
     {
-        idx.setNote( idx.getNote().transposed(steps) );
+        idx.setNote( idx.getNote().transposed(steps, wholeSteps) );
     }
-    emit noteValuesChanged(indices);
-    emit documentChanged();
+    emit p->noteValuesChanged(indices);
+    emit p->documentChanged();
     return true;
 }
-
-
 
 bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
 {
@@ -1172,7 +1216,7 @@ bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
         emit notesDeleted(list);
         emit documentChanged();
 
-        if (p_->doEnableUndo)
+        if (p_->doUndo)
         {
             p_->addBarChangeUndoData(idx, *bar, oldBar,
                                      tr("delete note in %1:%2")
@@ -1196,12 +1240,12 @@ bool ScoreEditor::deleteBar(const Score::Index& idx_)
     if (!bar || !stream)
         return false;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         QString undoName = tr("delete bar in part %1")
                             .arg(idx.stream()),
                 undoDetail = tr("delete bar %1").arg(idx.toString());
-        if (!p_->doMergeUndo)
+        if (!p_->doUndoMerge)
         {
             auto undo = new Private::UndoData();
             undo->name = undoName;
@@ -1269,12 +1313,12 @@ bool ScoreEditor::deleteStream(const Score::Index& idx_)
     if (!stream)
         return false;
 
-    if (p_->doEnableUndo)
+    if (p_->doUndo)
     {
         auto undo = new Private::UndoData();
         undo->name = tr("delete part %1").arg(idx.stream());
         undo->detail = tr("delete part %1").arg(idx.toString());
-        if (!p_->doMergeUndo)
+        if (!p_->doUndoMerge)
         {
             NoteStream copy(*stream);
             undo->undo = [=]()

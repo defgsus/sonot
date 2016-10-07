@@ -71,7 +71,7 @@ Note KeySignature::transform(const Note &note) const
         n.setAccidental(n.accidental() + i->second);
     }
     else
-        n.transpose(i->second);
+        n.transpose(i->second, false);
     return n;
 }
 

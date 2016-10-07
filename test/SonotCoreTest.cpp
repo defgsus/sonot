@@ -230,7 +230,11 @@ bool SonotCoreTest::compare(const Score &a, const Score &b)
             {
                 const Bar& barA = a.noteStream(i).bar(j),
                            barB = b.noteStream(i).bar(j);
-                MY_QCOMPARE(barA, barB);
+                MY_QCOMPARE(barA.numRows(), barB.numRows());
+                for (size_t row=0; row<barA.numRows(); ++row)
+                {
+                    MY_QCOMPARE(barA[row], barB[row]);
+                }
             }
         }
     }
@@ -318,10 +322,10 @@ void SonotCoreTest::testNoteTranspose()
 
     Note a, b;
 #define SONOT__COMP(a__, t__, b__) \
-    a = Note(a__).transposed(t__); b = Note(b__); \
+    a = Note(a__).transposed(t__, false); b = Note(b__); \
     if (a != b) qDebug() << "mismatch" << b.toNoaString() \
                          << "->" << a.toNoaString(); \
-    QCOMPARE( Note(a__).transposed(t__), Note(b__) );
+    QCOMPARE( Note(a__).transposed(t__, false), Note(b__) );
 
     SONOT__COMP("C",  1, "C#");
     SONOT__COMP("C#", 1, "D" );
@@ -628,12 +632,18 @@ bool SonotCoreTest::makeRandomEditorAction(
         qDebug() << "invalid random index" << idx.toString();
         return false;
     }
+    Score::Index idx2 = getRandomIndex(editor.score());
+    if (!idx2.isValid())
+    {
+        qDebug() << "invalid random index" << idx2.toString();
+        return false;
+    }
 
     QString desc;
 
     try
     {
-
+        /** @todo transpose not working right yet */
         int action = rand() % 11;
 
         static int prevAction = 0;
@@ -719,6 +729,13 @@ bool SonotCoreTest::makeRandomEditorAction(
                     goto again;
                 desc = tr("deleteStream(%1)").arg(idx.toString());
                 return editor.deleteStream( idx );
+            break;
+
+            case 11:
+                desc = tr("transpose");
+                return editor.transpose(Score::Selection(idx),
+                                        (1+rand()%30) * (rand()%2==0 ? 1 : -1),
+                                        rand()%2);
             break;
         }
         return false;

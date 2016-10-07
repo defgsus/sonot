@@ -90,8 +90,8 @@ public:
 
     bool isValid() const { return p_note_ != Invalid; }
     bool isNote() const { return p_note_ >= C && p_note_ <= B; }
-    bool isSpecial() const { return !isNote(); }
     bool isNote(Name n) const { return p_note_ == n; }
+    bool isSpecial() const { return !isNote(); }
     bool isSpecial(Special s) const { return p_note_ == s; }
     bool isRest() const { return isSpecial(Rest); }
     bool isSpace() const { return isSpecial(Space); }
@@ -119,9 +119,11 @@ public:
     Note& setAccidental(int8_t a) { p_acc_ = a; return *this; }
     Note& setOctave(int8_t o) { p_oct_ = o; return *this; }
 
-    void transpose(int8_t noteStep);
-    Note transposed(int8_t noteStep) const
-        { Note n(*this); n.transpose(noteStep); return n; }
+    void transpose(int8_t noteStep, bool wholeSteps);
+    Note transposed(int8_t noteStep, bool wholeSteps) const
+        { Note n(*this); n.transpose(noteStep, wholeSteps); return n; }
+
+    void setFromValue(int8_t value);
 
     static Note fromString(const QString&);
     static Note fromValue(int8_t value);

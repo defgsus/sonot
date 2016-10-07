@@ -85,7 +85,7 @@ public:
     Notes& operator << (const char* name);
     Notes& operator << (const QString& name);
 
-    void transpose(int8_t noteStep);
+    void transpose(int8_t noteStep, bool wholeNotes);
 
 private:
     std::vector<Note> p_data_;
