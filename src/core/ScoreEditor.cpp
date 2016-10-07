@@ -1039,12 +1039,25 @@ bool ScoreEditor::changeBar(const Score::Index& idx_, const Bar& b)
 
     auto idx = idx_.topLeft();
 
+    NoteStream* stream = p_->getStream(idx);
     Bar* bar = p_->getBar(idx);
-    if (!bar)
+    if (!stream || !bar)
         return false;
 
     if (p_->doEnableUndo)
     {
+        if (b.numRows() != stream->numRows() && p_->doMergeUndo)
+        {
+            auto oldStream = *stream;
+            if (!p_->changeBar(idx, b))
+                return false;
+            p_->addStreamChangeUndoData(idx, *stream, oldStream,
+                                        tr("change bar %1:%2")
+                                        .arg(idx.stream()).arg(idx.bar()),
+                                        tr("change bar %1")
+                                        .arg(idx.toString()));
+            return true;
+        }
         p_->addBarChangeUndoData(idx, b, *bar,
                                  tr("change bar %1:%2")
                                  .arg(idx.stream()).arg(idx.bar()),
