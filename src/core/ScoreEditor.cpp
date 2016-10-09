@@ -1392,7 +1392,7 @@ bool ScoreEditor::splitStream(const Score::Index& idx)
     SONOT__DEBUG("splitStream(" << idx.toString() << ")");
 
     SONOT__CHECK_INDEX(idx, false, "in splitStream");
-    if (idx.isStreamRight())
+    if (idx.isLastBar())
         return false;
     NoteStream* org = p_->getStream(idx);
     if (!org)

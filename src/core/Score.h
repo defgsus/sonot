@@ -75,8 +75,8 @@ public:
 
         /** Returns true if the index is pointing into the first
             Bar of a NoteStream */
-        bool isStreamLeft() const;
-        bool isStreamRight() const;
+        bool isFirstBar() const;
+        bool isLastBar() const;
 
         /** Returns true if this Bar's tempo is different to previous one's */
         bool isTempoChange() const;

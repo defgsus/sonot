@@ -66,9 +66,19 @@ struct ScoreDocument::Private
     Score* score() { return editor ? editor->score() : nullptr; }
 
     void createItems();
-    bool createBarItems_Fixed(int pageIdx, Score::Index& scoreIdx);
-    ReturnCode createBarItems_Fixed(
-            int pageIdx, int lineIdx, Score::Index& scoreIdx, QPointF& pagePos);
+    bool createPageItems(int pageIdx, Score::Index& scoreIdx, bool isFixed);
+    ReturnCode createLineOfScore(
+            int pageIdx, int lineIdx,
+            Score::Index& scoreIdx, QPointF& pagePos,
+            bool isFixed);
+
+    QString getBarAnnotation(const Score::Index& scoreIdx,
+                             const KeySignature& keySig);
+    BarItems* createSingleBarItems(const Score::Index& scoreIdx,
+            const ScoreDocument::Index& docIdx,
+            const KeySignature& keySig,
+            const QRectF& barRect, double noteSize, double rowSpace, bool endOfLine);
+    void updateNoteItems(const ScoreEditor::IndexList& idxs);
 
     ScoreDocument* p;
 
@@ -90,7 +100,7 @@ struct ScoreDocument::Private
     // maps each page/line/bar to BarItems
     QMap<Index, BarItems*> barItemMap;
     // maps Score::Index to each ScoreItem
-    QMap<Score::Index, ScoreItem*> scoreItemMap;
+    QMap<Score::Index, ScoreItem*> noteItemMap;
 };
 
 
@@ -372,8 +382,8 @@ ScoreDocument::BarItems* ScoreDocument::getBarItems(const Index& idx) const
 
 ScoreItem* ScoreDocument::getScoreItem(const Score::Index &idx) const
 {
-    auto i = p_->scoreItemMap.find(idx);
-    return i == p_->scoreItemMap.end() ? nullptr : i.value();
+    auto i = p_->noteItemMap.find(idx);
+    return i == p_->noteItemMap.end() ? nullptr : i.value();
 }
 
 ScoreItem* ScoreDocument::getLeftScoreItem(const Score::Index& idx) const
@@ -716,9 +726,9 @@ void ScoreDocument::Private::initEditor()
     });
 
     QObject::connect(editor, &ScoreEditor::noteValuesChanged,
-            [=](const ScoreEditor::IndexList& )
+            [=](const ScoreEditor::IndexList& idxs)
     {
-        createItems();
+        updateNoteItems(idxs);
     });
     QObject::connect(editor, &ScoreEditor::barsChanged,
             [=](const ScoreEditor::IndexList& )
@@ -765,12 +775,20 @@ void ScoreDocument::Private::initEditor()
 
 }
 
+void ScoreDocument::Private::updateNoteItems(const ScoreEditor::IndexList &idxs)
+{
+    for (const auto& idx : idxs)
+    if (ScoreItem* i = p->getScoreItem(idx))
+    {
+        i->updateNote(idx.getNote());
+    }
+}
 
 void ScoreDocument::Private::createItems()
 {
     barItems.clear();
     barItemMap.clear();
-    scoreItemMap.clear();
+    noteItemMap.clear();
     numPages = 0;
     if (!score())
         return;
@@ -779,26 +797,24 @@ void ScoreDocument::Private::createItems()
     if (!scoreIdx.isValid())
         return;
 
-    /// @todo non-fixed layout
-    if (p->scoreLayout(0).isFixedBarWidth())
+    int page = 0;
+    bool isFixed = p->scoreLayout(0).isFixedBarWidth();
+    while (createPageItems(page, scoreIdx, isFixed))
     {
-        int page = 0;
-        while (createBarItems_Fixed(page, scoreIdx))
-        {
-            //qDebug() << scoreIdx.toString();
-            ++page;
-        }
-        numPages = page + 1;
+        //qDebug() << scoreIdx.toString();
+        ++page;
     }
+    numPages = page + 1;
 }
 
-bool ScoreDocument::Private::createBarItems_Fixed(
-        int pageIdx, Score::Index& scoreIdx)
+bool ScoreDocument::Private::createPageItems(
+        int pageIdx, Score::Index& scoreIdx, bool isFixed)
 {
-    QPointF pagePos;
+    QPointF pageOffs;
     for (int line=0; ; ++line)
     {
-        ReturnCode ret = createBarItems_Fixed(pageIdx, line, scoreIdx, pagePos);
+        ReturnCode ret = createLineOfScore(
+                    pageIdx, line, scoreIdx, pageOffs, isFixed);
         if (ret == R_DATA_FINISHED)
             return false;
         else if (ret == R_PAGE_FINISHED)
@@ -808,9 +824,9 @@ bool ScoreDocument::Private::createBarItems_Fixed(
 }
 
 ScoreDocument::Private::ReturnCode
-ScoreDocument::Private::createBarItems_Fixed(
+ScoreDocument::Private::createLineOfScore(
         int pageIdx, int lineIdx,
-        Score::Index& scoreIdx, QPointF& pagePos)
+        Score::Index& scoreIdx, QPointF& pageOffs, bool isFixed)
 {
     const ScoreLayout& slayout = p->scoreLayout(pageIdx);
     const PageLayout& playout = p->pageLayout(pageIdx);
@@ -820,154 +836,267 @@ ScoreDocument::Private::createBarItems_Fixed(
                  lineHeightFull = lineHeight + slayout.lineSpacing();
 
     // break if page ends
-    if (pagePos.y() + lineHeight >= scoreRect.height() )
+    if (pageOffs.y() + lineHeight >= scoreRect.height() )
         return R_PAGE_FINISHED;
 
     const double
             noteSize = slayout.noteSize(),
             rowSpace = slayout.rowSpacing();
-    const size_t numBarsPerLine = slayout.barsPerLine();
-    QPROPS_ASSERT(numBarsPerLine > 0, "");
-    const double barWidth = scoreRect.width() / numBarsPerLine;
 
     KeySignature keySig = scoreIdx.getStream().keySignature();
 
-    for (size_t barIdx = 0; barIdx < numBarsPerLine; ++barIdx)
+    if (isFixed)
     {
-        // container for one bar block
-        auto items = new BarItems;
-        items->docIndex = Index(pageIdx, lineIdx, barIdx);
-        items->scoreIndex = scoreIdx;
+        const size_t numBarsPerLine = slayout.barsPerLine();
+        QPROPS_ASSERT(numBarsPerLine > 0, "");
+        const double barWidth = scoreRect.width() / numBarsPerLine;
 
-        QString anno;
-
-        // annotation at stream start
-        if (scoreIdx.isStreamLeft())
+        for (size_t barIdx = 0; barIdx < numBarsPerLine; ++barIdx)
         {
-            // stream title
-            anno += scoreIdx.getStream().props().get("title").toString();
+            Index docIdx(pageIdx, lineIdx, barIdx);
 
-            // signature
-            if (!keySig.isEmpty())
+            if (!getBarAnnotation(scoreIdx, keySig).isEmpty())
             {
-                if (!anno.isEmpty())
-                    anno += " ";
-                anno += keySig.toString();
+                pageOffs.ry() += noteSize + 2;
+                // break if page ends
+                if (pageOffs.y() + lineHeight >= scoreRect.height() )
+                    return R_PAGE_FINISHED;
+            }
+
+            QRectF barRect = QRectF(
+                        pageOffs.x() + scoreRect.x() + barIdx * barWidth,
+                        pageOffs.y() + scoreRect.y(),
+                        barWidth, lineHeight);
+
+            createSingleBarItems(   scoreIdx,
+                                    docIdx,
+                                    keySig,
+                                    barRect,
+                                    noteSize,
+                                    rowSpace,
+                                    barIdx+1 >= numBarsPerLine
+                                    );
+
+            // forward index and check for stream change
+            size_t curStream = scoreIdx.stream();
+            bool finish = !scoreIdx.nextBar(),
+                 newStream = (scoreIdx.stream() != curStream);
+            if (finish || newStream)
+            {
+                // next line
+                pageOffs.ry() += lineHeightFull;
+
+                return newStream ? R_LINE_FINISHED : R_DATA_FINISHED;
             }
         }
+    }
+    // non-fixed barwidth
+    else
+    {
+        const double
+                noteSpace = slayout.noteSpacing(),
+                minBarWidth = slayout.minBarWidth(),
+                maxBarWidth = slayout.maxBarWidth();
 
-        // tempo indicator
-        if (scoreIdx.isStreamLeft() || scoreIdx.isTempoChange())
+        // look-ahead into next bars
+        Score::Index idx = scoreIdx;
+        QList<double> barWidths;
+        double width = 0;
+        bool isAnno = false;
+        while (idx.isValid())
         {
-            if (!anno.isEmpty())
-                anno += " ";
-            anno += QString("%1bpm").arg(scoreIdx.getBeatsPerMinute());
+            isAnno |= !getBarAnnotation(idx, keySig).isEmpty();
+            int numNotes = idx.getBar().maxNumberNotes();
+            double w = std::max(minBarWidth, std::min(maxBarWidth,
+                numNotes * noteSize + (numNotes-1) * noteSpace ));
+            if (width+w > scoreRect.width()-pageOffs.x())
+                break;
+            width += w;
+            barWidths << w;
+
+            size_t curStream = idx.stream();
+            if (!idx.nextBar())
+                break;
+            if (idx.stream() != curStream)
+                break;
         }
 
-        // print annotation
-        if (!anno.isEmpty())
+        if (barWidths.isEmpty())
         {
-            double si = noteSize;
-            QRectF rect(scoreRect.x() + barIdx * barWidth,
-                        scoreRect.y() + pagePos.y(),
-                        si, si);
-            items->items.push_back(
-                ScoreItem(scoreIdx, items->docIndex, rect, anno) );
-            pagePos.ry() += si + 2;
+            return R_DATA_FINISHED;
         }
 
+        // scale into page width
+        for (auto& w : barWidths)
+            w = std::max(minBarWidth, std::min(maxBarWidth,
+                    w * (scoreRect.width()-pageOffs.x()) / std::max(1., width)
+                ));
 
-        // create item for each note in this bar block
-        for (size_t row=0; row<scoreIdx.numRows(); ++row)
+        if (isAnno)
+            pageOffs.ry() += noteSize + 2;
+
+        // break if page ends
+        if (pageOffs.y() + lineHeight >= scoreRect.height() )
+            return R_PAGE_FINISHED;
+
+        double x = 0.;
+        for (int barIdx = 0; barIdx < barWidths.size(); ++barIdx)
         {
-            double y = pagePos.y() + rowSpace * row;
+            Index docIdx(pageIdx, lineIdx, barIdx);
 
-            const Notes& b = scoreIdx.getNotes(row);
-            for (size_t col=0; col<b.length(); ++col)
-            {
-                Score::Index idx = scoreIdx.offset(row, col);
-                Note note = idx.getNote();
-                //note = keySig.transform(note);
-                if (!note.isValid())
-                    continue;
+            QRectF barRect = QRectF(
+                        pageOffs.x() + scoreRect.x() + x,
+                        pageOffs.y() + scoreRect.y(),
+                        barWidths[barIdx], lineHeight);
+            x += barWidths[barIdx];
 
-                double x = barIdx * barWidth
-                         + b.columnTime(col+.5) * barWidth;
+            createSingleBarItems(   scoreIdx,
+                                    docIdx,
+                                    keySig,
+                                    barRect,
+                                    noteSize,
+                                    rowSpace,
+                                    barIdx+1 >= barWidths.size()
+                                    );
 
-                QRectF rect(x + scoreRect.x() -noteSize/2.,
-                            y + scoreRect.y(),
-                            noteSize, noteSize);
-                items->items.push_back(
-                            ScoreItem(idx, items->docIndex, rect, note) );
-                scoreItemMap.insert(
-                            items->items.back().scoreIndex(),
-                            &items->items.back() );
-
-            }
-        }
-
-        // leading bar-slash item
-        double x = barIdx * barWidth + scoreRect.x(),
-               y = pagePos.y() + scoreRect.y();
-        QLineF line(x, y, x, y + slayout.lineHeight(scoreIdx.numRows()));
-        items->items.push_back( ScoreItem(scoreIdx,
-                                          items->docIndex,
-                                          line) );
-
-        if (barIdx + 1 == numBarsPerLine)
-        {
-            // end-of-line bar-slash item
-            double x = scoreRect.right(),
-                   y = pagePos.y() + scoreRect.y();
-            QLineF line(x, y, x, y + lineHeight);
-            items->items.push_back( ScoreItem(scoreIdx,
-                                              items->docIndex,
-                                              line) );
-        }
-
-        // get bounding rect
-        if (!items->items.isEmpty())
-        {
-            items->boundingBox = items->items.at(0).boundingBox();
-            for (const ScoreItem& i : items->items)
-                items->boundingBox |= i.boundingBox();
-        }
-
-        // store items
-        std::shared_ptr<BarItems> pit(items);
-        barItems.push_back(pit);
-
-        barItemMap.insert(items->docIndex, items);
-
-        // forward index and check for stream change
-        size_t curStream = scoreIdx.stream();
-        bool finish = !scoreIdx.nextBar(),
-             newStream = (scoreIdx.stream() != curStream);
-        if (finish || newStream)
-        {
-            // trailing bar-slash item
-            double x = (barIdx+1) * barWidth + scoreRect.x(),
-                   y = pagePos.y() + scoreRect.y();
-            QLineF line(x, y, x, y + lineHeight);
-            items->items.push_back( ScoreItem(scoreIdx,
-                                              items->docIndex,
-                                              line) );
-            line.translate(-1, 0.);
-            items->items.push_back( ScoreItem(scoreIdx,
-                                              items->docIndex,
-                                              line) );
-            // next line
-            pagePos.ry() += lineHeightFull;
-
-            return newStream ? R_LINE_FINISHED : R_DATA_FINISHED;
+            if (!scoreIdx.nextBar())
+                return R_DATA_FINISHED;
         }
 
     }
+
     // next line
-    pagePos.ry() += lineHeightFull;
+    pageOffs.ry() += lineHeightFull;
 
     return R_ALL_GOOD;
 }
+
+QString ScoreDocument::Private::getBarAnnotation(
+        const Score::Index &scoreIdx, const KeySignature& keySig)
+{
+    QString anno;
+
+    // annotation at stream start
+    if (scoreIdx.isFirstBar())
+    {
+        // stream title
+        anno += scoreIdx.getStream().props().get("title").toString();
+
+        // signature
+        if (!keySig.isEmpty())
+        {
+            if (!anno.isEmpty())
+                anno += " ";
+            anno += keySig.toString();
+        }
+    }
+
+    // tempo indicator
+    if (scoreIdx.isFirstBar() || scoreIdx.isTempoChange())
+    {
+        if (!anno.isEmpty())
+            anno += " ";
+        anno += QString("%1bpm").arg(scoreIdx.getBeatsPerMinute());
+    }
+
+    return anno;
+}
+
+ScoreDocument::BarItems* ScoreDocument::Private::createSingleBarItems(
+        const Score::Index& scoreIdx,
+        const ScoreDocument::Index& docIdx,
+        const KeySignature& keySig,
+        const QRectF& barRect,
+        double noteSize, double rowSpace,
+        bool endOfLine)
+{
+    // container for one bar block
+    auto items = new BarItems;
+    items->docIndex = docIdx;
+    items->scoreIndex = scoreIdx;
+
+
+    QString anno = getBarAnnotation(scoreIdx, keySig);
+
+    // print annotation
+    if (!anno.isEmpty())
+    {
+        QRectF rect = barRect;
+        const double si = noteSize;
+        rect.setTop(rect.top() - si - 2);
+        rect.setHeight(si);
+        items->items.push_back(
+            ScoreItem(scoreIdx, docIdx, rect, anno) );
+    }
+
+
+    // create item for each note in this bar block
+    for (size_t row=0; row<scoreIdx.numRows(); ++row)
+    {
+        double y = barRect.top() + rowSpace * row;
+
+        const Notes& b = scoreIdx.getNotes(row);
+        for (size_t col=0; col<b.length(); ++col)
+        {
+            Score::Index idx = scoreIdx.offset(row, col);
+            Note note = idx.getNote();
+            //note = keySig.transform(note);
+            if (!note.isValid())
+                continue;
+
+            double x = barRect.left()
+                     + barRect.width() * b.columnTime(col+.5);
+
+            QRectF rect(x-noteSize/2., y, noteSize, noteSize);
+            items->items.push_back(
+                        ScoreItem(idx, docIdx, rect, note) );
+            noteItemMap.insert(idx, &items->items.back() );
+
+        }
+    }
+
+    // leading bar-slash item
+    double x = barRect.x(),
+           y = barRect.y();
+    QLineF line(x, y, x, y + barRect.height());
+    items->items.push_back( ScoreItem(scoreIdx, docIdx, line) );
+
+    if (endOfLine || scoreIdx.isLastBar())
+    {
+        // end-of-line bar-slash item
+        double x = barRect.right(),
+               y = barRect.y();
+        QLineF line(x, y, x, y + barRect.height());
+        items->items.push_back( ScoreItem(scoreIdx, docIdx, line) );
+
+        // end-of-part bar-slash item
+        if (scoreIdx.isLastBar())
+        {
+            line.translate(-1,0);
+            items->items.push_back( ScoreItem(scoreIdx, docIdx, line) );
+        }
+    }
+
+
+    // get bounding rect
+    if (!items->items.isEmpty())
+    {
+        items->boundingBox = items->items.at(0).boundingBox();
+        for (const ScoreItem& i : items->items)
+            items->boundingBox |= i.boundingBox();
+    }
+
+    // store/reference all bar items
+    std::shared_ptr<BarItems> pit(items);
+    barItems.push_back(pit);
+    barItemMap.insert(items->docIndex, items);
+
+    return items;
+}
+
+
+
+
 
 void ScoreDocument::paintScoreItems(QPainter &p, int pageIdx,
                                     const QRectF& updateRect) const
@@ -1024,5 +1153,6 @@ QList<QRectF> ScoreDocument::getSelectionRects(int pageIdx,
 
     return rects;
 }
+
 
 } // namespace Sonot

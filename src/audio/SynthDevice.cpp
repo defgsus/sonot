@@ -195,7 +195,7 @@ bool SynthDevice::Private::fillBuffer()
             {
                 SONOT_DEBUG_SYNTH("next bar");
                 bool enablePause = index.getStream().isPauseOnEnd(),
-                        doPause = index.isStreamRight() && enablePause;
+                        doPause = index.isLastBar() && enablePause;
                 size_t numRows = index.numRows();
                 if (!index.nextBar())
                 {

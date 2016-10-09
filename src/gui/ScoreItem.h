@@ -64,6 +64,11 @@ public:
 
     QRectF boundingBox() const { return p_rect; }
 
+    // ---- update ----
+
+    /** Recreate text settings for note */
+    void updateNote(const Note& n);
+
     // ---- render ----
 
     void paint(QPainter& p);
@@ -71,7 +76,7 @@ public:
 
 private:
 
-    void p_updateNote();
+    void p_updateNoteLayout();
 
     Score::Index p_index;
     ScoreDocument::Index p_docIndex;

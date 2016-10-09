@@ -33,7 +33,7 @@ ScoreItem::ScoreItem(const Score::Index& i,
     , p_rect       (rect)
     , p_note       (n)
 {
-    p_updateNote();
+    p_updateNoteLayout();
 }
 
 ScoreItem::ScoreItem(const Score::Index& i, const ScoreDocument::Index& j, const QLineF& line)
@@ -57,8 +57,21 @@ ScoreItem::ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
 
 }
 
-void ScoreItem::p_updateNote()
+void ScoreItem::updateNote(const Note& n)
 {
+    if (type() == T_NOTE)
+    {
+        p_note = n;
+        p_updateNoteLayout();
+    }
+}
+
+void ScoreItem::p_updateNoteLayout()
+{
+    p_font.clear();
+    p_staticText.clear();
+    p_textPos.clear();
+
     QString string = note().toSpanishString();
 
     QFont f;
@@ -71,10 +84,9 @@ void ScoreItem::p_updateNote()
 
     QFontMetricsF m(p_font[0]);
     QRectF rect = m.boundingRect(p_rect,
-                      Qt::AlignCenter
-                    //| (note().isSpace() ? Qt::AlignHCenter : Qt::AlignLeft)
-                    | Qt::TextDontClip,
-                    p_staticText[0].text() );
+                                   Qt::AlignCenter
+                                 | Qt::TextDontClip,
+                                 p_staticText[0].text() );
 
     p_textPos << rect.topLeft();
 

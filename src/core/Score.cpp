@@ -359,12 +359,12 @@ bool Score::Index::isValid(int s, int b, int r, int c) const
                                 stream()).notes(bar(), row()).length();
 }
 
-bool Score::Index::isStreamLeft() const
+bool Score::Index::isFirstBar() const
 {
     return bar() == 0;
 }
 
-bool Score::Index::isStreamRight() const
+bool Score::Index::isLastBar() const
 {
     if (!isValid())
         return false;
@@ -765,7 +765,7 @@ bool Score::Selection::isCompleteBar() const
           && p_to.isBottom() && p_to.isRight(); }
 
 bool Score::Selection::isCompleteStream() const
-    { return isValid() && p_from.isStreamLeft() && p_to.isStreamRight(); }
+    { return isValid() && p_from.isFirstBar() && p_to.isLastBar(); }
 
 bool Score::Selection::isCompleteScore() const
     { return isValid() && p_from.stream() == 0
