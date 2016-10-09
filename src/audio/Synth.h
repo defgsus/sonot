@@ -29,7 +29,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "QProps/JsonInterface.h"
 
 #include "EnvelopeGenerator.h"
-#include "NoteFreq.h"
+#include "core/NoteFreq.h"
 
 namespace Sonot {
 
@@ -162,6 +162,9 @@ public:
     double baseFreq() const { return props().get("base-freq").toDouble(); }
     double notesPerOctave()
         { return props().get("notes-per-octave").toDouble(); }
+    int pythagoreanNum() const { return props().get("mean-numerator").toInt(); }
+    int pythagoreanDenom() const
+                            { return props().get("mean-denominator").toInt(); }
 
     // -- modulator voices --
 

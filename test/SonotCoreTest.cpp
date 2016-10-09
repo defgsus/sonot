@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/Score.h"
 #include "core/ScoreEditor.h"
 #include "core/ExportMusicXML.h"
+#include "core/NoteFreq.h"
 #include "QProps/Properties.h"
 #include "QProps/error.h"
 
@@ -110,6 +111,7 @@ public:
 
 private slots:
 
+    void testNoteFreq();
     void testNoteFromString();
     void testNoteFromValue();
     void testNoteTranspose();
@@ -243,6 +245,34 @@ bool SonotCoreTest::compare(const Score &a, const Score &b)
 }
 
 
+
+void SonotCoreTest::testNoteFreq()
+{
+    return;
+
+    qDebug() << "a";
+    {
+        NoteFreq<double> f(12., 440.);
+        for (int i=0; i<=12; ++i)
+            qDebug() << f.frequency(12*4 + i - 57);
+    }
+
+    qDebug() << "c";
+    {
+        NoteFreq<double> f;
+        for (int i=0; i<=12; ++i)
+            qDebug() << f.frequency(12*4 + i);
+    }
+
+    qDebug() << "mean";
+    {
+        NoteFreq<double> f(12);
+        for (int i=0; i<=12; ++i)
+            qDebug() << f.frequency(12*4 + i);
+    }
+
+    abort();
+}
 
 
 void SonotCoreTest::testNoteFromString()

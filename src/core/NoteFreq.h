@@ -21,7 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef SONOTSRC_NOTEFREQ_H
 #define SONOTSRC_NOTEFREQ_H
 
-#include <cmath>
+#include <vector>
 
 namespace Sonot {
 
@@ -30,24 +30,36 @@ class NoteFreq
 {
 public:
 
-    static F defaultBaseFrequency() { return F(16.35155); }
+    /** Base C */
+    static constexpr F defaultBaseFrequency() { return F(16.35158); }
 
-    NoteFreq(F notesPerOctave = F(12), F baseFrequency = F(16.35155));
+    NoteFreq(F notesPerOctave = F(12),
+             F baseFrequency = defaultBaseFrequency());
+
+    NoteFreq(int notesPerOctave,
+             F baseFrequency = defaultBaseFrequency(),
+             int pythagoreanNum = 3,
+             int pythagoreanDenom = 2);
 
     // ------- getter -------
 
-    F notesPerOctave() const { return notes_per_octave_; }
-    F baseFrequency() const { return base_freq_; }
+    F notesPerOctave() const { return p_notes_per_octave; }
+    F baseFrequency() const { return p_base_freq; }
+    int pythagoeanNum() const { return p_num; }
+    int pythagoeanDenom() const { return p_denom; }
 
     // ------- setter -------
 
     void setNotesPerOctave(F notes);
-    void setBaseFrequency(F f) { base_freq_ = f; }
+    void setNotesPerOctave(int notes);
+    void setBaseFrequency(F f) { p_base_freq = f; }
+    void setPythagorean(int nom, int denom);
 
     // ----- conversion -----
 
-    /** Returns the frequency for the given note */
-    F frequency(F note) const;
+    /** Returns the frequency for the given note.
+        @p note is lower-clamped to 0 */
+    F frequency(int note) const;
 
     /** Returns the octave of the frequency */
     F octave(F freq) const;
@@ -56,47 +68,13 @@ private:
 
     void recalc_();
 
-    F notes_per_octave_,
-      base_freq_,
-      oct_pow_;
+    F p_notes_per_octave,
+      p_base_freq,
+      p_oct_pow;
+    int p_num,
+        p_denom;
+    std::vector<F> p_table;
 };
-
-
-
-// ----------- IMPL ---------
-
-template <typename F>
-NoteFreq<F>::NoteFreq(F notes, F freq)
-    : notes_per_octave_ (notes),
-      base_freq_        (freq)
-{
-    recalc_();
-}
-
-template <typename F>
-void NoteFreq<F>::setNotesPerOctave(F n)
-{
-    notes_per_octave_ = std::max(F(0.0000001), n);
-    recalc_();
-}
-
-template <typename F>
-void NoteFreq<F>::recalc_()
-{
-    oct_pow_ = std::pow(F(2), F(1) / notes_per_octave_);
-}
-
-template <typename F>
-F NoteFreq<F>::frequency(F note) const
-{
-    return base_freq_ * std::pow(oct_pow_, note);
-}
-
-template <typename F>
-F NoteFreq<F>::octave(F f) const
-{
-    return (std::log(f) - std::log(base_freq_)) / std::log(F(2));
-}
 
 
 } // namespace Sonot

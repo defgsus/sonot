@@ -350,6 +350,16 @@ void Synth::Private::createProperties()
               noteFreq.notesPerOctave());
     props.setMin("notes-per-octave", 1./1000.);
 
+    props.set("mean-numerator", tr("numerator"),
+              tr("The 'pythagorean' numerator"),
+              noteFreq.pythagoeanNum());
+    props.setMin("mean-numerator", 0);
+
+    props.set("mean-denominator", tr("denominator"),
+              tr("The 'pythagorean' denominator"),
+              noteFreq.pythagoeanDenom());
+    props.setMin("mean-denominator", 0);
+
     props.set("attack", tr("attack"),
               tr("Attack time of envelope in seconds"),
               0.02, 0., 10000., 0.01);
@@ -852,7 +862,16 @@ void Synth::setProperties(const QProps::Properties& p)
 {
     p_->props = p;
     p_->noteFreq.setBaseFrequency( baseFreq() );
-    p_->noteFreq.setNotesPerOctave( notesPerOctave() );
+    if (pythagoreanNum() && pythagoreanDenom())
+    {
+        p_->noteFreq.setPythagorean( pythagoreanNum(), pythagoreanDenom() );
+        p_->noteFreq.setNotesPerOctave( (int)notesPerOctave() );
+    }
+    else
+    {
+        p_->noteFreq.setBaseFrequency( baseFreq() );
+        p_->noteFreq.setNotesPerOctave( notesPerOctave() );
+    }
     p_->voicePolicy = (VoicePolicy)p_->props.get("voice-policy").toInt();
     if (numberVoices() != p_->voices.size())
         p_->setNumVoices(numberVoices());
