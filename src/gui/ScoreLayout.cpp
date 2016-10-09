@@ -40,6 +40,10 @@ ScoreLayout::ScoreLayout()
                  4);
     p_props_.setMin("bars-per-line", 1);
 
+    p_props_.set("note-size", tr("note size"),
+                 tr("The size of note items"),
+                 4., 1.);
+
     p_props_.set("note-spacing", tr("note spacing"),
                  tr("The distance between adjacent notes"),
                  3., .1);
@@ -55,9 +59,15 @@ ScoreLayout::ScoreLayout()
     p_props_.set("max-bar-width", tr("bar width (maximum)"),
                  tr("The maximum width of a bar"),
                  48., 1.);
-    p_props_.set("note-size", tr("note size"),
-                 tr("The size of note items"),
-                 5., 1.);
+
+    p_props_.setUpdateVisibilityCallback([](QProps::Properties& p)
+    {
+        bool fixed = p.get("fixed-number-bars").toBool();
+        p.setVisible("bars-per-line", fixed);
+        p.setVisible("note-spacing", !fixed);
+        p.setVisible("min-bar-width", !fixed);
+        p.setVisible("max-bar-width", !fixed);
+    });
 }
 
 

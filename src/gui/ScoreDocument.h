@@ -127,12 +127,9 @@ public:
     const ScoreLayout& scoreLayout(const QString& id) const;
     const PageAnnotation& pageAnnotation(const QString& id) const;
 
-    const PageLayout& pageLayout(int pageIdx) const
-        { return pageLayout(layoutKeyForIndex(pageIdx)); }
-    const ScoreLayout& scoreLayout(int pageIdx) const
-        { return scoreLayout(layoutKeyForIndex(pageIdx)); }
-    const PageAnnotation& pageAnnotation(int pageIdx) const
-        { return pageAnnotation(layoutKeyForIndex(pageIdx)); }
+    const PageLayout& pageLayout(int pageIdx) const;
+    const ScoreLayout& scoreLayout(int pageIdx) const;
+    const PageAnnotation& pageAnnotation(int pageIdx) const;
 
     const QProps::Properties& props() const;
 

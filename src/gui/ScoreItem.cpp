@@ -27,20 +27,20 @@ namespace Sonot {
 ScoreItem::ScoreItem(const Score::Index& i,
                      const ScoreDocument::Index& j,
                      const QRectF& rect, const Note& n)
-    : p_index_      (i)
-    , p_docIndex_   (j)
-    , p_type_       (T_NOTE)
-    , p_rect_       (rect)
-    , p_note_       (n)
+    : p_index      (i)
+    , p_docIndex   (j)
+    , p_type       (T_NOTE)
+    , p_rect       (rect)
+    , p_note       (n)
 {
-
+    p_updateNote();
 }
 
 ScoreItem::ScoreItem(const Score::Index& i, const ScoreDocument::Index& j, const QLineF& line)
-    : p_index_      (i)
-    , p_docIndex_   (j)
-    , p_type_       (T_BAR_SLASH)
-    , p_rect_       (line.x1(), line.y1(),
+    : p_index      (i)
+    , p_docIndex   (j)
+    , p_type       (T_BAR_SLASH)
+    , p_rect       (line.x1(), line.y1(),
                      line.x2()-line.x1(), line.y2()-line.y1())
 {
 
@@ -48,46 +48,106 @@ ScoreItem::ScoreItem(const Score::Index& i, const ScoreDocument::Index& j, const
 
 ScoreItem::ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
                      const QRectF& rect, const QString& text)
-    : p_index_      (i)
-    , p_docIndex_   (j)
-    , p_type_       (T_TEXT)
-    , p_rect_       (rect)
-    , p_text_       (text)
+    : p_index      (i)
+    , p_docIndex   (j)
+    , p_type       (T_TEXT)
+    , p_rect       (rect)
+    , p_text       (text)
 {
 
 }
 
+void ScoreItem::p_updateNote()
+{
+    QString string = note().toSpanishString();
+
+    QFont f;
+    f.setPointSizeF(p_rect.height());
+    f.setBold(true);
+    f.setItalic(false);
+    p_font << f;
+
+    p_staticText << QStaticText( string.left(1) );
+
+    QFontMetricsF m(p_font[0]);
+    QRectF rect = m.boundingRect(p_rect,
+                      Qt::AlignCenter
+                    //| (note().isSpace() ? Qt::AlignHCenter : Qt::AlignLeft)
+                    | Qt::TextDontClip,
+                    p_staticText[0].text() );
+
+    p_textPos << rect.topLeft();
+
+    if (note().accidental() != 0)
+    {
+        p_textPos[0].rx() -= rect.width()*.2;
+
+        f.setPointSizeF(f.pointSizeF()*.8);
+        f.setBold(false);
+        p_font << f;
+        p_staticText << QStaticText( note().accidentalString() );
+        QRectF rect2 = rect;
+        rect2.moveLeft(p_textPos[0].x() + m.width(p_staticText[0].text()));
+        QFontMetricsF m2(f);
+        rect2.moveTop(rect.top() + m2.height()*.1 );
+        p_textPos << rect2.topLeft();
+    }
+
+    while (!string.isEmpty() && !(string[0] == '\'' || string[0] == ','))
+        string.remove(0,1);
+    if (!string.isEmpty())
+    {
+        f = p_font[0];
+        f.setBold(false);
+        f.setItalic(true);
+        p_font << f;
+        p_staticText << QStaticText( string );
+        QPointF pos = rect.topRight();
+        pos.rx() = p_textPos[0].x() + rect.width()*.8;
+        double s = rect.height() * .1;
+        if (string.startsWith(','))
+            pos.ry() += s;
+        else
+            pos.ry() -= s, pos.rx() -= s;
+        p_textPos << pos;
+
+    }
+}
+
 void ScoreItem::paint(QPainter& p)
 {
-    if (p_type_ == T_NOTE)
+    if (p_type == T_NOTE)
     {
-        QString t = note().toSpanishString();
+        //QString t = note().toSpanishString();
 
-        QFont f(p.font());
-        f.setPixelSize(p_rect_.height());
-        f.setBold(true);
-        f.setItalic(false);
-        p.setFont(f);
-        p.drawText(p_rect_, Qt::AlignCenter | Qt::TextDontClip, t);
+        for (int i=0; i<p_staticText.size(); ++i)
+        {
+            p.setFont(p_font[i]);
+            p.drawStaticText(p_textPos[i], p_staticText[i]);
+        }
+        /*p.drawText(p_rect_,
+                     Qt::AlignVCenter
+                   | (note().isSpace() ? Qt::AlignHCenter : Qt::AlignLeft)
+                   | Qt::TextDontClip, t);*/
         //p.drawRect(p_rect_);
 
         //p.drawLine(p_rect_.center().x(), p_rect_.top(),
         //           p_rect_.center().x(), p_rect_.bottom());
     }
-    else if (p_type_ == T_BAR_SLASH)
+    else if (p_type == T_BAR_SLASH)
     {
-        p.drawLine(p_rect_.x(), p_rect_.y(),
-                   p_rect_.bottomRight().x(), p_rect_.bottomRight().y());
+        p.drawLine(p_rect.x(), p_rect.y(),
+                   p_rect.bottomRight().x(), p_rect.bottomRight().y());
     }
-    else if (p_type_ == T_TEXT)
+    else if (p_type == T_TEXT)
     {
         QFont f(p.font());
-        f.setPixelSize(p_rect_.height());
+        f.setPixelSize(p_rect.height());
         f.setBold(false);
         f.setItalic(true);
         p.setFont(f);
-        p.drawText(p_rect_, Qt::AlignLeft | Qt::AlignVCenter
-                            | Qt::TextDontClip, p_text_);
+        p.drawText(p_rect, Qt::AlignLeft | Qt::AlignVCenter
+                            | Qt::TextDontClip, p_text);
     }
 
 }

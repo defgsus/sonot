@@ -279,6 +279,16 @@ QString Note::toShortAlphaNumString() const
     return s;
 }
 
+QString Note::accidentalString() const
+{
+    if (p_acc_ > 0)
+        return QString("#").repeated(p_acc_);
+    else if (p_acc_ < 0)
+        return QString("b").repeated(-p_acc_);
+    else
+        return QString();
+}
+
 void Note::transpose(int8_t step, bool wholeSteps)
 {
     if (step != 0 && isNote())

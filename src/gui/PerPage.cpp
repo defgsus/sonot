@@ -42,7 +42,8 @@ QJsonObject PerPage<T>::toJson() const
 template <class T>
 void PerPage<T>::fromJson(const QJsonObject& o)
 {
-    QProps::JsonInterfaceHelper json(QString("PerPage<%1>").arg(typeid(T).name()));
+    QProps::JsonInterfaceHelper json(
+                QString("PerPage<%1>").arg(typeid(T).name()));
     QMap<QString, T> map;
     for (auto key : o.keys())
     {

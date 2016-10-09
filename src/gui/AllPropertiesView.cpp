@@ -177,12 +177,15 @@ void AllPropertiesView::Private::updateComboBox()
             subCombo->addItem(tr("modulator voice %1").arg(i+1),
                               QString("mod-%1").arg(i));
     }
-    else if (curId() == "page-layout"
-          || curId() == "score-layout")
+    else if (curId() == "page-layout")
     {
         subCombo->addItem(tr("title"), "title");
         subCombo->addItem(tr("left"), "left");
         subCombo->addItem(tr("right"), "right");
+    }
+    else if (curId() == "score-layout")
+    {
+        subCombo->addItem(tr("global"), "global");
     }
 
     subCombo->setVisible(subCombo->count() > 0);

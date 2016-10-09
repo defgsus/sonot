@@ -22,6 +22,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #define SONOTSRC_SCOREITEM_H
 
 #include <QRectF>
+#include <QStaticText>
+#include <QFont>
 
 #include "core/Note.h"
 #include "core/Score.h"
@@ -41,23 +43,26 @@ public:
         T_TEXT
     };
 
+    /** A note item */
     ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
               const QRectF& rect, const Note& n);
-    ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
-              const QLineF& rect);
+    /** A general text item */
     ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
               const QRectF& rect, const QString& text);
+    /** A bar line */
+    ScoreItem(const Score::Index& i, const ScoreDocument::Index& j,
+              const QLineF& rect);
 
     // ---- getter ----
 
-    Score* score() const { return p_index_.score(); }
-    Score::Index scoreIndex() const { return p_index_; }
-    ScoreDocument::Index docIndex() const { return p_docIndex_; }
-    Type type() const { return p_type_; }
+    Score* score() const { return p_index.score(); }
+    Score::Index scoreIndex() const { return p_index; }
+    ScoreDocument::Index docIndex() const { return p_docIndex; }
+    Type type() const { return p_type; }
 
-    const Note& note() const { return p_note_; }
+    const Note& note() const { return p_note; }
 
-    QRectF boundingBox() const { return p_rect_; }
+    QRectF boundingBox() const { return p_rect; }
 
     // ---- render ----
 
@@ -66,12 +71,17 @@ public:
 
 private:
 
-    Score::Index p_index_;
-    ScoreDocument::Index p_docIndex_;
-    Type p_type_;
-    QRectF p_rect_;
-    QString p_text_;
-    Note p_note_;
+    void p_updateNote();
+
+    Score::Index p_index;
+    ScoreDocument::Index p_docIndex;
+    Type p_type;
+    QRectF p_rect;
+    QList<QPointF> p_textPos;
+    QList<QStaticText> p_staticText;
+    QList<QFont> p_font;
+    QString p_text;
+    Note p_note;
 };
 
 } // namespace Sonot

@@ -103,10 +103,11 @@ public:
 
     QString toString() const;
     QString toNoaString() const;
-    /** Returns a string in the format 'C#3' */
+    /** Returns a string in the format 'C-3' or 'C#3' */
     QString to3String() const;
     QString toSpanishString() const;
     QString toShortAlphaNumString() const;
+    QString accidentalString() const;
 
     bool operator == (const Note& rhs) const;
     bool operator != (const Note& rhs) const { return !(*this == rhs); }

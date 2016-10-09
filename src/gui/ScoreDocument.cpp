@@ -169,6 +169,7 @@ QJsonObject ScoreDocument::toJson() const
     if (p_->score())
         jscore = p_->score()->toJson();
 
+    o.insert("version", QJsonValue(2));
     o.insert("score-layout", p_->scoreLayout.toJson());
     o.insert("page-layout", p_->pageLayout.toJson());
     o.insert("annotation", p_->pageAnnotation.toJson());
@@ -188,8 +189,13 @@ void ScoreDocument::fromJson(const QJsonObject& jscore)
     if (jscore.contains("document"))
     {
         QJsonObject o = json.expectChildObject(jscore, "document");
-        tmp.p_->scoreLayout.fromJson(
+        const int ver = o.value("version").toInt(1);
+
+        if (ver >= 2)
+        {
+            tmp.p_->scoreLayout.fromJson(
                     json.expectChildObject(o, "score-layout") );
+        }
         tmp.p_->pageLayout.fromJson(
                     json.expectChildObject(o, "page-layout") );
         tmp.p_->pageAnnotation.fromJson(
@@ -211,11 +217,7 @@ const Score* ScoreDocument::score() const
 {
     return p_->score();
 }
-/*
-void ScoreDocument::setScore(const Score& s)
-{
-    p_->editor->setScore(s);
-}*/
+
 
 size_t ScoreDocument::numPages() const { return p_->numPages; }
 
@@ -242,6 +244,33 @@ const ScoreLayout& ScoreDocument::scoreLayout(const QString& id) const
 const PageAnnotation& ScoreDocument::pageAnnotation(const QString& id) const
 {
     return p_->pageAnnotation[id];
+}
+
+const PageLayout& ScoreDocument::pageLayout(int pageIdx) const
+{
+    QString key = layoutKeyForIndex(pageIdx);
+    if (p_->pageLayout.contains(key))
+        return p_->pageLayout[key];
+    else
+        return p_->pageLayout["global"];
+}
+
+const ScoreLayout& ScoreDocument::scoreLayout(int pageIdx) const
+{
+    QString key = layoutKeyForIndex(pageIdx);
+    if (p_->scoreLayout.contains(key))
+        return p_->scoreLayout[key];
+    else
+        return p_->scoreLayout["global"];
+}
+
+const PageAnnotation& ScoreDocument::pageAnnotation(int pageIdx) const
+{
+    QString key = layoutKeyForIndex(pageIdx);
+    if (p_->pageAnnotation.contains(key))
+        return p_->pageAnnotation[key];
+    else
+        return p_->pageAnnotation["global"];
 }
 
 int ScoreDocument::pageNumberForIndex(int pageIndex) const
@@ -416,13 +445,6 @@ Score::Index ScoreDocument::getScoreIndex(
     return getScoreIndex(page, documentPos - pagePosition(page));
 }
 
-/*
-void ScoreDocument::updateScoreIndex(const Score::Index& i)
-{
-    QPROPS_ASSERT(i.isValid(), "in ScoreDocument::updateScoreIndex()");
-    auto s = getScoreItem(i);
-}
-*/
 
 Score::Index ScoreDocument::goToPrevRow(const Score::Index &idx) const
 {
@@ -564,7 +586,7 @@ ScoreItem* ScoreDocument::getClosestScoreItem(
 
 
 
-/** @todo This is to be templated */
+/** @todo This is to be templatized */
 void ScoreDocument::Private::initLayout()
 {
     // PageLayout
@@ -655,30 +677,6 @@ void ScoreDocument::Private::initLayout()
 
 }
 
-#if 0
-void ScoreDocument::setPageAnnotation(int pageIndex, const PageAnnotation &p)
-{
-    setPageAnnotation( layoutKeyForIndex(pageIndex), p);
-}
-
-void ScoreDocument::setPageLayout(int pageIndex, const PageLayout &p)
-{
-    setPageLayout( layoutKeyForIndex(pageIndex), p);
-}
-
-void ScoreDocument::setScoreLayout(int pageIndex, const ScoreLayout &p)
-{
-    setScoreLayout( layoutKeyForIndex(pageIndex), p);
-}
-
-void ScoreDocument::setScoreProperties(const QProps::Properties &p)
-{
-    if (p_->score())
-    {
-        p_->score()->setProperties(p);
-    }
-}
-#endif
 
 void ScoreDocument::p_setProperties(const QProps::Properties &p)
 {
