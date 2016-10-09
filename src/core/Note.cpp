@@ -303,7 +303,7 @@ void Note::transpose(int8_t step, bool wholeSteps)
             int note = p_note_ + step;
             int octChange = note > 0
                     ? note / 7
-                    : note / 7 - 1;
+                    : note < 0 ? note / 7 - 1 : 0;
             p_note_ = (note+700) % 7;
             p_oct_ = std::max(0, octChange + p_oct_);
         }

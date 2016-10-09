@@ -70,6 +70,14 @@ struct ScoreEditor::Private
     /** Returns writeable Notes */
     Notes* getNotes(const Score::Index& i);
 
+    /** Location string for undo name.
+        @note this merges row/column undo actions into one */
+    static QString barString(const Score::Index& idx)
+        { return tr("part %1 bar %2").arg(idx.stream()).arg(idx.bar()); }
+    /** Location string for undo name.
+        @note this merges undo actions per stream into one */
+    static QString partString(const Score::Index& idx)
+        { return tr("part %1").arg(idx.stream()); }
     void addUndoData(UndoData*);
     void addBarChangeUndoData(const Score::Index& idx,
                               const Bar& newBar, const Bar& oldBar,
@@ -626,8 +634,8 @@ bool ScoreEditor::insertNote(
             emit barsChanged(IndexList() << idx);
             emit documentChanged();
             p_->addBarChangeUndoData(idx, *p_->getBar(idx), oldBar,
-                                     tr("insert note in %1:%2")
-                                     .arg(idx.stream()).arg(idx.bar()),
+                                     tr("insert note in %1")
+                                     .arg(Private::barString(idx)),
                                      tr("insert note at %1")
                                      .arg(idx.toString()));
             return true;
@@ -659,8 +667,8 @@ bool ScoreEditor::insertNote(
             emit barsChanged(IndexList() << idx);
             emit documentChanged();
             p_->addBarChangeUndoData(idx, *p_->getBar(idx), oldBar,
-                                     tr("insert note in %1:%2")
-                                     .arg(idx.stream()).arg(idx.bar()),
+                                     tr("insert note in %1")
+                                     .arg(Private::barString(idx)),
                                      tr("insert note at %1")
                                      .arg(idx.toString()));
             return true;
@@ -682,7 +690,7 @@ bool ScoreEditor::insertBar(
 
     if (p_->doUndo)
     {
-        QString undoName = tr("insert bar in part %1").arg(idx.stream()),
+        QString undoName = tr("insert bar in %1").arg(Private::partString(idx)),
                 undoDetail = tr("insert bar %1 %2")
                                 .arg(after ? "after" : "at")
                                 .arg(idx.toString());
@@ -787,7 +795,8 @@ bool ScoreEditor::insertRow(const Score::Index& idx, bool after)
 
     if (p_->doUndo)
     {
-        QString undoName = QString("insert row in part %1").arg(idx.stream()),
+        QString undoName = QString("insert row in %1")
+                            .arg(Private::partString(idx)),
                 undoDetail = QString("insert row %1 %2")
                 .arg(after ? "after" : "before").arg(idx.toString());
 
@@ -959,7 +968,8 @@ bool ScoreEditor::deleteRow(const Score::Index& idx)
 
     if (p_->doUndo)
     {
-        QString undoName = QString("delete row in part %1").arg(idx.stream()),
+        QString undoName = QString("delete row in %1")
+                    .arg(Private::partString(idx)),
                 undoDetail = QString("delete row %1").arg(idx.toString());
         if (!p_->doUndoMerge)
         {
@@ -1027,8 +1037,8 @@ bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
             // store the whole bar so merging undo actions
             // will keep all changed notes
             p_->addBarChangeUndoData(idx, *bar, oldBar,
-                                     tr("change note in %1:%2")
-                                     .arg(idx.stream()).arg(idx.bar()),
+                                     tr("change note in %1")
+                                     .arg(Private::barString(idx)),
                                      tr("change note %1").arg(idx.toString()));
         }
         return true;
@@ -1219,8 +1229,8 @@ bool ScoreEditor::deleteNote(const Score::Index& idx, bool allRows)
         if (p_->doUndo)
         {
             p_->addBarChangeUndoData(idx, *bar, oldBar,
-                                     tr("delete note in %1:%2")
-                                     .arg(idx.stream()).arg(idx.bar()),
+                                     tr("delete note in %1")
+                                     .arg(Private::barString(idx)),
                                      undoDesc);
         }
 
@@ -1242,8 +1252,8 @@ bool ScoreEditor::deleteBar(const Score::Index& idx_)
 
     if (p_->doUndo)
     {
-        QString undoName = tr("delete bar in part %1")
-                            .arg(idx.stream()),
+        QString undoName = tr("delete bar in %1")
+                            .arg(Private::partString(idx)),
                 undoDetail = tr("delete bar %1").arg(idx.toString());
         if (!p_->doUndoMerge)
         {
