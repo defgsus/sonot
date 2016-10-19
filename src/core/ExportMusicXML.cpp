@@ -100,16 +100,6 @@ QString ExportMusicXML::toString()
     return p_->xmlString;
 }
 
-void ExportMusicXML::saveFile(const QString& fn)
-{
-    QFile f(fn);
-    if (!f.open(QFile::WriteOnly))
-        QPROPS_ERROR("Could not open file " << fn
-                     << " for writing.\n" << f.errorString());
-    QByteArray a = toString().toUtf8();
-    f.write(a);
-}
-
 
 void ExportMusicXML::Private::notesToMeasure(Measure& m, const Notes& n)
 {

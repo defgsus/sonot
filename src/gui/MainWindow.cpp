@@ -27,6 +27,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <QCloseEvent>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QClipboard>
+#include <QApplication>
 
 #include "QProps/PropertiesView.h"
 #include "QProps/FileTypes.h"
@@ -46,6 +48,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/Score.h"
 #include "core/ScoreEditor.h"
 #include "core/ExportMusicXML.h"
+#include "core/ExportShadertoy.h"
 
 namespace Sonot {
 
@@ -78,10 +81,13 @@ struct MainWindow::Private
     bool loadScore(const QString& fn);
     bool saveScore(const QString& fn);
     Score createNewScore();
-    bool exportMusicXML();
 
     bool loadSynth(const QString& fn);
     bool saveSynth(const QString& fn);
+
+    bool saveFile(const QString& filename, const QString& text);
+    bool exportMusicXML();
+    bool exportShadertoy(bool toFile);
 
     //void setEditProperties(const QString& s);
     //void applyProperties();
@@ -137,6 +143,10 @@ MainWindow::MainWindow(QWidget *parent)
         "musicxml", "MusicXML", "../sonot/export",
         QStringList() << ".music.xml",
         QStringList() << "MusicXML (*.music.xml *.xml)"));
+    QProps::FileTypes::addFileType(QProps::FileType(
+        "shadertoy", "Shadertoy", "../sonot/export",
+        QStringList() << ".glsl",
+        QStringList() << "GLSL (*.glsl)"));
 }
 
 MainWindow::~MainWindow()
@@ -279,10 +289,20 @@ void MainWindow::Private::createMenu()
 
     menu->addSeparator();
 
+    // ############ export sub ##################
+
     auto sub = menu->addMenu(tr("Export"));
 
         a = sub->addAction(tr("MusicXML"));
         connect(a, &QAction::triggered, [=](){ exportMusicXML(); });
+
+        auto subsub = sub->addMenu(tr("Shadertoy"));
+
+            a = subsub->addAction(tr("to file"));
+            connect(a, &QAction::triggered, [=](){ exportShadertoy(true); });
+
+            a = subsub->addAction(tr("to clipboard"));
+            connect(a, &QAction::triggered, [=](){ exportShadertoy(false); });
 
     menu->addSeparator();
 
@@ -522,6 +542,28 @@ Score MainWindow::Private::createNewScore()
     return s;
 }
 
+bool MainWindow::Private::saveFile(const QString& fn,
+                                   const QString& text)
+{
+    QFile f(fn);
+    if (!f.open(QFile::WriteOnly))
+    {
+        QMessageBox::critical(p, tr("save failed"),
+            tr("Could not open file %1 for writing.\n%2")
+                              .arg(fn).arg(f.errorString()));
+        return false;
+    }
+    QByteArray a = text.toUtf8();
+    if (f.write(a) != a.length())
+    {
+        QMessageBox::critical(p, tr("save failed"),
+            tr("Could not write all data to %1").arg(fn));
+        return false;
+    }
+    return true;
+}
+
+
 bool MainWindow::Private::exportMusicXML()
 {
     ExportMusicXML exp(*document->score());
@@ -529,18 +571,23 @@ bool MainWindow::Private::exportMusicXML()
     if (filename.isEmpty())
         return false;
 
-    try
+    return saveFile(filename, exp.toString());
+}
+
+bool MainWindow::Private::exportShadertoy(bool toFile)
+{
+    ExportShadertoy exp(*document->score());
+
+    if (toFile)
     {
-        exp.saveFile(filename);
-        return true;
+        QString filename = QProps::FileTypes::getSaveFilename("shadertoy", p);
+        if (filename.isEmpty())
+            return false;
+        return saveFile(filename, exp.toString());
     }
-    catch (const QProps::Exception& e)
-    {
-        QMessageBox::critical(p, tr("Export MusicXML"),
-            tr("Exporting MusicXML file failed!\n%1")
-                              .arg(e.text()));
-    }
-    return false;
+
+    qApp->clipboard()->setText(exp.toString());
+    return true;
 }
 
 bool MainWindow::Private::loadSynth(const QString& fn)

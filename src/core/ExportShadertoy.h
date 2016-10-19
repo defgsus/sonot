@@ -18,8 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef SONOTSRC_CORE_EXPORTMUSICXML_H
-#define SONOTSRC_CORE_EXPORTMUSICXML_H
+#ifndef SONOTSRC_CORE_EXPORTSHADERTOY_H
+#define SONOTSRC_CORE_EXPORTSHADERTOY_H
 
 #include <QString>
 
@@ -27,22 +27,21 @@ namespace Sonot {
 
 class Score;
 
-class ExportMusicXML
+class ExportShadertoy
 {
-    ExportMusicXML(const ExportMusicXML&) = delete;
-    void operator=(const ExportMusicXML&) = delete;
+    ExportShadertoy() = delete;
+    void operator=(const ExportShadertoy&) = delete;
+    struct Private;
+    Private* p_;
 public:
 
-    ExportMusicXML(const Score& s);
-    ~ExportMusicXML();
+    ExportShadertoy(const Score&);
+    ~ExportShadertoy();
 
     QString toString();
 
-private:
-    struct Private;
-    Private* p_;
 };
 
 } // namespace Sonot
 
-#endif // SONOTSRC_CORE_EXPORTMUSICXML_H
+#endif // SONOTSRC_CORE_EXPORTSHADERTOY_H
