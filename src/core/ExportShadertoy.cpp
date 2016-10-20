@@ -111,10 +111,15 @@ QString ExportShadertoy::toString()
     p_->exportNotes.clear();
 
     int start = 0;
-    for (size_t i=0; i<p_->score.numNoteStreams(); ++i)
+    for (const NoteStream& s : p_->score.noteStreams())
     {
-        p_->transformStream(p_->score.noteStream(i), start);
-        start += p_->score.noteStream(i).numBars();
+        // get all notes from this stream
+        p_->transformStream(s, start);
+
+        int len = s.numBars();
+        if (s.isPauseOnEnd())
+            ++len;
+        start += len;
     }
 
     // sort exported notes
@@ -133,11 +138,14 @@ QString ExportShadertoy::toString()
     start = 0;
     for (const QList<Private::ExportNote>& notes : p_->exportNotes)
     {
-        code += QString("    // part %1\n").arg(part);
         if (part > 1)
             code += QString("#if INCLUDE_PART >= %1\n").arg(part);
 
+        code += QString("    // part %1\n").arg(part);
+
         int end = start + p_->score.noteStream(part-1).numBars();
+        if (p_->score.noteStream(part-1).isPauseOnEnd())
+            ++end;
         code += QString("    if (beat >= %1. && beat <= %2.)\n    {\n")
                 .arg(start).arg(end);
         start = end;
@@ -153,7 +161,7 @@ QString ExportShadertoy::toString()
         ++part;
     }
 
-    // generate part defines
+    // generate defines
     QString defines = "";
     if (p_->score.numNoteStreams() > 1)
     {
