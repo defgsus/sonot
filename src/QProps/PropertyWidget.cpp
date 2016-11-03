@@ -1111,7 +1111,7 @@ void PropertyWidget::Private::createWidgets()
 #endif
 
 #undef QPROPS__VECTOR
-
+git
 
 
     // ---- error-checking / finalize ----

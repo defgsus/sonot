@@ -1,0 +1,730 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE score-partwise PUBLIC
+    "-//Recordare//DTD MusicXML 3.0 Partwise//EN"     "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise>
+<work>
+  <work-title></work-title>
+</work>
+<identification>
+  <creator type="composer"></creator>
+  <creator type="poet"></creator>
+  <rights></rights>
+  <encoding>
+    <software>Sonot</software>
+    <encoding-description>Sonot export</encoding-description>
+  </encoding>
+</identification>
+<part-list>
+  <score-part id="P1">
+    <part-name>Organ</part-name>
+    <part-abbreviation>Org.</part-abbreviation>
+    <score-instrument id="P1-I3">
+      <instrument-name>Organ</instrument-name>
+    </score-instrument>
+    <midi-instrument id="P1-I3">
+      <midi-channel>1</midi-channel>
+      <midi-program>20</midi-program>
+      <volume>80.</volume>
+      <pan>0</pan>
+    </midi-instrument>
+  </score-part>
+  <score-part id="P2">
+    <part-name>Organ</part-name>
+    <part-abbreviation>Org.</part-abbreviation>
+    <score-instrument id="P2-I3">
+      <instrument-name>Organ</instrument-name>
+    </score-instrument>
+    <midi-instrument id="P2-I3">
+      <midi-channel>1</midi-channel>
+      <midi-program>20</midi-program>
+      <volume>80.</volume>
+      <pan>0</pan>
+    </midi-instrument>
+  </score-part>
+  <score-part id="P3">
+    <part-name>Organ</part-name>
+    <part-abbreviation>Org.</part-abbreviation>
+    <score-instrument id="P3-I3">
+      <instrument-name>Organ</instrument-name>
+    </score-instrument>
+    <midi-instrument id="P3-I3">
+      <midi-channel>1</midi-channel>
+      <midi-program>20</midi-program>
+      <volume>80.</volume>
+      <pan>0</pan>
+    </midi-instrument>
+  </score-part>
+  <score-part id="P4">
+    <part-name>Organ</part-name>
+    <part-abbreviation>Org.</part-abbreviation>
+    <score-instrument id="P4-I3">
+      <instrument-name>Organ</instrument-name>
+    </score-instrument>
+    <midi-instrument id="P4-I3">
+      <midi-channel>1</midi-channel>
+      <midi-program>20</midi-program>
+      <volume>80.</volume>
+      <pan>0</pan>
+    </midi-instrument>
+  </score-part>
+</part-list>
+<part id="P1">
+  <measure number="1">
+    <attributes>
+      <divisions>16</divisions>
+      <key>
+        <fifths>0</fifths>
+        <mode>major</mode>
+      </key>
+      <time>
+        <beats>4</beats>
+        <beat-type>4</beat-type>
+      </time>
+      <staves>1</staves>
+      <clef number="1">
+        <sign>G</sign>
+        <line>2</line>
+      </clef>
+    </attributes>
+    <sound tempo="160"/>
+    <note><pitch><step>A</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="2">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>G</step><octave>4</octave><alter>1</alter></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="3">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>A</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="4">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>G</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>F</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="5">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="6">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>F</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>G</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="7">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>48</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>F</step><octave>4</octave></pitch>
+      <duration>16</duration>
+      <type>quarter</type>
+    </note>
+  </measure>
+  <measure number="8">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>G</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>A</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="9">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>G</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="10">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>F</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="11">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>G</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="12">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>F</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="13">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="14">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>C</step><octave>4</octave><alter>1</alter></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="15">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+</part>
+<part id="P2">
+  <measure number="1">
+    <attributes>
+      <divisions>16</divisions>
+      <key>
+        <fifths>0</fifths>
+        <mode>major</mode>
+      </key>
+      <time>
+        <beats>4</beats>
+        <beat-type>4</beat-type>
+      </time>
+      <staves>1</staves>
+      <clef number="1">
+        <sign>G</sign>
+        <line>2</line>
+      </clef>
+    </attributes>
+    <sound tempo="160"/>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="2">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="3">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="4">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="5">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>C</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="6">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>B</step><octave>3</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="7">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>C</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="8">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>B</step><octave>3</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>A</step><octave>3</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="9">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>B</step><octave>3</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="10">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>C</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="11">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>B</step><octave>3</octave></pitch>
+      <duration>48</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>C</step><octave>4</octave></pitch>
+      <duration>16</duration>
+      <type>quarter</type>
+    </note>
+  </measure>
+  <measure number="12">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>A</step><octave>3</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="13">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>B</step><octave>3</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>G</step><octave>3</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="14">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>A</step><octave>3</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="15">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>F</step><octave>3</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+</part>
+<part id="P3">
+  <measure number="1">
+    <attributes>
+      <divisions>16</divisions>
+      <key>
+        <fifths>0</fifths>
+        <mode>major</mode>
+      </key>
+      <transpose>
+        <chromatic>-12</chromatic>
+        <octave-change>-1</octave-change>
+      </transpose>
+      <time>
+        <beats>4</beats>
+        <beat-type>4</beat-type>
+      </time>
+      <staves>1</staves>
+      <clef number="1">
+        <sign>G</sign>
+        <line>2</line>
+        <clef-octave-change>-1</clef-octave-change>
+      </clef>
+    </attributes>
+    <sound tempo="160"/>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="2">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="3">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="4">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="5">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>A</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="6">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>G</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="7">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>A</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="8">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>G</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>F</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="9">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="10">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>A</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="11">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>G</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="12">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>A</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>A</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="13">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>G</step><octave>4</octave></pitch>
+      <duration>16</duration>
+      <type>quarter</type>
+    </note>
+    <note><pitch><step>F</step><octave>4</octave></pitch>
+      <duration>16</duration>
+      <type>quarter</type>
+    </note>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>16</duration>
+      <type>quarter</type>
+    </note>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>16</duration>
+      <type>quarter</type>
+    </note>
+  </measure>
+  <measure number="14">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="15">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+</part>
+<part id="P4">
+  <measure number="1">
+    <attributes>
+      <divisions>16</divisions>
+      <key>
+        <fifths>0</fifths>
+        <mode>major</mode>
+      </key>
+      <transpose>
+        <chromatic>-12</chromatic>
+        <octave-change>-1</octave-change>
+      </transpose>
+      <time>
+        <beats>4</beats>
+        <beat-type>4</beat-type>
+      </time>
+      <staves>1</staves>
+      <clef number="1">
+        <sign>G</sign>
+        <line>2</line>
+        <clef-octave-change>-1</clef-octave-change>
+      </clef>
+    </attributes>
+    <sound tempo="160"/>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="2">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="3">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="4">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="5">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="6">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="7">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="8">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+  <measure number="9">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="10">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>32</duration><type>half</type></note>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="11">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>E</step><octave>4</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="12">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>D</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+    <note><pitch><step>C</step><octave>4</octave></pitch>
+      <duration>32</duration>
+      <type>half</type>
+    </note>
+  </measure>
+  <measure number="13">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>B</step><octave>3</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="14">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><pitch><step>A</step><octave>3</octave></pitch>
+      <duration>64</duration>
+      <type>whole</type>
+    </note>
+  </measure>
+  <measure number="15">
+    <attributes>
+      <divisions>16</divisions>
+    </attributes>
+    <note><rest/><duration>64</duration><type>whole</type></note>
+  </measure>
+</part>
+</score-partwise>
