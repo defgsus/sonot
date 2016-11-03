@@ -102,7 +102,7 @@ void SamplePlayer::Private::removeAll()
 {
     while (!sampleMap.isEmpty())
     {
-        Sample* s = sampleMap.first();
+        Sample* s = *sampleMap.begin();
         remove(s);
     }
 }

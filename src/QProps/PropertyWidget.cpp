@@ -1105,8 +1105,10 @@ void PropertyWidget::Private::createWidgets()
     QPROPS__VECTOR(uint,        QSpinBox, int)
     QPROPS__VECTOR(long,        QSpinBox, int)
     QPROPS__VECTOR(ulong,       QSpinBox, int)
+#ifndef QPROPS_32_BIT
     QPROPS__VECTOR(qlonglong,   QSpinBox, int)
     QPROPS__VECTOR(qulonglong,  QSpinBox, int)
+#endif
 
 #undef QPROPS__VECTOR
 

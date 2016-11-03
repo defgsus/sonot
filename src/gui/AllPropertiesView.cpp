@@ -155,12 +155,20 @@ void AllPropertiesView::setScoreIndex(const Score::Index& i)
 
 QString AllPropertiesView::Private::curId()
 {
+#if QT_VERSION >= 0x050200
     return combo->currentData().toString();
+#else
+    return combo->itemData(combo->currentIndex()).toString();
+#endif
 }
 
 QString AllPropertiesView::Private::curSubId()
 {
+#if QT_VERSION >= 0x050200
     return subCombo->currentData().toString();
+#else
+    return subCombo->itemData(subCombo->currentIndex()).toString();
+#endif
 }
 
 void AllPropertiesView::Private::updateComboBox()

@@ -199,7 +199,7 @@ void ScoreDocument::fromJson(const QJsonObject& jscore)
     if (jscore.contains("document"))
     {
         QJsonObject o = json.expectChildObject(jscore, "document");
-        const int ver = o.value("version").toInt(1);
+        const int ver = o.value("version").toDouble(1.);
 
         if (ver >= 2)
         {

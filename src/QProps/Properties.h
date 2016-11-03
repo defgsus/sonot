@@ -100,7 +100,7 @@ public:
             { return p_val_.cend(); }
 
     private:
-        friend Properties;
+        friend class Properties;
         QMap<QString, Value> p_val_;
         size_t p_curIndex_;
         bool p_isFlags_;

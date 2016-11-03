@@ -259,6 +259,13 @@ QJsonObject JsonInterfaceHelper::expectChildObject(
 
 // ########################## to JSON ################################
 
+#if QT_VERSION <= 0x050200
+template <class T>
+QJsonArray& operator << (QJsonArray& a, T x) { a.append(QJsonValue(x)); return a; }
+#endif
+
+
+
 namespace
 {
     static_assert(sizeof(int64_t) == sizeof(qlonglong), "");

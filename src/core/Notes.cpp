@@ -161,7 +161,11 @@ void Notes::fromJson(const QJsonObject& o)
         QJsonArray jnotes = json.expectArray(json.expectChildValue(o, "notes"));
         for (int i=0; i<jnotes.size(); ++i)
         {
+#if QT_VERSION >= 0x050200
             int n = jnotes[i].toInt(Note::Invalid);
+#else
+            int n = jnotes[i].isDouble() ? (int)jnotes[i].toDouble() : (int)Note::Invalid;
+#endif
             if (n == Note::Invalid)
                 notes.push_back(Note());
             else
@@ -173,13 +177,22 @@ void Notes::fromJson(const QJsonObject& o)
         QJsonArray jnotes = json.expectArray(json.expectChildValue(o, "noa"));
         for (int i=0; i<jnotes.size()/3; ++i)
         {
+#if QT_VERSION >= 0x050200
             int n = jnotes[i*3].toInt(Note::Invalid);
+#else
+            int n = jnotes[i*3].isDouble() ? (int)jnotes[i*3].toDouble() : (int)Note::Invalid;
+#endif
             if (n == Note::Invalid)
                 notes.push_back(Note());
             else
                 notes.push_back(Note(Note::Name(n),
-                                     jnotes[i*3+1].toInt(3),
-                                     jnotes[i*3+2].toInt(0)));
+                     #if QT_VERSION >= 0x050200
+                                 jnotes[i*3+1].toInt(3),
+                                 jnotes[i*3+2].toInt(0)));
+                     #else
+                                 jnotes[i*3+1].isDouble() ? (int)jnotes[i*3+1].toDouble() : (int)3,
+                                 jnotes[i*3+2].isDouble() ? (int)jnotes[i*3+2].toDouble() : (int)0 ));
+                     #endif
         }
     }
 

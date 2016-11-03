@@ -1466,10 +1466,17 @@ bool ScoreEditor::pasteMimeData(const Score::Index& idx,
         Bar bar;
         bar.fromJson( json.expectChildObject(o, "bar") );
 
+#if QT_VERSION >= 0x050200
         int startRow = o.value("row-start").toInt(-1),
             endRow = o.value("row-end").toInt(-1),
             startCol = o.value("col-start").toInt(-1),
             endCol = o.value("col-end").toInt(-1);
+#else
+        int startRow = o.value("row-start").toDouble(-1),
+            endRow = o.value("row-end").toDouble(-1),
+            startCol = o.value("col-start").toDouble(-1),
+            endCol = o.value("col-end").toDouble(-1);
+#endif
         QPROPS_ASSERT(startRow < 0 || endRow >= 0, "range not fully set");
         QPROPS_ASSERT(startCol < 0 || endCol >= 0, "range not fully set");
         qDebug() << startRow << endRow << startCol << endCol;

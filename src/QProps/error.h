@@ -102,7 +102,11 @@ public:
 
     template <class T>
     void addToText(const T& value) throw()
-        { QDebug deb(&text_); deb.noquote().nospace() << value; }
+        { QDebug deb(&text_); deb
+        #if QT_VERSION >= 0x050200
+                .noquote()
+        #endif
+                .nospace() << value; }
 
     void addToText(const std::string& value) throw()
         { text_ += QString::fromStdString(value); }

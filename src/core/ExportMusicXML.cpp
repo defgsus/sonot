@@ -227,13 +227,21 @@ void ExportMusicXML::Private::notesToMeasure(Measure& m, const Notes& n)
 
 void ExportMusicXML::Private::dumpMeasure(const Measure& m)
 {
-    qDebug().noquote().nospace()
+    qDebug()
+    #if QT_VERSION >= 0x050200
+            .noquote()
+    #endif
+            .nospace()
         << "measure: "
         << m.beat << "/" << m.beatType << " div=" << m.divisions;
     for (const MeasureNote& n : m.notes)
     {
         QString name = n.isRest ? QString("rest") : n.noteName;
-        qDebug().noquote().nospace()
+        qDebug()
+        #if QT_VERSION >= 0x050200
+                .noquote()
+        #endif
+                .nospace()
                 << name << " " << noteTypeNames[n.noteType]
                 << " dur=" << n.duration << " len=" << n.length;
     }

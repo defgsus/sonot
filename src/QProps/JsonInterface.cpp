@@ -30,15 +30,22 @@ namespace QProps {
 QString JsonInterface::toJsonString(bool compact) const
 {
     QJsonDocument doc(toJson());
+#if QT_VERSION >= 0x050200
     return QString::fromUtf8(doc.toJson(
                 compact ? QJsonDocument::Compact : QJsonDocument::Indented));
+#else
+    return QString::fromUtf8(doc.toJson());
+#endif
 }
 
 QByteArray JsonInterface::toJsonByteArray(bool compact) const
 {
     QJsonDocument doc(toJson());
-    return doc.toJson( compact ? QJsonDocument::Compact
-                               : QJsonDocument::Indented );
+#if QT_VERSION >= 0x050200
+    return doc.toJson(compact ? QJsonDocument::Compact : QJsonDocument::Indented);
+#else
+    return doc.toJson();
+#endif
 }
 
 void JsonInterface::fromJsonString(const QString &jsonString)
