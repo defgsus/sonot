@@ -63,7 +63,6 @@ struct ScoreView::Private
         , document              (nullptr)
         , matrix                ()
         , action                (A_NOTHING)
-        , curOctave             (3)
         , brushBackground       (QColor(155,155,155))
         , brushPageBackground   (QColor(255,255,240))
         , brushSelection        (QColor(0,100,240, 40))
@@ -87,6 +86,9 @@ struct ScoreView::Private
     void setSelection(const Score::Selection&);
     void clearCursor();
     void updateStatus();
+
+    void setCurOctave(int row, int oct);
+    int  getCurOctave(int row);
 
     // --- helper ---
 
@@ -117,7 +119,7 @@ struct ScoreView::Private
 
     Score::Index cursor, playCursor, selStart;
     Score::Selection curSelection;
-    int curOctave;
+    std::vector<int> curOctave;
 
     // -- config --
 
@@ -524,10 +526,6 @@ void ScoreView::editTransposeUp(int steps, bool whole)
     }
 }
 
-void ScoreView::editTransposeDown(int steps, bool whole)
-{
-    editTransposeUp(-steps, whole);
-}
 
 void ScoreView::editAccidentialUp(int steps)
 {
@@ -541,9 +539,38 @@ void ScoreView::editAccidentialUp(int steps)
     }
 }
 
-void ScoreView::editAccidentialDown(int steps)
+void ScoreView::editOctaveUp(int steps)
 {
-    editAccidentialUp(-steps);
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+    Note n = p_->cursor.getNote();
+    if (n.isNote())
+    {
+        n.setOctave(n.octave() + steps);
+        editor()->changeNote(p_->cursor, n);
+        p_->setCurOctave(p_->cursor.row(), n.octave());
+    }
+    else
+        p_->setCurOctave(p_->cursor.row(),
+                         p_->getCurOctave(p_->cursor.row()) + steps);
+
+}
+
+void ScoreView::Private::setCurOctave(int row, int oct)
+{
+    if (row < 0)
+        return;
+    while ((size_t)row >= curOctave.size())
+        curOctave.push_back(3);
+    curOctave[row] = oct;
+    updateStatus();
+}
+
+int ScoreView::Private::getCurOctave(int row)
+{
+    if (row < 0 || (size_t)row >= curOctave.size())
+        return 3;
+    return curOctave[row];
 }
 
 void ScoreView::editSelectNone()
@@ -607,6 +634,7 @@ void ScoreView::Private::connectEditor(ScoreEditor* editor)
 {
     connect(editor, &ScoreEditor::scoreReset, [=]()
     {
+        curOctave.clear();
         setCursor(document->score()->index(0,0,0,0), false, false);
         setSelection(Score::Selection());
         setAction(cursor.isValid()
@@ -753,8 +781,8 @@ void ScoreView::Private::updateStatus()
                 .arg(cursor.row())
                 .arg(cursor.column())
                 .arg(cursor.getNote().to3String());
-    s += QString(" | octave %1")
-            .arg(curOctave);
+    s += QString(" | current octave %1")
+            .arg(getCurOctave(cursor.row()));
     emit p->statusChanged(s);
 }
 
@@ -816,7 +844,11 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         }
 
         // INSERT/DELETE / CHANGE
+
+        KeySignature keySig = p_->cursor.getStream().keySignature();
+
         handled = true;
+        bool doSendNote = false;
         switch (e->key())
         {
             case Qt::Key_Insert:
@@ -842,13 +874,7 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
                     editTransposeUp();
                 else
                     editTransposeDown();
-                if (!isSelection() && p_->cursor.isValid()
-                        && p_->cursor.getNote().isNote())
-                {
-                    emit noteEntered(p_->cursor.getNote());
-                    //p_->curOctave = p_->cursor.getNote().octaveSpanish();
-                    p_->updateStatus();
-                }
+                doSendNote = true;
             break;
 
             case '8':
@@ -857,28 +883,32 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
                     editAccidentialUp();
                 else
                     editAccidentialDown();
-                if (!isSelection() && p_->cursor.isValid()
-                        && p_->cursor.getNote().isNote())
-                {
-                    emit noteEntered(p_->cursor.getNote());
-                    //p_->curOctave = p_->cursor.getNote().octaveSpanish();
-                    p_->updateStatus();
-                }
+                doSendNote = true;
             break;
 
             case '>':
-                p_->curOctave++;
-                p_->updateStatus();
+                editOctaveUp();
+                doSendNote = true;
             break;
             case '<':
-                p_->curOctave--;
-                p_->updateStatus();
+                editOctaveDown();
+                doSendNote = true;
             break;
 
             default: handled = false;
         }
         if (handled)
         {
+            if (doSendNote)
+            {
+                if (!isSelection() && p_->cursor.isValid()
+                        && p_->cursor.getNote().isNote())
+                {
+                    emit noteEntered(keySig.transform(p_->cursor.getNote()));
+                    //p_->curOctave = p_->cursor.getNote().octaveSpanish();
+                    p_->updateStatus();
+                }
+            }
             return;
         }
 
@@ -886,7 +916,6 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         // ENTER NOTES
         handled = true;
         QString noteStr;
-        KeySignature keySig = p_->cursor.getStream().keySignature();
         switch (e->key())
         {
             case Qt::Key_1:
@@ -904,9 +933,12 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             case Qt::Key_F:
             case Qt::Key_G:
             case Qt::Key_H:
+            {
+                int oct = p_->getCurOctave(p_->cursor.row());
                 noteStr = QChar(e->key());
-                noteStr += QString("'").repeated(p_->curOctave-3);
-                noteStr += QString(",").repeated(3-p_->curOctave);
+                noteStr += QString("'").repeated(oct-3);
+                noteStr += QString(",").repeated(3-oct);
+            }
             break;
             case Qt::Key_P:
                 noteStr = QChar(e->key());
@@ -943,14 +975,14 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
     }
 
     /** @todo go-to-page-keys are ambigious now */
-    if (e->key() >= Qt::Key_0 && e->key() <= Qt::Key_9)
+    /*if (e->key() >= Qt::Key_0 && e->key() <= Qt::Key_9)
     {
         if (e->modifiers() != 0)
             showPage(e->key() - Qt::Key_0);
         else
             goToPage(e->key() - Qt::Key_0);
         return;
-    }
+    }*/
 
     e->ignore();
 }

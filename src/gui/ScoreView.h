@@ -108,9 +108,12 @@ public slots:
     void editSplitStream();
 
     void editTransposeUp(int steps = 1, bool whole = true);
-    void editTransposeDown(int steps = 1, bool whole = true);
+    void editTransposeDown(int steps = 1, bool whole = true)
+        { editTransposeUp(-steps, whole); }
     void editAccidentialUp(int steps = 1);
-    void editAccidentialDown(int steps = 1);
+    void editAccidentialDown(int steps = 1) { editAccidentialUp(-steps); }
+    void editOctaveUp(int steps = 1);
+    void editOctaveDown(int steps = 1) { editOctaveUp(-steps); }
 
     void editSelectNext();
     void editSelectNone();
