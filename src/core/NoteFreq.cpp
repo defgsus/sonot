@@ -17,6 +17,8 @@ along with this software; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
+#include <QString>
+#include <QDebug>
 
 #include <cmath>
 #include <cstddef>
@@ -91,18 +93,25 @@ void NoteFreq<F>::recalc_()
 
     // -- "pythagorean tuning" --
 
+    int offset = 0;
+    offset = 3; // kluge
     double freq = F(1);
-    int k = 0;
+    int k = offset;
     for (int i=0; i<p_table.size(); ++i)
     {
         if (size_t(k) < p_table.size())
-            p_table[size_t(k)] = freq;
+            p_table[size_t(k)] = k<offset? freq / 2: freq;
         freq = freq * F(p_num) / F(p_denom);
         while (freq >= F(2))
             freq /= F(2);
         k = (k - 5 + (int)p_table.size()) % p_table.size();
     }
-
+    QString str;
+    F first = p_table[0];
+    for (auto& f : p_table)
+        f /= first,
+        str += QString("%1 ").arg(f);
+    qDebug() << str;
 }
 
 template <typename F>

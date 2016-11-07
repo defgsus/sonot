@@ -154,3 +154,7 @@ Below is some brainstorming, vocabulary and class hierarchy.
 - ScoreDocument + editor
 - renderPage(QPainter*, pageIndex)
 - editing
+
+### todo
+- doubling length of a bar (for selection)
+- temperament
