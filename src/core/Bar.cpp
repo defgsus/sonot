@@ -185,4 +185,13 @@ QString Bar::toString() const
     return s;
 }
 
+QList<Note> Bar::getColumn(size_t column) const
+{
+    QList<Note> nts;
+    for (size_t i=0; i<numRows(); ++i)
+        if (column < notes(i).length())
+            nts << notes(i)[column];
+    return nts;
+}
+
 } // namespace Sonot

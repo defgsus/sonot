@@ -66,6 +66,9 @@ public:
     const Notes& notes(size_t i) const { return (*this)[i]; }
     const Notes& operator[](size_t i) const;
 
+    /** Returns list of notes (from all rows) for column index */
+    QList<Note> getColumn(size_t column) const;
+
     QString toString() const;
 
     // -- setter --

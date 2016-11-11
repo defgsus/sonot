@@ -55,6 +55,7 @@ public:
     QRectF mapToDocument(const QRect& widgetSpace);
 
     void createEditActions(QMenu*);
+    void createPlaybackActions(QMenu*);
 
     // ----- setter -----
 
@@ -65,8 +66,8 @@ public:
 
 signals:
 
-    void noteEntered(const Note& n);
-    void statusChanged(const QString& n);
+    void playNotes(const QList<Note>& n);
+    void statusChanged(const QString& text);
     void currentIndexChanged(const Score::Index& newIdx,
                              const Score::Index& oldIdx);
 

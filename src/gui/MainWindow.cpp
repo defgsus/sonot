@@ -165,10 +165,14 @@ void MainWindow::Private::createWidgets()
         scoreView->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         lh->addWidget(scoreView);
         scoreView->setDocument(document);
-        connect(scoreView, &ScoreView::noteEntered, [=](const Note& n)
+        connect(scoreView, &ScoreView::playNotes, [=](const QList<Note>& notes)
         {
-            if (n.isNote())
-                synthStream->playNote(n.value(), .4);
+            std::vector<int8_t> vals;
+            for (const Note& n : notes)
+                if (n.isNote())
+                    vals.push_back(n.value());
+            if (!vals.empty())
+                synthStream->playNotes(vals, .4);
         });
         connect(scoreView, &ScoreView::statusChanged, [=](const QString& s)
         {
@@ -360,7 +364,7 @@ void MainWindow::Private::createMenu()
         synthStream->setPlaying(true);
     });
 
-    a = menu->addAction(tr("Play current part"));
+    a = menu->addAction(tr("Play current section"));
     a->setShortcut(Qt::Key_F6);
     a->connect(a, &QAction::triggered, [=]()
     {
@@ -388,6 +392,13 @@ void MainWindow::Private::createMenu()
         synthStream->setPlaying(false);
     });
 
+    menu->addSeparator();
+
+    scoreView->createPlaybackActions(menu);
+
+
+
+    // ######## Settings #########
 
     menu = p->menuBar()->addMenu(tr("Settings"));
 

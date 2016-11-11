@@ -168,6 +168,18 @@ void SynthDevice::playNote(int8_t note, double duration)
     p_->playNotes.push_back( n );
 }
 
+void SynthDevice::playNotes(const std::vector<int8_t>& notes, double duration)
+{
+    for (auto v : notes)
+    {
+        Private::PlayNote n;
+        n.note = v;
+        n.started = -1.;
+        n.duration = duration;
+        p_->playNotes.push_back( n );
+    }
+}
+
 bool SynthDevice::Private::fillBuffer()
 {
     // length of dsp buffer in samples

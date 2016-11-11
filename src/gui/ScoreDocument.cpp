@@ -1069,7 +1069,7 @@ ScoreDocument::BarItems* ScoreDocument::Private::createSingleBarItems(
         QLineF line(x, y, x, y + barRect.height());
         items->items.push_back( ScoreItem(scoreIdx, docIdx, line) );
 
-        // end-of-part bar-slash item
+        // end-of-section bar-slash item
         if (scoreIdx.isLastBar())
         {
             line.translate(-1,0);

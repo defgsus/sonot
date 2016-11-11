@@ -73,6 +73,7 @@ public slots:
 
     /** Play a single note as soon as possible */
     void playNote(int8_t note, double duration = 1.);
+    void playNotes(const std::vector<int8_t>& notes, double duration = 1.);
 
 signals:
 

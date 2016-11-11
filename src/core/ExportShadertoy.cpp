@@ -134,17 +134,17 @@ QString ExportShadertoy::toString()
 
     // generate code
     QString code;
-    int part = 1;
+    int section = 1;
     start = 0;
     for (const QList<Private::ExportNote>& notes : p_->exportNotes)
     {
-        if (part > 1)
-            code += QString("#if INCLUDE_PART >= %1\n").arg(part);
+        if (section > 1)
+            code += QString("#if INCLUDE_SECTION >= %1\n").arg(section);
 
-        code += QString("    // part %1\n").arg(part);
+        code += QString("    // section %1\n").arg(section);
 
-        int end = start + p_->score.noteStream(part-1).numBars();
-        if (p_->score.noteStream(part-1).isPauseOnEnd())
+        int end = start + p_->score.noteStream(section-1).numBars();
+        if (p_->score.noteStream(section-1).isPauseOnEnd())
             ++end;
         code += QString("    if (beat >= %1. && beat <= %2.)\n    {\n")
                 .arg(start).arg(end);
@@ -156,16 +156,16 @@ QString ExportShadertoy::toString()
                     .arg(n.start)
                     .arg(n.len);
         code += "    }\n";
-        if (part > 1)
+        if (section > 1)
             code += QString("#endif\n");
-        ++part;
+        ++section;
     }
 
     // generate defines
     QString defines = "";
     if (p_->score.numNoteStreams() > 1)
     {
-        defines = QString("#define INCLUDE_PART %1\n")
+        defines = QString("#define INCLUDE_SECTION %1\n")
                 .arg(p_->score.numNoteStreams());
     }
 
