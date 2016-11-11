@@ -56,6 +56,8 @@ public:
     /** Returns true if any of the row's Notes::containsNotes()
         returns true */
     bool containsNotes() const;
+    /** Returns true if each row has the same number of notes */
+    bool hasUniformRowLength() const;
 
     size_t numRows() const;
     size_t maxNumberNotes() const;

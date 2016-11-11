@@ -372,6 +372,16 @@ bool Score::Index::isLastBar() const
     return s.isEmpty() || (bar() + 1 == s.numBars());
 }
 
+bool Score::Index::isLeftOf(const Index &i) const
+{
+    return stream() == i.stream()
+             ? bar() == i.bar()
+                ? column() < i.column()
+                : bar() < i.bar()
+             : stream() < i.stream();
+}
+
+
 bool Score::Index::isTempoChange() const
 {
     QPROPS_ASSERT(isValid(), "in Score::Index::isTempoChange()");
@@ -800,7 +810,7 @@ bool Score::Selection::contains(const Index &idx) const
     return true;
 }
 
-QList<Score::Index> Score::Selection::containedNoteIndices() const
+QList<Score::Index> Score::Selection::getContainedNoteIndices() const
 {
     QList<Index> list;
     if (!isValid())
@@ -823,6 +833,24 @@ QList<Score::Index> Score::Selection::containedNoteIndices() const
     }
     return list;
 }
+
+QList<Score::Index> Score::Selection::getSelectedBarIndices() const
+{
+    QList<Index> list;
+    if (!isValid())
+        return list;
+
+    auto i = from().topLeft();
+    while (i.isValid() && !to().isLeftOf(i))
+    {
+        list << i;
+        if (!i.nextBar())
+            break;
+    }
+
+    return list;
+}
+
 
 void Score::Selection::set(const Index& idx)
 {

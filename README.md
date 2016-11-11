@@ -164,8 +164,10 @@ Below is some brainstorming, vocabulary and class hierarchy.
 - editing
 
 ### todo
-- doubling length of a bar (for selection)
+- fix selection display for more-than-one-line
 - temperament (generalized pythagorean/mean tone tuning for synth)
 - attach pdf files with page-number to scores
+- (OK) doubling length of a bar (for selection)
 - (OK) rename 'part' to 'section'
 - (OK) play note on cursor move
+- (OK) single note change undo (do not merge data)

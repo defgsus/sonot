@@ -1035,12 +1035,18 @@ bool ScoreEditor::changeNote(const Score::Index& idx, const Note& n)
 
         if (p_->doUndo)
         {
+#if 0
             // store the whole bar so merging undo actions
-            // will keep all changed notes
+            // will merge all changed notes
             p_->addBarChangeUndoData(idx, *bar, oldBar,
                                      tr("change note in %1")
                                      .arg(Private::barString(idx)),
                                      tr("change note %1").arg(idx.toString()));
+#else
+            p_->addBarChangeUndoData(idx, *bar, oldBar,
+                                     tr("change note %1").arg(idx.toString()),
+                                     tr("change note %1").arg(idx.toString()));
+#endif
         }
         return true;
     }
@@ -1112,6 +1118,30 @@ bool ScoreEditor::Private::changeBar(const Score::Index& idx, const Bar& b)
     return false;
 }
 
+bool ScoreEditor::changeStream(
+        const Score::Index& idx_, const NoteStream& s,
+        const QString& undoDesc)
+{
+    SONOT__DEBUG("changeStream(" << s.toInfoString()
+                 << ", " << undoDesc << ")");
+
+    auto idx = idx_.topLeft();
+
+    NoteStream* stream = p_->getStream(idx);
+    if (!stream)
+        return false;
+
+    if (p_->doUndo)
+    {
+        p_->addStreamChangeUndoData(idx, s, *stream,
+             tr("change section %1 %2").arg(idx.stream()).arg(undoDesc),
+             tr("change section %1 %2").arg(idx.toString()).arg(undoDesc));
+    }
+
+    return p_->changeStream(idx.stream(), s);
+}
+
+
 bool ScoreEditor::Private::changeStream(size_t streamIdx, const NoteStream& s)
 {
     SONOT__DEBUG("Private::changeStream(" << streamIdx << ", "
@@ -1175,7 +1205,7 @@ bool ScoreEditor::Private::transpose(
 
     if (steps == 0)
         return false;
-    auto indices = sel.containedNoteIndices();
+    auto indices = sel.getContainedNoteIndices();
     if (indices.isEmpty())
         return false;
 

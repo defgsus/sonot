@@ -307,6 +307,27 @@ QRectF ScoreView::mapToDocument(const QRect& r)
 void ScoreView::createEditActions(QMenu* menu)
 {
     QAction* a;
+    QMenu* sub;
+
+    // ###### edit ######
+
+    sub = menu->addMenu(tr("Edit"));
+
+    a = sub->addAction(tr("double number of notes"));
+    a->setToolTip(tr("Doubles the number of notes for each bar in the "
+                     "selection"));
+    connect(a, &QAction::triggered, [=](){ editResizeBars(1, 1); });
+
+    a = sub->addAction(tr("half number of notes"));
+    a->setToolTip(tr("Halfs the number of notes for each bar in the "
+                     "selection"));
+    connect(a, &QAction::triggered, [=](){ editResizeBars(1, -1); });
+
+
+    // ########## insert #########
+
+    menu->addSeparator();
+
     a = menu->addAction(tr("insert new section"));
     //a->setShortcut(Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertStream(false); });
@@ -392,6 +413,54 @@ void ScoreView::createPlaybackActions(QMenu* menu)
     a->setChecked(false);
 
 }
+
+
+
+void ScoreView::editResizeBars(int step, int num)
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    if (step == 0 || num == 0)
+        return;
+
+    Score::Selection sel = p_->curSelection.isValid()
+            ? p_->curSelection
+            : Score::Selection(p_->cursor);
+
+    if (!sel.isSingleStream())
+        return;
+
+    NoteStream stream = sel.from().getStream();
+
+    auto barIdxs = sel.getSelectedBarIndices();
+
+    for (auto& idx : barIdxs)
+    {
+        if (!idx.isValid())
+            continue;
+        auto bar = stream.bar(idx.bar());
+        if (!bar.hasUniformRowLength())
+            continue;
+
+        Note fill(Note::Space);
+
+        for (Notes& notes : bar)
+        {
+            if (num > 0)
+                notes.insertNotes(fill, step, num, num);
+            else
+                notes.deleteNotes(step, -num, -num);
+        }
+
+        stream.bar(idx.bar()) = bar;
+    }
+    editor()->changeStream(sel.from(), stream,
+                           tr("resize(%1, %2)")
+                           .arg(step).arg(num)
+                           );
+}
+
 
 void ScoreView::editInsertStream(bool after)
 {

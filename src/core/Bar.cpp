@@ -75,6 +75,17 @@ bool Bar::containsNotes() const
     return false;
 }
 
+bool Bar::hasUniformRowLength() const
+{
+    if (isEmpty())
+        return true;
+    size_t l = p_->rows[0].length();
+    for (auto& n : p_->rows)
+        if (l != n.length())
+            return false;
+    return true;
+}
+
 bool Bar::operator == (const Bar& o) const
 {
     return p_->rows == o.p_->rows;

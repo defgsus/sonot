@@ -18,6 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#include <ctime>
+
 #include <QLayout>
 #include <QStatusBar>
 #include <QMenu>
@@ -89,6 +91,7 @@ struct MainWindow::Private
     bool exportMusicXML();
     bool exportShadertoy(bool toFile);
 
+    QString getLostMessage();
     //void setEditProperties(const QString& s);
     //void applyProperties();
 
@@ -115,6 +118,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow   (parent)
     , p_            (new Private(this))
 {
+    srand(time(NULL));
+
     setObjectName("MainWindow");
     setMinimumSize(320, 320);
     setGeometry(0,0,720,600);
@@ -152,6 +157,27 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete p_;
+}
+
+QString MainWindow::Private::getLostMessage()
+{
+    QStringList what, like;
+
+    what << tr("be lost in time")
+         << tr("be forgotten")
+         << tr("vanish")
+         << tr("be one with eternity")
+    ;
+    like << tr("like tears in the rain")
+         << tr("like a drop in the ocean")
+         << tr("like a corn of sand on the beach")
+         << tr("and never return")
+         << tr("as if never happened")
+            ;
+
+    return QString("%1, %2.")
+            .arg(what[rand()%what.length()])
+            .arg(like[rand()%like.length()]);
 }
 
 void MainWindow::Private::createWidgets()
@@ -437,10 +463,10 @@ bool MainWindow::Private::isSaveToDiscard()
     if (!isChanged)
         return true;
 
-    int ret = QMessageBox::question(p, tr("unsaved changes"),
-                tr("The current changes will be lost in time,\n"
-                   "like tears in the rain.\n"),
-                tr("Save as"), tr("Throw away"), tr("Cancel"));
+    int ret = QMessageBox::question(p, tr("unsaved score"),
+                tr("<html>The current <b>score changes</b> will %1</html>")
+                .arg(getLostMessage()).replace(",", ",<br/>"),
+                tr("Save as"), tr("Discard"), tr("Cancel"));
     if (ret == 1)
         return true;
     if (ret == 2)
@@ -457,10 +483,10 @@ bool MainWindow::Private::isSaveToDiscardSynth()
     if (!isSynthChanged)
         return true;
 
-    int ret = QMessageBox::question(p, tr("unsaved changes"),
-                tr("The current synth settings will be lost in time,\n"
-                   "like tears in the rain.\n"),
-                tr("Save as"), tr("Throw away"), tr("Cancel"));
+    int ret = QMessageBox::question(p, tr("unsaved synth"),
+                tr("<html>The current <b>synth settings</b> will %1</html>")
+                .arg(getLostMessage()).replace(",", ",<br/>"),
+                tr("Save as"), tr("Discard"), tr("Cancel"));
     if (ret == 1)
         return true;
     if (ret == 2)

@@ -97,6 +97,7 @@ public slots:
     void setPlayingIndex(const Score::Index&);
 
 
+    void editResizeBars(int step, int num_add_or_delete);
     void editInsertStream(bool after = false);
     void editInsertBar(bool after = false);
     void editInsertNote(const Note& n = Note(Note::Space));
