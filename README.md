@@ -50,15 +50,24 @@ Below is some brainstorming, vocabulary and class hierarchy.
 ## GENERAL DATA
 
 ### Note
-- 1,, - 7'', p, space, ..., annotation, newline, newpage, ...
+- note (c,d,e,f,g,h,a) or special (Space, Rest, ..)
+- octave
+- accidental
 
-### Bar
-- length (number Notes)
+### Notes
+- length (number of notes per row)
 - data[length] of Note
 
+### Bar
+- rows (number of rows per bar [must match NoteStream's])
+- data[rows] of Notes
+
 ### NoteStream
-- voices
-- data[voice][rows] of Bar
+- rows (number of rows [must match each Bar's])
+- bars (number of bars)
+- data[bars] of Bar
+- tempo
+- annotations
 
 ### Score::Index
 - stream
@@ -77,7 +86,6 @@ Below is some brainstorming, vocabulary and class hierarchy.
 
 ### ScoreEditor
 - undo/redo
-- ScoreEditorCursor
 - add/del/change
     - setScore(Score)
     - insertNote(Index, n)
@@ -156,5 +164,10 @@ Below is some brainstorming, vocabulary and class hierarchy.
 - editing
 
 ### todo
-- doubling length of a bar (for selection)
-- temperament
+- fix selection display for more-than-one-line
+- temperament (generalized pythagorean/mean tone tuning for synth)
+- attach pdf files with page-number to scores
+- (OK) doubling length of a bar (for selection)
+- (OK) rename 'part' to 'section'
+- (OK) play note on cursor move
+- (OK) single note change undo (do not merge data)

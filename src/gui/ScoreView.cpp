@@ -63,6 +63,9 @@ struct ScoreView::Private
         , document              (nullptr)
         , matrix                ()
         , action                (A_NOTHING)
+        , actPlayEntered        (nullptr)
+        , actPlayCursorChange   (nullptr)
+        , actPlayColumn         (nullptr)
         , brushBackground       (QColor(155,155,155))
         , brushPageBackground   (QColor(255,255,240))
         , brushSelection        (QColor(0,100,240, 40))
@@ -89,6 +92,9 @@ struct ScoreView::Private
 
     void setCurOctave(int row, int oct);
     int  getCurOctave(int row);
+
+    bool doPlayEntered() const
+        { return !actPlayEntered || actPlayEntered->isChecked(); }
 
     // --- helper ---
 
@@ -120,6 +126,10 @@ struct ScoreView::Private
     Score::Index cursor, playCursor, selStart;
     Score::Selection curSelection;
     std::vector<int> curOctave;
+
+    QAction *actPlayEntered,
+            *actPlayCursorChange,
+            *actPlayColumn;
 
     // -- config --
 
@@ -297,11 +307,32 @@ QRectF ScoreView::mapToDocument(const QRect& r)
 void ScoreView::createEditActions(QMenu* menu)
 {
     QAction* a;
-    a = menu->addAction(tr("insert new part"));
+    QMenu* sub;
+
+    // ###### edit ######
+
+    sub = menu->addMenu(tr("Edit"));
+
+    a = sub->addAction(tr("double number of notes"));
+    a->setToolTip(tr("Doubles the number of notes for each bar in the "
+                     "selection"));
+    connect(a, &QAction::triggered, [=](){ editResizeBars(1, 1); });
+
+    a = sub->addAction(tr("half number of notes"));
+    a->setToolTip(tr("Halfs the number of notes for each bar in the "
+                     "selection"));
+    connect(a, &QAction::triggered, [=](){ editResizeBars(1, -1); });
+
+
+    // ########## insert #########
+
+    menu->addSeparator();
+
+    a = menu->addAction(tr("insert new section"));
     //a->setShortcut(Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertStream(false); });
 
-    a = menu->addAction(tr("insert new part (after bar)"));
+    a = menu->addAction(tr("insert new section (after bar)"));
     a->setShortcut(Qt::ALT + Qt::Key_Enter);
     connect(a, &QAction::triggered, [=](){ editInsertStream(true); });
 
@@ -321,8 +352,8 @@ void ScoreView::createEditActions(QMenu* menu)
     a->setShortcut(Qt::ALT + Qt::Key_D);
     connect(a, &QAction::triggered, [=](){ editDuplicateBar(); });
 
-    a = menu->addAction(tr("split part"));
-    a->setStatusTip(tr("Splits the current part into two, "
+    a = menu->addAction(tr("split section"));
+    a->setStatusTip(tr("Splits the current section into two, "
                        "after the current bar"));
     //a->setShortcut(Qt::);
     connect(a, &QAction::triggered, [=](){ editSplitStream(); });
@@ -347,7 +378,7 @@ void ScoreView::createEditActions(QMenu* menu)
 
     menu->addSeparator();
 
-    a = menu->addAction(tr("delete part"));
+    a = menu->addAction(tr("delete section"));
     a->setShortcut(Qt::ALT + Qt::SHIFT + Qt::Key_P);
     connect(a, &QAction::triggered, [=](){ editDeleteStream(); });
 
@@ -364,6 +395,72 @@ void ScoreView::createEditActions(QMenu* menu)
     connect(a, &QAction::triggered, [=](){ editDeleteNote(); });
 
 }
+
+void ScoreView::createPlaybackActions(QMenu* menu)
+{
+    QAction* a;
+    a = p_->actPlayEntered = menu->addAction(tr("play entered notes"));
+    a->setCheckable(true);
+    a->setChecked(true);
+
+    a = p_->actPlayCursorChange =
+            menu->addAction(tr("play notes on cursor change"));
+    a->setCheckable(true);
+    a->setChecked(true);
+
+    a = p_->actPlayColumn = menu->addAction(tr("play whole column"));
+    a->setCheckable(true);
+    a->setChecked(false);
+
+}
+
+
+
+void ScoreView::editResizeBars(int step, int num)
+{
+    if (!isAssigned() || !p_->cursor.isValid())
+        return;
+
+    if (step == 0 || num == 0)
+        return;
+
+    Score::Selection sel = p_->curSelection.isValid()
+            ? p_->curSelection
+            : Score::Selection(p_->cursor);
+
+    if (!sel.isSingleStream())
+        return;
+
+    NoteStream stream = sel.from().getStream();
+
+    auto barIdxs = sel.getSelectedBarIndices();
+
+    for (auto& idx : barIdxs)
+    {
+        if (!idx.isValid())
+            continue;
+        auto bar = stream.bar(idx.bar());
+        if (!bar.hasUniformRowLength())
+            continue;
+
+        Note fill(Note::Space);
+
+        for (Notes& notes : bar)
+        {
+            if (num > 0)
+                notes.insertNotes(fill, step, num, num);
+            else
+                notes.deleteNotes(step, -num, -num);
+        }
+
+        stream.bar(idx.bar()) = bar;
+    }
+    editor()->changeStream(sel.from(), stream,
+                           tr("resize(%1, %2)")
+                           .arg(step).arg(num)
+                           );
+}
+
 
 void ScoreView::editInsertStream(bool after)
 {
@@ -712,6 +809,30 @@ void ScoreView::Private::setCursor(
     updateStatus();
     emit p->currentIndexChanged(cursor, oldCursor);
 
+    // play
+    if (actPlayCursorChange && actPlayCursorChange->isChecked()
+            && cursor.isValid())
+    {
+        QList<Note> notes;
+        if (!actPlayColumn || !actPlayColumn->isChecked())
+        {
+            if (cursor.getNote().isNote())
+                notes << cursor.getNote();
+        }
+        else
+        {
+            notes = cursor.getBar().getColumn(cursor.column());
+        }
+        if (!notes.empty())
+        {
+            KeySignature keySig = cursor.getStream().keySignature();
+            for (Note& n : notes)
+                n = keySig.transform(n);
+            emit p->playNotes(notes);
+        }
+    }
+
+    // adjust selection
     if (cursor.isValid() && extendSelection)
     {
         if (!selStart.isValid())
@@ -774,7 +895,7 @@ void ScoreView::Private::updateStatus()
     if (!cursor.isValid())
         s = "[]";
     else
-        s = QString("Part: %1, Bar(%2): %3, Row: %4, Note: %5 (%6)")
+        s = QString("Section: %1, Bar(%2): %3, Row: %4, Note: %5 (%6)")
                 .arg(cursor.stream())
                 .arg(cursor.getNotes().length())
                 .arg(cursor.bar())
@@ -899,16 +1020,16 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
         }
         if (handled)
         {
-            if (doSendNote)
+            if (doSendNote && p_->doPlayEntered())
             {
-                if (!isSelection() && p_->cursor.isValid()
-                        && p_->cursor.getNote().isNote())
+                if (p_->cursor.isValid() && p_->cursor.getNote().isNote())
                 {
-                    emit noteEntered(keySig.transform(p_->cursor.getNote()));
+                    emit playNotes(QList<Note>()
+                                   << keySig.transform(p_->cursor.getNote()));
                     //p_->curOctave = p_->cursor.getNote().octaveSpanish();
-                    p_->updateStatus();
                 }
             }
+            p_->updateStatus();
             return;
         }
 
@@ -968,8 +1089,11 @@ void ScoreView::keyPressEvent(QKeyEvent* e)
             p_->updateStatus();
         }
 
-        note = keySig.transform(note);
-        emit noteEntered(note);
+        if (p_->doPlayEntered())
+        {
+            note = keySig.transform(note);
+            emit playNotes(QList<Note>() << note);
+        }
 
         return;
     }

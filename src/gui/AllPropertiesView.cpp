@@ -89,7 +89,7 @@ void AllPropertiesView::Private::createWidgets()
         combo->addItem(tr("synth"), "synth");
         combo->addItem(tr("document"), "document");
         combo->addItem(tr("score"), "score");
-        combo->addItem(tr("part"), "stream");
+        combo->addItem(tr("section"), "stream");
         combo->addItem(tr("page layout"), "page-layout");
         combo->addItem(tr("score layout"), "score-layout");
         connect(combo, static_cast<void(QComboBox::*)(int)>(

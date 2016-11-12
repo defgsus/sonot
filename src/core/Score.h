@@ -78,6 +78,9 @@ public:
         bool isFirstBar() const;
         bool isLastBar() const;
 
+        /** Returns true if this index is before @p i */
+        bool isLeftOf(const Index& i) const;
+
         /** Returns true if this Bar's tempo is different to previous one's */
         bool isTempoChange() const;
 
@@ -192,7 +195,9 @@ public:
         bool contains(const Index& idx) const;
 
         /** Returns all notes within the selection */
-        QList<Index> containedNoteIndices() const;
+        QList<Index> getContainedNoteIndices() const;
+        /** Returns top-left index of all bars touched by selection */
+        QList<Index> getSelectedBarIndices() const;
 
         QString toString() const;
 

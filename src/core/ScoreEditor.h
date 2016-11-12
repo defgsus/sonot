@@ -90,6 +90,8 @@ public:
                       bool insertAfterIndex = false);
     bool changeNote(const Score::Index&, const Note& n);
     bool changeBar(const Score::Index&, const Bar& b);
+    bool changeStream(const Score::Index&, const NoteStream& s,
+                      const QString& undoDesc);
     bool deleteNote(const Score::Index&, bool allRows);
     bool deleteBar(const Score::Index&);
     bool deleteRow(const Score::Index&);

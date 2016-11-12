@@ -85,7 +85,15 @@ public:
     Notes& operator << (const char* name);
     Notes& operator << (const QString& name);
 
+    // --- modifier ---
+
     void transpose(int8_t noteStep, bool wholeNotes);
+    /** Inserts the note @p n at every @p steps + 1 position,
+        repeated @p times times, starting at @p offset. */
+    bool insertNotes(const Note& n, size_t steps, size_t times, size_t offset=0);
+    /** Deletes @p times notes at every @p steps + 1 position,
+        starting at @p offset. */
+    bool deleteNotes(size_t steps, size_t times, size_t offset=0);
 
 private:
     std::vector<Note> p_data_;

@@ -117,6 +117,8 @@ private slots:
     void testNoteTranspose();
     void testKeySignature();
     void testResize();
+    void testInsertNotes();
+    void testDeleteNotes();
     void testRandomCursor();
     void testKeepDataOnResize();
     void testJsonNotes();
@@ -384,13 +386,59 @@ void SonotCoreTest::testKeySignature()
 
 void SonotCoreTest::testResize()
 {
-    Notes bar(2);
+    Notes notes(2);
 
-    QCOMPARE(bar.length(), size_t(2));
+    QCOMPARE(notes.length(), size_t(2));
 
-    bar.resize(3);
+    notes.resize(3);
 
-    QCOMPARE(bar.length(), size_t(3));
+    QCOMPARE(notes.length(), size_t(3));
+}
+
+void SonotCoreTest::testInsertNotes()
+{
+    Notes n, n1; n1 << "a" << "b" << "c" << "d";
+    QCOMPARE(n1.toString(), QString("A3 B3 C3 D3"));
+
+    n=n1; n.insertNotes(Note(Note::Space), 1, 1, 1);
+    QCOMPARE(n.toString(), QString("A3 . B3 . C3 . D3 ."));
+
+    n=n1; n.insertNotes(Note(Note::Space), 1, 2, 1);
+    QCOMPARE(n.toString(), QString("A3 . . B3 . . C3 . . D3 . ."));
+
+    n=n1; n.insertNotes(Note(Note::Space), 1, 1, 0);
+    QCOMPARE(n.toString(), QString(". A3 . B3 . C3 . D3"));
+
+    n=n1; n.insertNotes(Note(Note::Space), 2, 1, 1);
+    QCOMPARE(n.toString(), QString("A3 . B3 C3 . D3"));
+
+    n=n1; n.insertNotes(Note(Note::Space), 2, 1, 2);
+    QCOMPARE(n.toString(), QString("A3 B3 . C3 D3 ."));
+
+    n=n1; n.insertNotes(Note(Note::Space), 2, 1, 3);
+    QCOMPARE(n.toString(), QString("A3 B3 C3 . D3"));
+
+    n=n1; n.insertNotes(Note(Note::Space), 1, 1, 3);
+    QCOMPARE(n.toString(), QString("A3 B3 C3 . D3 ."));
+}
+
+void SonotCoreTest::testDeleteNotes()
+{
+    Notes n, n1; n1 << "a" << "b" << "c" << "d" << "e" << "f" << "g";
+    QCOMPARE(n1.toString(), QString("A3 B3 C3 D3 E3 F3 G3"));
+
+    n=n1; n.deleteNotes(1, 1, 1);
+    QCOMPARE(n.toString(), QString("A3 C3 E3 G3"));
+
+    n=n1; n.deleteNotes(1, 1, 0);
+    QCOMPARE(n.toString(), QString("B3 D3 F3"));
+
+    n=n1; n.deleteNotes(1, 2, 1);
+    QCOMPARE(n.toString(), QString("A3 D3 G3"));
+
+    n=n1; n.deleteNotes(2, 1, 1);
+    QCOMPARE(n.toString(), QString("A3 C3 D3 F3 G3"));
+
 }
 
 /** Generates random score (WITH EMPTY STREAMS/BARS!!)
@@ -899,7 +947,7 @@ void SonotCoreTest::testUndoRedoMany()
         QCOMPARE(*editor.score(), current);
 
 
-        if ((it % 50) == 49)
+        if ((it % 200) == 199)
             qDebug().noquote() << (it+1) << "actions";
     }
 }
@@ -987,7 +1035,7 @@ void SonotCoreTest::testUndoRedoMerging()
         QCOMPARE(*editor.score(), current);
 
 
-        if ((it % 50) == 49)
+        if ((it % 200) == 199)
             qDebug().noquote() << (it+1) << "actions,"
                                << numMerges << "merges";
     }

@@ -115,6 +115,39 @@ Notes& Notes::operator<<(const QString& name)
     return *this;
 }
 
+bool Notes::insertNotes(const Note &n, size_t steps, size_t times, size_t offset)
+{
+    if (steps == 0 || times == 0)
+        return false;
+    size_t num = length() / steps;
+    size_t oldLen = length();
+    for (size_t i=offset, k=0; i<=length() && k<num; i += steps, ++k)
+    {
+        for (size_t j=0; j<times; ++j)
+        {
+            insertNote(i, n);
+            ++i;
+        }
+    }
+    return oldLen != length();
+}
+
+bool Notes::deleteNotes(size_t steps, size_t times, size_t offset)
+{
+    if (steps == 0 || times == 0)
+        return false;
+    size_t num = length() / steps;
+    size_t oldLen = length();
+    for (size_t i=offset, k=0; i<length() && k<num; i += steps, ++k)
+    {
+        for (size_t j=0; j<times && i<length(); ++j)
+        {
+            removeNote(i);
+        }
+    }
+    return oldLen != length();
+}
+
 QString Notes::toString() const
 {
     QString s;

@@ -56,6 +56,8 @@ public:
     /** Returns true if any of the row's Notes::containsNotes()
         returns true */
     bool containsNotes() const;
+    /** Returns true if each row has the same number of notes */
+    bool hasUniformRowLength() const;
 
     size_t numRows() const;
     size_t maxNumberNotes() const;
@@ -65,6 +67,9 @@ public:
 
     const Notes& notes(size_t i) const { return (*this)[i]; }
     const Notes& operator[](size_t i) const;
+
+    /** Returns list of notes (from all rows) for column index */
+    QList<Note> getColumn(size_t column) const;
 
     QString toString() const;
 
