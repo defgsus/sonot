@@ -56,8 +56,8 @@ const Note& Notes::note(size_t column) const
 
 double Notes::columnTime(double column) const
 {
-    //double t = column*3.14159265;
-    //column += .2*std::sin(t/2);
+    double t = column*3.14159265;
+    column += .2*std::sin(t/2);
     return length() ? column / length() : 0;
 }
 
